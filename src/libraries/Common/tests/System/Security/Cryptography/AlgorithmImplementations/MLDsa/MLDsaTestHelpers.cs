@@ -14,7 +14,9 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows && !PlatformDetection.IsAzureLinux;
+
+        internal static bool PreHashIsSupported => MLDsa.IsSupported && !PlatformDetection.IsAzureLinux;
 
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };

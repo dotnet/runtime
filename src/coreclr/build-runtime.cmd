@@ -355,6 +355,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-debug-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! debug
     )
+    if not "!string:-cdac-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! cdac
+    )
 )
 if "!__CMakeTarget!" == "" (
     set __CMakeTarget=install
@@ -445,13 +448,16 @@ if %__BuildNative% EQU 1 (
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (
         set __CmakeBuildToolArgs=
+        REM Work around cl.exe's MAX_PATH limit using existing Windows 8.3 directory aliases.
+        REM Pass -C to Ninja because CMake --build expands aliases back to long paths.
+        for %%i in ("%__IntermediatesDir%") do set __CmakeBuildToolArgs=-C "%%~fsi"
     ) else (
         REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    echo running "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
-    "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    echo running "%CMakePath%" --build "%__IntermediatesDir%" --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    "%CMakePath%" --build "%__IntermediatesDir%" --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
@@ -604,7 +610,7 @@ echo Build architecture: one of -x64, -x86, -arm, -arm64, -loongarch64, -riscv64
 echo                     Can also be set with "-arch ^<value^>" ^(e.g. -arch arm64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
-echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi
+echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi cdac
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.

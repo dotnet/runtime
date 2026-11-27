@@ -226,10 +226,20 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
                 return GetFltCmpOpName("ps");
             }
 
+            case INS_vcmpph:
+            {
+                return GetFltCmpOpName("ph");
+            }
+
             case INS_cmpsd:
             case INS_vcmpsd:
             {
                 return GetFltCmpOpName("sd");
+            }
+
+            case INS_vcmpsh:
+            {
+                return GetFltCmpOpName("sh");
             }
 
             case INS_cmpss:

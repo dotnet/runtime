@@ -2328,11 +2328,6 @@ namespace System
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
-
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(ValueType);
-
-        private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
         #endregion
 
         #region Constructor
@@ -2630,6 +2625,41 @@ namespace System
         {
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
             return new ReadOnlySpan<Type>(candidates).ToArray();
+        }
+
+        public override Type[] GetInterfacesWithSameMetadataDefinitionAs(Type interfaceType)
+        {
+            ArgumentNullException.ThrowIfNull(interfaceType);
+
+            // The interfaces of a runtime type are runtime types, so an interfaceType that isn't a RuntimeType never matches.
+            if (interfaceType is not RuntimeType)
+            {
+                return EmptyTypes;
+            }
+
+            // Any instantiation of a generic interface matches the same interfaces as its generic type definition.
+            if (interfaceType.IsConstructedGenericType)
+            {
+                interfaceType = interfaceType.GetGenericTypeDefinition();
+            }
+
+            // Filter the cached interface list directly instead of copying it via GetInterfaces. The interfaces are
+            // runtime types, so comparing generic type definitions by reference is equivalent to
+            // HasSameMetadataDefinitionAs and cheaper.
+            RuntimeType[] interfaces = Cache.GetInterfaceList(MemberListType.All, null);
+
+            // Usually a single interface matches, which ListBuilder handles without allocating backing storage.
+            // Don't size it for every interface: that would over-allocate when several interfaces match.
+            ListBuilder<Type> matches = default;
+            foreach (RuntimeType implementedInterface in interfaces)
+            {
+                if (ReferenceEquals(implementedInterface.IsGenericType ? implementedInterface.GetGenericTypeDefinition() : implementedInterface, interfaceType))
+                {
+                    matches.Add(implementedInterface);
+                }
+            }
+
+            return matches.ToArray();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
@@ -3264,7 +3294,7 @@ namespace System
             // pretty much everything is a subclass of object, even interfaces
             // notice that interfaces are really odd because they do not have a BaseType
             // yet IsSubclassOf(typeof(object)) returns true
-            if (rtType == ObjectType && rtType != this)
+            if (rtType == typeof(object) && rtType != this)
                 return true;
 
             return false;
@@ -3536,13 +3566,12 @@ namespace System
                 {
                     // The open generic Nullable<> is also classified as Nullable, and a constructed
                     // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
-                    // MethodTable*) in InstantiationArg0(). Fall back to managed reflection in
-                    // those cases.
+                    // MethodTable*) for its argument. Fall back to managed reflection in those cases.
                     if (pMT->ContainsGenericVariables)
                     {
                         return GetGenericArguments()[0];
                     }
-                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->NullableType.AsMethodTable());
                     GC.KeepAlive(this);
                     return result;
                 }
@@ -3749,10 +3778,10 @@ namespace System
             }
         }
 
-        private CheckValueStatus TryChangeTypeSpecial(ref object value)
+        private unsafe CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
-            RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
+            RuntimeType srcType = pointer != null ? (RuntimeType)pointer.PointerType : (RuntimeType)value.GetType();
             if (!CanValueSpecialCast(srcType, this))
             {
                 return CheckValueStatus.ArgumentException;
@@ -3760,7 +3789,7 @@ namespace System
 
             if (pointer != null)
             {
-                value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+                value = (IntPtr)pointer.Value; // Convert source pointer to IntPtr
             }
             else
             {

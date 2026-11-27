@@ -1,7 +1,8 @@
 # Shared KBE Analysis Instructions
 
 Use this file when you already have a concrete failure candidate that might need
-a `Known Build Error` issue in `dotnet/runtime`.
+a repository `Known Build Error` in `dotnet/runtime` or an infrastructure Known
+Build Error in `dotnet/dnceng`.
 
 This file is intentionally limited to the logic shared between:
 
@@ -19,6 +20,24 @@ responsible for:
   review, and
 - formatting the final report back to the user.
 
+The runtime lookup, templates, and verification sections below remain specific
+to `dotnet/runtime`. Consumers that have not already established runtime
+ownership may opt into the destination-routing section first. That section can
+identify or deduplicate a dnceng outcome.
+
+These shared analysis and template instructions do not grant permission to
+publish. The caller must follow the repository's
+[GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization):
+ordinary interactive and coding sessions require explicit authorization. In an
+interactive session, advance permission covering the proposed publication is
+sufficient; do not ask again. An executing user-requested or enabled workflow
+may publish the operations its documented publication contract authorizes for
+its currently authorized actions, without another approval step unless the
+contract requires one. A repository-configured agentic workflow may publish
+only the operations authorized by its purpose and configured outputs, through
+its configured output mechanism. Without authorization, leave a draft and
+report the pending decision. Dry-run mode never publishes.
+
 <a id="shared-kbe-rules"></a>
 
 ## Shared rules
@@ -34,6 +53,120 @@ responsible for:
    separately.
 5. **Do not comment on existing KBEs.** Build Analysis tracks occurrence data in
    the issue body.
+
+<a id="classify-kbe-destination"></a>
+
+## Classify the KBE destination
+
+Use this section when the caller has not already established that the failure
+is exclusive to `dotnet/runtime`.
+
+Apply the current Arcade Known Issues criteria:
+
+- **Runtime repository candidate:** the failure is specific to runtime product,
+  tests, build logic, or repository configuration and should be investigated by
+  runtime owners.
+- **Infrastructure candidate:** the failure is not exclusive to runtime and
+  needs engineering-services investigation, such as a lab, agent, queue,
+  pipeline service, network, package-feed, or cross-repository infrastructure
+  failure.
+- **Infrastructure review:** the evidence is infrastructure-shaped but ownership
+  is not yet proven. This may support a non-publishable review draft, not an
+  automatic issue.
+- **Unclear:** evidence is too weak to choose either destination.
+
+Do not infer infrastructure ownership merely because the runtime lookup finds
+no existing issue. Use failure evidence and ownership criteria.
+
+If the candidate may contain a security issue, stop public KBE processing and
+report the required private escalation path. Do not create a GitHub issue,
+AzDO work item, comment, or public draft.
+
+Before routing any candidate to dnceng, run the normal runtime KBE lookup,
+including open and recently closed KBEs, plain trackers, and existing PRs. This
+preserves the previous behavior for pipelines excluded from Build Analysis:
+
+- if a verified open runtime KBE matches, report or reuse it and do not create a
+  dnceng issue unless an explicit migration was requested;
+- if only a plain tracker matches, retain it as cross-link context but continue
+  destination and KBE eligibility analysis because it is not a KBE substitute;
+- if the runtime lookup is blocked or inconclusive, stop for human review rather
+  than creating a dnceng issue.
+
+For a runtime repository candidate, continue with the normal runtime lookup and
+classification.
+
+For an infrastructure candidate or infrastructure review with no matching open
+runtime KBE, run the dnceng lookup below before selecting any creation action.
+
+<a id="search-existing-dnceng-kbe"></a>
+
+## Search for an existing dnceng KBE
+
+Read the current authoritative sources before classifying a dnceng result:
+
+- `dotnet/dnceng` Known Build Error form:
+  `.github/ISSUE_TEMPLATE/known-build-error.yml`
+- Arcade `Documentation/Build Analysis/KnownIssues.md`
+- dnceng `Documentation/TeamProcess/DevGuide/IssueTrackingGuidance.md`
+
+Search open and closed `dotnet/dnceng` issues using progressively narrowed
+combinations of:
+
+1. the full stable error signature,
+2. assertion, exception, or task error text,
+3. pipeline and failing task,
+4. queue, image, pool, or agent identifier after removing volatile instance
+   values,
+5. build leg and originating repository,
+6. relevant service or package-feed name.
+
+For closed `dotnet/dnceng` issues, use the following windows:
+
+- The normal closed dnceng search uses `closed:>=<30-days-ago>`.
+- After that misses, widen to `closed:>=<90-days-ago>` only when checking a
+  suspected recurrence with the same stable signature. Do not use a test stem,
+  generic exception, or task name alone for the widened search.
+- Do not run an unbounded dnceng history search from this shared flow. Older
+  infrastructure history requires explicit human review or separate,
+  caller-specific guidance.
+
+Preserve complete search responses and inspect every plausible issue body and
+relevant comments. A failed, filtered, incomplete, ambiguous, or unreadable
+lookup is not an empty result: classify it as `dnceng-lookup-blocked` and do not
+draft or publish a new issue.
+
+If a candidate is closed as a duplicate, follow only explicit duplicate links
+and read each linked issue body and relevant comments until reaching the
+canonical issue that is not itself a duplicate. Track visited issues. If a link
+is missing or ambiguous, the chain is cyclic, or any read is inconclusive,
+classify the result as `dnceng-lookup-blocked`.
+
+Use the canonical issue's state, closure time, and linked fix evidence for
+classification. An open canonical issue always yields `existing-dnceng-kbe`,
+even when the initially matched duplicate is closed. A closed duplicate does
+not establish that the failure was fixed and must not by itself produce a
+recurrence draft.
+
+Classify the result as exactly one of:
+
+- `existing-dnceng-kbe`: an open issue covers the same root cause;
+- `recently-handled-dnceng-kbe`: a closed issue or linked fix handled a failure
+  that predates the fix or closure;
+- `eligible-dnceng-recurrence`: the same root cause is verified after the prior
+  fix or closure;
+- `eligible-new-dnceng-kbe`: no issue matches and the evidence supports
+  engineering-services ownership;
+- `dnceng-review-draft`: ownership is still uncertain but the evidence is
+  useful for human review;
+- `runtime-candidate`: dnceng lookup or ownership analysis shows the failure is
+  repository-specific; continue with the runtime lookup;
+- `dnceng-lookup-blocked`: lookup or evidence is inconclusive;
+- `unhandled`: evidence is too weak even for a useful review draft.
+
+These are classifications, not publication decisions. The caller chooses no
+action, review draft, publishable draft, or live publication. The dnceng issue
+form remains the authority for draft and publication fields.
 
 <a id="search-existing-kbe"></a>
 
@@ -59,6 +192,9 @@ retrieval failure to the caller and do not create a KBE for that signature
 while the lookup remains inconclusive.
 These rules also apply to candidate body and comments reads. Do not switch
 retrieval paths to work around an integrity-filtered or denied read.
+When the caller provides a bounded issue-search wrapper, use that wrapper for
+every issue query and read every returned candidate through the caller's
+full-issue transport before making a duplicate decision.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -125,13 +261,21 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If any lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it as
-a possible existing-KBE hit and record
+If an issue search fails, or a full candidate read fails or returns a
+`[Filtered]` marker for a KBE-oriented search, treat it as a likely
+existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-This includes variation 5 and searches without a KBE label filter. A hidden
-result does not establish whether the issue is an unlabeled tracker or a KBE.
+If a full read fails or returns a `[Filtered]` marker for a plain tracker
+candidate, stop the search and record
+`skipped: integrity-filtered tracker candidate, needs human review`. Do not
+continue to issue creation.
+
+If any other lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it
+as a possible existing candidate and record
+`skipped: integrity-filtered candidate, needs human review`. A hidden result
+does not establish whether the issue is an unlabeled tracker or a KBE.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
@@ -145,7 +289,8 @@ it does not end the inspection.
 The existing-KBE search above is open-only, so a `[ci-scan]` KBE already closed
 as fixed, duplicate, or stale is invisible and a recurring signature gets
 re-filed from scratch. After the open search misses, also scan recently-closed
-candidates:
+candidates, then read every returned candidate before comparing its contents or
+`closed_at`:
 
 - `is:issue is:closed label:"Known Build Error" "<assertion-or-test-name>" closed:>=<30-days-ago>`
 - `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
@@ -213,7 +358,7 @@ fall back to the post-close recurrence rule above.
 
 ## Search for an area-team tracker
 
-Search for a plain tracker with:
+Search for a plain tracker, then read every returned candidate:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
@@ -234,6 +379,10 @@ A plain tracker is **not** a KBE substitute. Build Analysis only matches
 <a id="search-existing-prs"></a>
 
 ## Search for existing PRs already handling the failure
+
+Use the PR search and full-PR read transports available in the caller's
+environment. Do not decide that a PR handles the failure from search metadata
+alone.
 
 ### Existing test-disable PR
 

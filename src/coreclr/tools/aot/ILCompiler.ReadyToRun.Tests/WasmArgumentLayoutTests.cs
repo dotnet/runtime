@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
 using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::ILCompiler.PortableCallHelpers;
@@ -39,6 +40,7 @@ namespace ILCompiler.ReadyToRun.Tests;
 [ConditionalClass(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
 public class WasmArgumentLayoutTests
 {
+    private const string CoreLibSimpleName = "System.Private.CoreLib";
     private const string Vector128OfT = "Vector128`1";
     private const string VectorOfT = "Vector`1";
     private const string Vector64OfT = "Vector64`1";
@@ -56,6 +58,32 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
+    [InlineData(0, -1, 1)]
+    [InlineData(1, -3, 1)]
+    [InlineData(31, -63, 1)]
+    [InlineData(32, -65, 2)]
+    [InlineData(4095, -8191, 2)]
+    [InlineData(4096, -8193, 3)]
+    [InlineData(1073741823, -2147483647, 5)]
+    public unsafe void ManagedHelperFrameIdentityRelocation(int index, int identity, int encodedSize)
+    {
+        Assert.Equal(identity, checked(-(index * 2 + 1)));
+        Assert.Equal((uint)index, (~(uint)identity) >> 1);
+        RelocType type = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+        Assert.True(Relocation.IsVariableLength(type));
+        Assert.Equal(5, Relocation.GetSize(type));
+        Assert.Equal(encodedSize, Relocation.ActualSize(type, identity));
+        byte[] buffer = new byte[Relocation.GetSize(type)];
+        fixed (byte* bytes = buffer)
+        {
+            Relocation.WriteValue(type, bytes, identity);
+            Assert.Equal(identity, Relocation.ReadValue(type, bytes));
+            Assert.Equal(encodedSize, Relocation.WriteVariableLengthValue(type, bytes, identity));
+            Assert.Equal(identity, Relocation.ReadValue(type, bytes));
+        }
+    }
+
+    [Theory]
     [InlineData("Byte", false)]
     [InlineData("Int16", false)]
     [InlineData("Int64", false)]
@@ -64,7 +92,7 @@ public class WasmArgumentLayoutTests
     [InlineData("Int64", true)]
     public void ClosedStaticDelegateSignaturePreservesArgumentLayout(string underlyingType, bool returnsStruct)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
         DefType nullableType = context.SystemModule.GetType("System"u8, "Nullable`1"u8)
             .MakeInstantiatedType(GetSystemType(context, underlyingType));
@@ -96,7 +124,7 @@ public class WasmArgumentLayoutTests
     [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "viaiiS16p", 7)]
     public void ClosedStaticDelegateSignaturePreservesHiddenArguments(WasmLowering.LoweringFlags flags, string expectedSignature, int expectedParameters)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         MethodSignature invokeSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
             [context.GetWellKnownType(WellKnownType.Int32), MakeAlignedEightBlob(context, 16)]);
 
@@ -108,13 +136,191 @@ public class WasmArgumentLayoutTests
         Assert.True(lowered.FuncType.Returns.Types.IsEmpty);
     }
 
+    /// <summary>
+    /// Without an async continuation the generic context occupies the slot of a leading pointer argument,
+    /// and callers rely on that: InitHelpers.CallClassConstructor calls a shared generic class constructor
+    /// as delegate*&lt;void*, void&gt;. Both shapes must produce the same thunk key.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false, false, "vip")]
+    [InlineData(false, false, true, "viip")]
+    [InlineData(true, false, true, "vTiip")]
+    [InlineData(false, true, true, "S16iip")]
+    [InlineData(true, true, true, "S16Tiip")]
+    public void GenericContextEncodesAsLeadingPointerArgument(bool hasThis, bool returnsStruct, bool hasArgument, string expectedSignature)
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        TypeDesc returnType = returnsStruct ? MakeAlignedEightBlob(context, 16) : context.GetWellKnownType(WellKnownType.Void);
+        MethodSignatureFlags flags = hasThis ? MethodSignatureFlags.None : MethodSignatureFlags.Static;
+        TypeDesc[] arguments = hasArgument ? [context.GetWellKnownType(WellKnownType.Int32)] : [];
+        MethodSignature withContext = new MethodSignature(flags, 0, returnType, arguments);
+        MethodSignature withPointer = new MethodSignature(flags, 0, returnType, [context.GetWellKnownType(WellKnownType.IntPtr), .. arguments]);
+
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(withContext, WasmLowering.LoweringFlags.HasGenericContextArg).SignatureString);
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(withPointer, WasmLowering.LoweringFlags.None).SignatureString);
+    }
+
+    [Theory]
+    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iiaip",
+        "GenericContext@8:1 AsyncContinuation@16:2 Argument@24:3")]
+    [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iTiaip",
+        "This@8:1 GenericContext@16:2 AsyncContinuation@24:3 Argument@32:4")]
+    [InlineData(false, true, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "S16iaip",
+        "RetBuf@-1:1 GenericContext@8:2 AsyncContinuation@16:3 Argument@24:4")]
+    [InlineData(true, true, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "S16Tiaip",
+        "This@8:1 RetBuf@-1:2 GenericContext@16:3 AsyncContinuation@24:4 Argument@32:5")]
+    [InlineData(false, false, WasmLowering.LoweringFlags.IsAsyncCall, "iaip",
+        "AsyncContinuation@8:1 Argument@16:2")]
+    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iiip",
+        "Argument@8:1 Argument@16:2")]
+    [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iTiip",
+        "This@8:1 Argument@16:2 Argument@24:3")]
+    [InlineData(false, false, WasmLowering.LoweringFlags.None, "iip",
+        "Argument@8:1")]
+    public void WasmThunkArgLayoutFollowsSignatureOrder(bool hasThis, bool returnsStruct, WasmLowering.LoweringFlags flags, string expectedSignature, string expectedArgs)
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
+        TypeDesc returnType = returnsStruct ? MakeAlignedEightBlob(context, 16) : int32;
+        MethodSignature signature = new MethodSignature(hasThis ? MethodSignatureFlags.None : MethodSignatureFlags.Static, 0, returnType, [int32]);
+
+        WasmSignature lowered = WasmLowering.GetSignature(signature, flags);
+        Assert.Equal(expectedSignature, lowered.SignatureString);
+        Assert.Equal(expectedArgs.Contains("GenericContext"), WasmLowering.HasGenericContextBeforeAsync(lowered, context));
+
+        // The interpreter and the method's GC ref map expect [this][generic context][async continuation][args].
+        WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
+        Assert.Equal(expectedArgs, string.Join(" ", layout.Args.Select(arg => $"{arg.Kind}@{arg.Offset}:{arg.WasmParamIndex}")));
+        Assert.All(layout.Args, arg => Assert.Equal(1, arg.WasmParamCount));
+        Assert.Equal(lowered.FuncType.Params.Types.Length - 1, layout.PortableEntrypointParamIndex);
+    }
+
+    [Fact]
+    public void WasmThunkArgLayoutDescribesMultiSlotAndIndirectArguments()
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        TypeDesc int64 = context.GetWellKnownType(WellKnownType.Int64);
+        TypeDesc int128 = InstantiateMultiSlotType(context, Int128Type);
+        TypeDesc blob = MakeAlignedEightBlob(context, 16);
+        MethodSignature signature = MakeStaticVoidSignature(context, int64, int128, blob, context.GetWellKnownType(WellKnownType.Int32));
+
+        WasmSignature lowered = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None);
+        Assert.Equal("vll2S16ip", lowered.SignatureString);
+
+        WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
+        Assert.Equal(
+            new[]
+            {
+                (8, 1, 1, WasmValueType.I64, 0),
+                (24, 2, 2, WasmValueType.I64, 0),
+                (40, 4, 1, WasmValueType.I32, 16),
+                (56, 5, 1, WasmValueType.I32, 0),
+            },
+            layout.Args.Select(arg => (arg.Offset, arg.WasmParamIndex, arg.WasmParamCount, arg.WasmType, arg.IndirectStructSize)));
+        Assert.All(layout.Args, arg => Assert.Equal(WasmThunkArgKind.Argument, arg.Kind));
+        Assert.True(layout.Args[1].IsMultiSlot);
+        Assert.True(layout.Args[2].IsIndirectStruct);
+        Assert.Equal(6, layout.PortableEntrypointParamIndex);
+    }
+
+    /// <summary>
+    /// The delay-load GC ref map for a call is computed from the callee's <see cref="MethodDesc"/>, while the Wasm
+    /// import thunk that spills the arguments during the fixup only has the callee's Wasm signature. Both must agree
+    /// on every argument location, or a GC during the fixup reports the wrong slots.
+    /// </summary>
+    [Theory]
+    [InlineData("FromResult", true, false)]
+    [InlineData("FromResult", true, true)]
+    [InlineData("StartNew", true, true)]
+    [InlineData("Delay", false, true)]
+    public void WasmThunkArgLayoutMatchesCallRefMapLayout(string methodName, bool sharedGeneric, bool asyncVariant)
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        MethodDesc method = GetTaskReturningCoreLibMethod(context, methodName);
+        if (sharedGeneric)
+        {
+            method = method.MakeInstantiatedMethod(context.CanonType);
+        }
+
+        if (asyncVariant)
+        {
+            method = context.GetAsyncVariantMethod(method);
+        }
+
+        Assert.Equal(sharedGeneric, method.RequiresInstArg());
+        Assert.Equal(asyncVariant, method.IsAsyncCall());
+
+        WasmSignature lowered = WasmLowering.GetSignature(method.Signature, WasmLowering.GetLoweringFlags(method));
+        var (callRefMapIterator, transitionBlock) = GCRefMapBuilder.BuildCallRefMapArgIterator(method, isUnboxingStub: false);
+
+        List<int> callRefMapOffsets = new();
+        if (callRefMapIterator.HasThis)
+        {
+            callRefMapOffsets.Add(transitionBlock.ThisOffset);
+        }
+
+        if (callRefMapIterator.HasParamType)
+        {
+            callRefMapOffsets.Add(callRefMapIterator.GetParamTypeArgOffset());
+        }
+
+        if (callRefMapIterator.HasAsyncContinuation)
+        {
+            callRefMapOffsets.Add(callRefMapIterator.GetAsyncContinuationArgOffset());
+        }
+
+        int argOffset;
+        while ((argOffset = callRefMapIterator.GetNextOffset()) != TransitionBlock.InvalidOffset)
+        {
+            callRefMapOffsets.Add(argOffset);
+        }
+
+        // Without an async continuation the generic context stays the first explicit argument, in the same slot.
+        WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
+        Assert.Equal(sharedGeneric && asyncVariant, layout.Args.Any(arg => arg.Kind == WasmThunkArgKind.GenericContext));
+        Assert.Equal(callRefMapOffsets, layout.Args.Where(arg => arg.Kind != WasmThunkArgKind.RetBuf).Select(arg => arg.Offset));
+    }
+
+    private static MethodDesc GetTaskReturningCoreLibMethod(ReadyToRunCompilerContext context, string methodName)
+    {
+        MetadataType type = methodName == "StartNew"
+            ? context.SystemModule.GetType("System.Threading.Tasks"u8, "TaskFactory"u8)
+            : context.SystemModule.GetType("System.Threading.Tasks"u8, "Task"u8);
+        foreach (MethodDesc method in type.GetMethods())
+        {
+            if ((method.Name.ToString() == methodName) && (method.Signature.Length == 1) && (method.HasInstantiation == (methodName != "Delay")) &&
+                ((methodName != "Delay") || method.Signature[0].IsWellKnownType(WellKnownType.Int32)))
+            {
+                return method;
+            }
+        }
+
+        throw new InvalidOperationException($"No single-argument {type.Name.ToString()}.{methodName} overload in System.Private.CoreLib");
+    }
+
+    [Theory]
+    [InlineData(MethodSignatureFlags.None, "iip")]
+    [InlineData(MethodSignatureFlags.CallingConventionVarargs, "iip")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionStdCall, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionThisCall, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConvention, "ii")]
+    public void SignatureCallingConventionSelectsLowering(MethodSignatureFlags callingConvention, string expectedSignature)
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
+        MethodSignature signature = new MethodSignature(callingConvention | MethodSignatureFlags.Static, 0, int32Type, [int32Type]);
+
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).SignatureString);
+    }
+
     [Theory]
     [InlineData(MethodSignatureFlags.None)]
     [InlineData(MethodSignatureFlags.CallingConventionVarargs)]
     [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl)]
     public void ClosedStaticDelegateSignaturePreservesCallingConvention(MethodSignatureFlags flags)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
         MethodSignature invokeSignature = new MethodSignature(flags, 0, objectType, [objectType]);
 
@@ -154,7 +360,7 @@ public class WasmArgumentLayoutTests
     [MemberData(nameof(V128Types))]
     public void WasmV128TypesAre16ByteAligned(string vectorType, WellKnownType elementType)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType instantiated = InstantiateVector(context, vectorType, elementType);
 
         Assert.Equal(16, instantiated.InstanceFieldSize.AsInt);
@@ -171,7 +377,7 @@ public class WasmArgumentLayoutTests
     [InlineData(VectorOfT)]
     public void WasmV128ArgumentsStartOn16ByteBoundaries(string vectorType)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
 
         MethodSignature signature = MakeStaticVoidSignature(
@@ -192,7 +398,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector512OfT)]
     public void OtherSimdWidthsAreNotV128(string vectorType)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType instantiated = InstantiateVector(context, vectorType, WellKnownType.Int32);
 
         Assert.NotEqual(16, instantiated.InstanceFieldSize.AsInt);
@@ -210,7 +416,7 @@ public class WasmArgumentLayoutTests
     [InlineData(VectorOfT)]
     public void RaisingV128SignatureIsIndependentOfLoweringOrder(string? loweredFirst)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
 
         if (loweredFirst is not null)
         {
@@ -247,7 +453,7 @@ public class WasmArgumentLayoutTests
     public void MultiSlotTypesAreSplitAcrossWasmParameters(
         string typeName, string expectedSignature, WasmValueType slotType, int slotCount, int alignment, int[] expectedOffsets)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType multiSlot = InstantiateMultiSlotType(context, typeName);
 
         Assert.Equal(alignment, multiSlot.InstanceFieldSize.AsInt);
@@ -288,7 +494,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector512OfT)]
     public void RaisingMultiSlotSignaturePreservesArgumentLayout(string typeName)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType multiSlot = InstantiateMultiSlotType(context, typeName);
 
         // Prime the struct-size cache with an ordinary 8-byte aligned struct of the same size. If
@@ -321,7 +527,7 @@ public class WasmArgumentLayoutTests
     [InlineData(4, "vlS32ip", new[] { 0, 8, 40 })]
     public void SameSizedOrdinaryStructsStayByReference(int fieldCount, string expectedSignature, int[] expectedOffsets)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         TypeDesc int64 = context.GetWellKnownType(WellKnownType.Int64);
 
         // A value tuple of longs is an ordinary multi-field struct of the right size, 8-byte aligned.
@@ -347,7 +553,7 @@ public class WasmArgumentLayoutTests
     [Fact]
     public void AutoLayoutStructUsesRuntimeAggregateAlignment()
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType alignedEight = MakeAlignedEightBlob(context, 32);
         DefType int128 = InstantiateMultiSlotType(context, Int128Type);
         DefType autoLayout = MakeValueTuple(context, int128, int128);
@@ -387,7 +593,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector128OfT, 16, "vlVp")]
     public void NarrowVectorsAreNotMultiSlot(string vectorType, int expectedSize, string expectedSignature)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType vector = InstantiateVector(context, vectorType, WellKnownType.Int32);
 
         Assert.Equal(expectedSize, vector.InstanceFieldSize.AsInt);
@@ -409,7 +615,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector256OfT, 4)]
     public void MultiSlotReturnDoesNotPoisonTheStructSizeCache(string typeName, int fieldCount)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         TypeDesc int64 = context.GetWellKnownType(WellKnownType.Int64);
 
         // Lower a method whose return is the multi-slot type; this is what caches by size.
@@ -446,7 +652,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector512OfT)]
     public void VectorsOverUnsupportedBaseTypesAreNotMultiSlot(string vectorType)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         MetadataType openType = (MetadataType)context.SystemModule.GetType(
             "System.Runtime.Intrinsics"u8,
             System.Text.Encoding.UTF8.GetBytes(vectorType));
@@ -468,7 +674,7 @@ public class WasmArgumentLayoutTests
     [InlineData("Decimal32", "vliip", new[] { 0, 8, 16 })]
     public void DecimalFloatingPointTypesFollowTheirAbiShape(string typeName, string expectedSignature, int[] expectedOffsets)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType type = (DefType)context.SystemModule.GetType(
             "System.Numerics"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
 
@@ -487,7 +693,7 @@ public class WasmArgumentLayoutTests
     [Fact]
     public void LegacyDecimalStaysByReference()
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType type = (DefType)context.SystemModule.GetType("System"u8, "Decimal"u8);
 
         Assert.Equal(16, type.InstanceFieldSize.AsInt);
@@ -516,7 +722,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector512OfT)]
     public void RaisingResolvesALayoutEquivalentStandIn(string typeName)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType multiSlot = InstantiateMultiSlotType(context, typeName);
 
         WasmSignature lowered = WasmLowering.GetSignature(
@@ -540,7 +746,7 @@ public class WasmArgumentLayoutTests
     [Fact]
     public void SixteenByteTwoSlotTypesShareAnEncodingAndALayout()
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
 
         foreach (string typeName in new[] { Int128Type, UInt128Type, Decimal128Type })
         {
@@ -570,7 +776,7 @@ public class WasmArgumentLayoutTests
     [InlineData(Vector512OfT, "vlV4ip")]
     public void SingleFieldStructIsPassedAsTheTypeItWraps(string typeName, string expectedSignature)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType wrapped = InstantiateVector(context, typeName, WellKnownType.Int32);
         DefType wrapper = MakeValueTuple(context, wrapped);
 
@@ -591,7 +797,7 @@ public class WasmArgumentLayoutTests
     [Fact]
     public void SingleFieldStructWrappingAMultiSlotScalarKeepsItsSlots()
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         DefType int128 = (DefType)context.SystemModule.GetType("System"u8, "Int128"u8);
         DefType wrapper = MakeValueTuple(context, int128);
 
@@ -634,7 +840,7 @@ public class WasmArgumentLayoutTests
     [InlineData("Int32", "i")]
     public void PortableCallHelpersGeneratorEncodesTypesTheWayTheCompilerLowersThem(string typeName, string expected)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
 
         Assert.Equal(expected, InteropSignature.GetAbiToken(GetSystemType(context, typeName)));
     }
@@ -647,7 +853,7 @@ public class WasmArgumentLayoutTests
     [Fact]
     public void PortableCallHelpersGeneratorComputesLayoutOfStructsHoldingReferences()
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         var type = GetSystemType(context, "RuntimeTypeHandle");
 
         // If this stops holding, the test no longer covers the auto-layout path it was written for.
@@ -665,7 +871,7 @@ public class WasmArgumentLayoutTests
     [Fact]
     public void PortableCallHelpersGeneratorEncodesMethodsLikeTheCompiler()
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod("AddTicks"u8, null);
 
         string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
@@ -690,7 +896,7 @@ public class WasmArgumentLayoutTests
     [InlineData("Double")]
     public void PortableCallHelpersGeneratorEncodesTypesTheSameWayInAndOutOfASignature(string typeName)
     {
-        ReadyToRunCompilerContext context = CreateWasmContext();
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
         TypeDesc type = GetSystemType(context, typeName);
 
         string signature = WasmLowering.GetSignature(
@@ -703,7 +909,64 @@ public class WasmArgumentLayoutTests
         Assert.Equal(tokens[1], InteropSignature.GetAbiToken(type));
     }
 
-    private const string CoreLibSimpleName = "System.Private.CoreLib";
+    [Theory]
+    [InlineData("int", "System.Int128", "l2")]
+    [InlineData("System.Int128", "int", "l2")]
+    [InlineData("int", "System.Runtime.Intrinsics.Vector128<int>", "V")]
+    [InlineData("System.Runtime.Intrinsics.Vector128<int>", "int", "V")]
+    public void PortableCallHelpersGeneratorRejectsUnsupportedSignatureTokens(
+        string returnType, string parameterType, string expectedToken)
+    {
+        string source = $$"""
+            using System;
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly(EntryPoint = "callback")]
+                public static {{returnType}} Handle({{parameterType}} value) => default;
+            }
+            """;
+
+        AssertPortableCallHelpersGeneratorRejects(source, $"has unsupported signature token '{expectedToken}'");
+    }
+
+    private void AssertPortableCallHelpersGeneratorRejects(string source, string expectedError)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                WasmTestHelpers.CreateContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains(expectedError, log.ToString());
+        }
+        finally
+        {
+            // The type system maps an input assembly with FileShare.Read and never releases it - the
+            // context is not disposable - so on Windows the compiled input cannot be deleted while
+            // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
 
     /// <summary>
     /// An exported callback resolves its MethodDesc at run time through
@@ -757,7 +1020,7 @@ public class WasmArgumentLayoutTests
 
             var log = new StringWriter();
             int exitCode = PortableCallHelpersGenerator.Run(
-                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+                WasmTestHelpers.CreateContext(inputAssembly), options, new Logger(log, isVerbose: false));
 
             if (expectRejected)
             {
@@ -786,16 +1049,581 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
-    /// reads, so the attributes it applies are the ones the type system will resolve.
+    /// The interpreter looks up a thunk for each unmanaged <c>calli</c> by signature, so the generator
+    /// has to emit one for every function pointer signature an app calls through, whatever the
+    /// calling convention spelling.
     /// </summary>
-    private static string CompileCallbackAssembly(string source, string outputPath)
+    [Fact]
+    public void PortableCallHelpersGeneratorEmitsThunksForUnmanagedCalliSites()
+    {
+        string source = """
+            public struct FloatPair
+            {
+                public float X;
+                public float Y;
+            }
+
+            public static unsafe class Calls
+            {
+                public static FloatPair MemberFunction(delegate* unmanaged[Cdecl, MemberFunction]<void*, long, FloatPair> fn)
+                    => fn(null, 1);
+
+                public static int ThisCall(delegate* unmanaged[Thiscall]<void*, double, double, double, int> fn)
+                    => fn(null, 1, 2, 3);
+
+                public static double Managed(delegate*<int, int, int, int, int, int, double> fn)
+                    => fn(1, 2, 3, 4, 5, 6);
+
+                public static T Generic<T>(delegate* unmanaged<T> fn)
+                    => fn();
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Calls.dll"), allowUnsafe: true);
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                WasmTestHelpers.CreateContext(inputAssembly), options, new Logger(log, isVerbose: true));
+
+            Assert.True(exitCode == 0, log.ToString());
+
+            string thunks = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-interp-to-managed.cpp"));
+            Assert.Contains("\"MS8il\"", thunks);
+            Assert.Contains("\"Miiddd\"", thunks);
+            Assert.DoesNotContain("\"Mdiiiiii\"", thunks);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// Native code calls a reverse thunk with the wasm C ABI, which returns a struct it cannot pass as a
+    /// single scalar through a hidden leading pointer instead of a return value. The thunk has to take
+    /// that pointer and hand it to the interpreter as the return buffer, or the indirect call from
+    /// native code traps with a signature mismatch.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorReturnsStructsThroughHiddenPointerInReverseThunks()
+    {
+        string source = """
+            using System.Runtime.InteropServices;
+
+            public struct FloatPair
+            {
+                public float X;
+                public float Y;
+            }
+
+            public struct Width
+            {
+                public float Value;
+            }
+
+            public static class Callbacks
+            {
+                [UnmanagedCallersOnly]
+                public static FloatPair GetPair(nint self, int unused) => default;
+
+                [UnmanagedCallersOnly]
+                public static Width GetWidth(nint self) => default;
+
+                [UnmanagedCallersOnly(EntryPoint = "export_pair")]
+                public static FloatPair ExportPair(int value) => default;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                WasmTestHelpers.CreateContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.True(exitCode == 0, log.ToString());
+
+            string reverse = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+            Assert.Contains("static void Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8(void * sret, void * arg0, int32_t arg1)", reverse);
+            Assert.Contains("static float Call_Callbacks__Callbacks_GetWidth_I32_RetF32(void * arg0)", reverse);
+            Assert.Contains("extern \"C\" void export_pair(void * sret, int32_t arg0)", reverse);
+            Assert.Contains("Call_Callbacks__Callbacks_ExportPair_I32_RetS8(sret, arg0);", reverse);
+            Assert.Contains("(int8_t*)sret, (PCODE)&Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8", reverse);
+            Assert.Contains("((void(*)(void *, int32_t))r2r)(sret, arg0);", reverse);
+            Assert.DoesNotContain("RetS8(void * arg", reverse);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// The generated wrapper only needs to reach the R2R native entrypoint for callbacks exported by
+    /// name: native code calls the extern "C" export (and thus the wrapper) directly. Every other
+    /// reverse thunk is handed out by the runtime, which already prefers R2R code before falling back to
+    /// the interpreter wrapper, so the dispatch is emitted for exports alone. Every wrapper still calls
+    /// the native code the runtime reports when the method switches to it after the wrapper was handed out.
+    /// </summary>
+    [Theory]
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_export\")]", true)]
+    [InlineData("[UnmanagedCallersOnly]", false)]
+    public void PortableCallHelpersGeneratorEmitsR2RDispatchForExportsOnly(string attribute, bool expectR2RDispatch)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                {{attribute}}
+                public static int Handle(int value) => value;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                WasmTestHelpers.CreateContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(0, exitCode);
+            string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+
+            // CoreLib is part of the scan context, so its own exported callbacks emit R2R dispatch too.
+            // Scope the assertions to this callback's mangled symbol to test the gating in isolation.
+            const string mySymbol = "R2RCode_Callbacks__Exports_Handle";
+            if (expectR2RDispatch)
+            {
+                Assert.Contains(mySymbol, reverseHelpers);
+                Assert.Contains($"__atomic_load_n(&{mySymbol}", reverseHelpers);
+                Assert.Contains($"__atomic_store_n(&{mySymbol}", reverseHelpers);
+            }
+            else
+            {
+                Assert.DoesNotContain(mySymbol, reverseHelpers);
+            }
+
+            // Every wrapper falls back to native code the runtime reports after the method switches to it.
+            int wrapperStart = reverseHelpers.IndexOf("Call_Callbacks__Exports_Handle", StringComparison.Ordinal);
+            Assert.True(wrapperStart >= 0);
+            string wrapper = reverseHelpers.Substring(wrapperStart, reverseHelpers.IndexOf("\n}", wrapperStart, StringComparison.Ordinal) - wrapperStart);
+            Assert.Contains("void* nativeCode = ExecuteInterpretedMethodFromUnmanaged(", wrapper);
+            Assert.Contains("return ((int32_t(*)(int32_t))nativeCode)(arg0);", wrapper);
+            Assert.Equal(expectR2RDispatch, wrapper.Contains(", nativeCode, __ATOMIC_RELEASE);", StringComparison.Ordinal));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("browser")]
+    [InlineData("wasi")]
+    public void PortableCallHelpersGeneratorEmitsCoreLibQCalls(string targetOS)
+    {
+        string source = """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.Versioning;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public static class Imports
+            {
+                [DllImport("Native", EntryPoint = "Native_Test")]
+                public static extern int Native();
+                [DllImport("QCall", EntryPoint = "QCall_Test")]
+                public static extern long First(int value, ref long result);
+                [DllImport("QCall", EntryPoint = "QCall_Test")]
+                public static extern long Second(int value, ref long result);
+                [DllImport("QCall")]
+                public static extern IntPtr memmove(IntPtr dest, IntPtr src, UIntPtr length);
+                [DllImport("QCall")]
+                public static extern IntPtr memset(IntPtr dest, int value, UIntPtr length);
+                [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi")]
+                [DllImport("QCall", EntryPoint = "QCall_Unavailable")]
+                public static extern void Unavailable();
+            }
+
+            namespace System
+            {
+                public class Object { }
+                public class ValueType { }
+                public class Enum : ValueType { }
+                public struct Void { }
+                public struct Boolean { }
+                public struct Byte { }
+                public struct Int16 { }
+                public struct Int32 { }
+                public struct Int64 { }
+                public struct UInt16 { }
+                public struct UInt32 { }
+                public struct UInt64 { }
+                public struct Single { }
+                public struct Double { }
+                public struct Char { }
+                public struct SByte { }
+                public struct IntPtr { }
+                public struct UIntPtr { }
+                public sealed class String { }
+                public class Attribute { }
+                public enum AttributeTargets { All = 32767 }
+                public sealed class AttributeUsageAttribute : Attribute
+                {
+                    public AttributeUsageAttribute(AttributeTargets targets) { }
+                    public bool AllowMultiple { get; set; }
+                    public bool Inherited { get; set; }
+                }
+            }
+            namespace System.Runtime.CompilerServices
+            {
+                public sealed class DisableRuntimeMarshallingAttribute : System.Attribute { }
+            }
+            namespace System.Runtime.InteropServices
+            {
+                public sealed class DllImportAttribute : System.Attribute
+                {
+                    public DllImportAttribute(string library) { }
+                    public string EntryPoint;
+                }
+            }
+            namespace System.Runtime.Versioning
+            {
+                [System.AttributeUsage(System.AttributeTargets.All, AllowMultiple = true)]
+                public sealed class UnsupportedOSPlatformAttribute : System.Attribute
+                {
+                    public UnsupportedOSPlatformAttribute(string platform) { }
+                }
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source,
+                Path.Combine(workingDirectory, CoreLibSimpleName + ".dll"), useCoreLibReference: false);
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
+                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, inputAssembly);
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = targetOS,
+                PInvokeModules = new[] { "Native", "QCall" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(exitCode == 0, log.ToString());
+
+            string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
+            Assert.Contains("{ \"Native_Test\", (void*)&direct_pinvoke::Native_Test }", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+            Assert.DoesNotContain("QCall_Unavailable", table);
+            Assert.Contains("static const Entry s_RuntimeHelpers", table);
+
+            Assert.Contains("int64_t RuntimeHelper_QCall_Test (int32_t, void *) __asm__(\"QCall_Test\");", table);
+            Assert.Equal(1, table.Split("{ \"QCall_Test\", (void*)&RuntimeHelper_QCall_Test }").Length - 1);
+            if (targetOS == "browser")
+            {
+                Assert.Contains("void* RuntimeHelper_memmove(void* dest, const void* src, size_t len) __asm__(\"QCall_memmove\");", table);
+                Assert.Contains("void* RuntimeHelper_memset(void* dest, int value, size_t len) __asm__(\"QCall_memset\");", table);
+                Assert.Contains("{ \"memmove\", (void*)&RuntimeHelper_memmove }", table);
+                Assert.Contains("{ \"memset\", (void*)&RuntimeHelper_memset }", table);
+                Assert.DoesNotContain("DllImportEntry(memmove)", table);
+                Assert.DoesNotContain("DllImportEntry(memset)", table);
+            }
+            else
+            {
+                Assert.Contains("DllImportEntry(memmove)", table);
+                Assert.Contains("DllImportEntry(memset)", table);
+                Assert.DoesNotContain("QCall_memmove", table);
+                Assert.DoesNotContain("QCall_memset", table);
+            }
+
+            int repeatExitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(repeatExitCode == 0, log.ToString());
+            Assert.Equal(table, File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp")));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("browser")]
+    [InlineData("wasi")]
+    public void PortableCallHelpersGeneratorIgnoresNonCoreLibQCalls(string targetOS)
+    {
+        string source = """
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public static class Imports
+            {
+                [DllImport("Native", EntryPoint = "Native_Test")]
+                public static extern int Native();
+                [DllImport("QCall", EntryPoint = "QCall_NonCoreLib")]
+                public static extern int QCall();
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Imports.dll"));
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
+                targetOS == "browser" ? TargetOS.Browser : TargetOS.Wasi, TestPaths.SystemPrivateCoreLibPath, inputAssembly);
+            context.InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Imports", inputAssembly },
+            };
+            context.ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { CoreLibSimpleName, TestPaths.SystemPrivateCoreLibPath },
+            };
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = targetOS,
+                PInvokeModules = new[] { "Native", "QCall" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false));
+            Assert.True(exitCode == 0, log.ToString());
+
+            string table = File.ReadAllText(Path.Combine(options.OutputDirectory, "callhelpers-pinvoke.cpp"));
+            Assert.Contains("{ \"Native_Test\", (void*)&direct_pinvoke::Native_Test }", table);
+            Assert.Contains("const void* ResolveRuntimeHelperEntrypoint(const char* name)", table);
+            Assert.DoesNotContain("static const Entry s_RuntimeHelpers", table);
+            Assert.DoesNotContain("QCall_NonCoreLib", table);
+            Assert.DoesNotContain("{\"QCall\",", table);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(TargetOS.Browser)]
+    [InlineData(TargetOS.Wasi)]
+    public void PortableCallHelpersGeneratorProducesStableEntryPointTable(TargetOS targetOS)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        try
+        {
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContextWithCoreLib(
+                targetOS, TestPaths.SystemPrivateCoreLibPath);
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = workingDirectory,
+                TargetOS = targetOS == TargetOS.Browser ? "browser" : "wasi",
+            };
+            var log = new StringWriter();
+            Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
+                log.ToString());
+            string path = Path.Combine(workingDirectory, PortableCallHelpersGenerator.PInvokeFileName);
+            string table = File.ReadAllText(path);
+
+            Assert.Contains("callhelpers_pinvoke_override", table);
+            Assert.Contains("ResolveRuntimeHelperEntrypoint", table);
+            Assert.Contains("static const Entry s_RuntimeHelpers[]", table);
+            string entries = table.Split("static const Entry s_RuntimeHelpers[] = {", StringSplitOptions.None)[1]
+                .Split("};", StringSplitOptions.None)[0];
+            string[] names = entries.Split('\n')
+                .Where(line => line.TrimStart().StartsWith("{ \"", StringComparison.Ordinal))
+                .Select(line => line.Split('"')[1])
+                .ToArray();
+            Assert.NotEmpty(names);
+            Assert.Equal(names.Order(StringComparer.Ordinal), names);
+            Assert.Equal(names.Length, names.Distinct(StringComparer.Ordinal).Count());
+            Assert.Contains("GCHandle_InternalGetWithDebugValidation", names);
+            Assert.Contains("DependentHandle_InternalGetTargetWithDebugValidation", names);
+            Assert.Contains("MarshalNative_GetIsInCooperativeGCModeFunctionPointer", names);
+            Assert.DoesNotContain("GCHandle_InternalGet", names);
+            Assert.DoesNotContain("DependentHandle_InternalGetTarget", names);
+            Assert.Contains("{ \"MathF_ModF\", (void*)&RuntimeHelper_MathF_ModF }", table);
+            Assert.DoesNotContain("(void*)&QCall_", table);
+
+            DateTime timestamp = File.GetLastWriteTimeUtc(path);
+            Assert.True(PortableCallHelpersGenerator.Run(context, options, new Logger(log, isVerbose: false)) == 0,
+                log.ToString());
+            Assert.Equal(table, File.ReadAllText(path));
+            Assert.Equal(timestamp, File.GetLastWriteTimeUtc(path));
+        }
+        finally
+        {
+            if (Directory.Exists(workingDirectory))
+                Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FCallDeclarationsIncludeInstanceReceiver()
+    {
+        ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext();
+        var log = new InteropLogger(new Logger(new StringWriter(), isVerbose: false));
+        var collector = new InternalCallSignatureCollector(log);
+        foreach (EcmaType type in context.SystemModule.GetAllTypes().OfType<EcmaType>())
+            collector.ScanType(type);
+
+        PInvokeInfo entry = collector.Entrypoints.First(entry => !entry.Method.Signature.IsStatic);
+        var table = new StringWriter();
+        new PInvokeTableGenerator(log).EmitPInvokeTable(table, context.Target, context.SystemModule, [], [entry]);
+        string declaration = table.ToString().Split('\n').Single(line => line.Contains("__asm__", StringComparison.Ordinal));
+        Assert.Contains($" RuntimeHelper_{entry.EntryPoint} (", declaration);
+        Assert.Contains("(uintptr_t, void *", declaration);
+        Assert.EndsWith($"uintptr_t) __asm__(\"{entry.EntryPoint}\");", declaration.TrimEnd());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedNativeEntryPointNamesRejectCollisions(bool qcallCollision)
+    {
+        string source = $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            namespace First
+            {
+                public static class Shared
+                {
+                    [MethodImpl(MethodImplOptions.InternalCall)]
+                    public static extern void Run();
+                }
+            }
+            namespace Second
+            {
+                public static class Shared
+                {
+                    {{(qcallCollision ? """[DllImport("QCall", EntryPoint = "Shared_Run")]""" : "[MethodImpl(MethodImplOptions.InternalCall)]")}}
+                    public static extern void Run();
+                }
+            }
+            """;
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            string input = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Collisions.dll"));
+            ReadyToRunCompilerContext context = WasmTestHelpers.CreateContext(input);
+            EcmaModule module = context.GetModuleForSimpleName("Collisions");
+            var log = new InteropLogger(new Logger(new StringWriter(), isVerbose: false));
+            var internalCalls = new InternalCallSignatureCollector(log);
+            var pinvokes = new List<PInvokeInfo>();
+            foreach (EcmaType type in module.GetAllTypes().OfType<EcmaType>())
+            {
+                internalCalls.ScanType(type);
+                foreach (EcmaMethod method in type.GetMethods().OfType<EcmaMethod>())
+                {
+                    if (method.IsPInvoke)
+                        pinvokes.Add(new PInvokeInfo("Shared_Run", "QCall", method, wasmLinkage: false));
+                }
+            }
+            pinvokes.AddRange(internalCalls.Entrypoints);
+            Assert.All(pinvokes, entry => Assert.Equal("Shared_Run", entry.EntryPoint));
+            LogAsErrorException exception = Assert.Throws<LogAsErrorException>(() =>
+                new PInvokeTableGenerator(log).EmitPInvokeTable(new StringWriter(), context.Target, module, [], pinvokes));
+            Assert.Contains("Shared_Run", exception.Message);
+            Assert.Contains("First.Shared", exception.Message);
+            Assert.Contains("Second.Shared", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// Builds an input assembly for the generator to scan, referencing the context's CoreLib
+    /// unless the source defines its own.
+    /// </summary>
+    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false, bool useCoreLibReference = true)
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
             Path.GetFileNameWithoutExtension(outputPath),
-            new[] { CSharpSyntaxTree.ParseText(source) },
-            new[] { MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath) },
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            [CSharpSyntaxTree.ParseText(source)],
+            useCoreLibReference ? [MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath)] : [],
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
 
         EmitResult result = compilation.Emit(outputPath);
         Assert.True(result.Success,
@@ -807,50 +1635,6 @@ public class WasmArgumentLayoutTests
     private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
     {
         return (EcmaType)context.SystemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
-    }
-
-    /// <summary>
-    /// Configures a type system context the way crossgen2 does for
-    /// <c>--targetarch wasm --targetos browser</c>. Extra input assemblies stand in for the rest of an
-    /// app closure, which a real build always supplies alongside CoreLib.
-    /// </summary>
-    private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
-    {
-        string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
-        Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
-
-        InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
-        TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
-
-        Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
-        foreach (string path in extraInputAssemblyPaths)
-        {
-            inputFilePaths.Add(Path.GetFileNameWithoutExtension(path), path);
-        }
-
-        // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
-        {
-            InputFilePaths = inputFilePaths,
-            ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-        };
-
-        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName(CoreLibSimpleName);
-        context.SetSystemModule(coreLib);
-
-        // The R2R field layout algorithm reaches into the compilation group to decide whether base
-        // offsets need aligning, so a context without one throws before computing any layout.
-        context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
-        {
-            Context = context,
-            IsInputBubble = true,
-            CompilationModuleSet = new[] { coreLib },
-            VersionBubbleModuleSet = new ModuleDesc[] { coreLib },
-            CrossModuleInlineable = Array.Empty<ModuleDesc>(),
-            InstructionSetSupport = instructionSetSupport,
-        }));
-
-        return context;
     }
 
     private static DefType InstantiateVector(ReadyToRunCompilerContext context, string vectorType, WellKnownType elementType)

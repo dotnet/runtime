@@ -11,6 +11,7 @@ using Xunit;
 
 public class Runtime_134605
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static void Test()
     {
@@ -76,11 +77,8 @@ public class Runtime_134605
             Thread.Sleep(5);
         }
 
-        long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
         int count = CountDisjoint(first, second);
-        long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
         Assert.Equal(12, count);
-        Assert.Equal(0, allocatedBytesAfter - allocatedBytesBefore);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

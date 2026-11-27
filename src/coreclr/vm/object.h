@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // OBJECT.H
 //
 // Definitions of a CLR Object
-//
 
 // See code:EEStartup#TableOfContents for overview
-
 
 #ifndef _OBJECT_H_
 #define _OBJECT_H_
@@ -78,7 +76,6 @@ class Thread;
 class Assembly;
 class AssemblyNative;
 class WaitHandleNative;
-class ArgDestination;
 
 struct RCW;
 
@@ -232,12 +229,6 @@ class Object
     {
         WRAPPER_NO_CONTRACT;
         return GetHeader()->GetSyncBlock();
-    }
-
-    DWORD GetSyncBlockIndex()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->GetSyncBlockIndex();
     }
 
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
@@ -413,7 +404,6 @@ inline void ClearObjectReference(OBJECTREF* dst)
 // CopyValueClass sets a value class field
 
 void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -421,12 +411,8 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
 
-// Initialize value class argument
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
-
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
-#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)
 
 #include <pshpack4.h>
 
@@ -450,7 +436,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
 
@@ -617,7 +602,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
 public:
@@ -790,7 +774,6 @@ class StringObject : public Object
     friend class ClrDataAccess;
 #endif
     friend class GCHeap;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend class COMString;
 
@@ -1184,11 +1167,13 @@ private:
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
+#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_StartHelper;
-#ifdef TARGET_UNIX
+#endif // FEATURE_MULTITHREADING
+#if defined(TARGET_UNIX) && defined(FEATURE_MULTITHREADING)
     OBJECTREF     m_WaitInfo;
     OBJECTREF     m_joinEvent;
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && FEATURE_MULTITHREADING
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1208,6 +1193,11 @@ private:
     bool          m_IsDead;
 
     bool          m_IsThreadPool;
+
+#ifndef FEATURE_MULTITHREADING
+    bool          m_IsBackground;
+    bool          m_IsPendingInterrupt;
+#endif // !FEATURE_MULTITHREADING
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -1243,11 +1233,13 @@ public:
 
     void      InitExisting();
 
+#ifdef FEATURE_MULTITHREADING
     void ResetStartHelper()
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
     }
+#endif // FEATURE_MULTITHREADING
 
     void SetPriority(INT32 priority)
     {
@@ -1419,22 +1411,6 @@ inline OBJECTREF ArgSlotToObj(ARG_SLOT i)
     return ObjectToOBJECTREF ((Object*)v);
 }
 
-inline ARG_SLOT StringToArgSlot(STRINGREF sr)
-{
-    LIMITED_METHOD_CONTRACT;
-    LPVOID v;
-    v = OBJECTREFToObject(sr);
-    return (ARG_SLOT)(SIZE_T)v;
-}
-
-inline STRINGREF ArgSlotToString(ARG_SLOT s)
-{
-    LIMITED_METHOD_CONTRACT;
-    LPVOID v;
-    v = (LPVOID)(SIZE_T)s;
-    return ObjectToSTRINGREF ((StringObject*)v);
-}
-
 #else // USE_CHECKED_OBJECTREFS
 
 typedef PTR_ReflectModuleBaseObject REFLECTMODULEBASEREF;
@@ -1451,16 +1427,7 @@ typedef PTR_ContinuationObject CONTINUATIONREF;
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
 
-#define StringToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
-#define ArgSlotToString(s)    ((STRINGREF)(SIZE_T)(s))
-
 #endif //USE_CHECKED_OBJECTREFS
-
-#define PtrToArgSlot(ptr) ((ARG_SLOT)(SIZE_T)(ptr))
-#define ArgSlotToPtr(s)   ((LPVOID)(SIZE_T)(s))
-
-#define BoolToArgSlot(b)  ((ARG_SLOT)(CLR_BOOL)(!!(b)))
-#define ArgSlotToBool(s)  ((BOOL)(s))
 
 STRINGREF AllocateString(SString sstr);
 

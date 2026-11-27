@@ -26,7 +26,6 @@ set_target_properties(WasiHost-Static PROPERTIES OUTPUT_NAME WasiHost CLEAN_DIRE
 if (CLR_CMAKE_TARGET_WASI)
     target_compile_definitions(WasiHost-Static PRIVATE
         _WASI_EMULATED_MMAN
-        _WASI_EMULATED_GETPID
         _WASI_EMULATED_SIGNAL
         _WASI_EMULATED_PROCESS_CLOCKS)
 endif()
@@ -37,6 +36,7 @@ target_include_directories(WasiHost-Static PRIVATE
     ${CLR_SRC_NATIVE_DIR}        # minipal/*.h
 )
 
-# The runtime static libraries and the app-generated callhelpers are supplied at the per-app relink
-# by the CoreCLR-WASI app builder, which pulls this archive whole-archive for main().
+# The runtime static libraries, app-generated callhelpers, and runtime configuration properties are
+# supplied at the per-app relink by the CoreCLR-WASI app builder, which pulls this archive
+# whole-archive for main().
 install(TARGETS WasiHost-Static DESTINATION sharedFramework COMPONENT runtime)

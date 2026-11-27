@@ -26,7 +26,7 @@ namespace System.CommandLine
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
         public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "openbsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
-        public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+        public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm", "wasm64"];
 
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
@@ -77,7 +77,7 @@ namespace System.CommandLine
 
             return token.ToLowerInvariant() switch
             {
-                "linux" or "android" => TargetOS.Linux,
+                "linux" or "android" or "openharmony" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
@@ -118,6 +118,7 @@ namespace System.CommandLine
                     "arm" or "armel" => TargetArchitecture.ARM,
                     "arm64" => TargetArchitecture.ARM64,
                     "wasm" => TargetArchitecture.Wasm32,
+                    "wasm64" => TargetArchitecture.Wasm64,
                     "loongarch64" => TargetArchitecture.LoongArch64,
                     "riscv64" => TargetArchitecture.RiscV64,
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
@@ -132,6 +133,9 @@ namespace System.CommandLine
 
             TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
             TargetOS targetOS = GetTargetOS(targetOSToken);
+            if (targetArchitecture == TargetArchitecture.X86 && targetOS != TargetOS.Windows)
+                throw new CommandLineException("Target architecture 'x86' is only supported on Windows");
+
             TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
             {
                 (_, "armel") => TargetAbi.NativeAotArmel,

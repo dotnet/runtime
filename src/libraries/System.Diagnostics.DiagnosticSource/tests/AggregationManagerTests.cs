@@ -1,11 +1,64 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Diagnostics.Metrics.Tests
 {
+    public class AggregationManagerTests
+    {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DisposeDuringPublication_DoesNotRetainInstrument(bool disposeListener)
+        {
+            using Meter meter = new Meter(Guid.NewGuid().ToString());
+            Counter<int> counter = meter.CreateCounter<int>("counter");
+            AggregationManager? manager = null;
+            int completed = 0;
+            manager = new AggregationManager(
+                maxTimeSeries: 1,
+                maxHistograms: 0,
+                collectMeasurement: (instrument, statistics, state) => { },
+                beginCollection: (start, end) => { },
+                endCollection: (start, end) => { },
+                beginInstrumentMeasurements: (instrument, state) =>
+                {
+                    if (disposeListener)
+                        manager!.Dispose();
+                    else
+                        meter.Dispose();
+                },
+                endInstrumentMeasurements: (instrument, state) =>
+                {
+                    Assert.Same(counter, instrument);
+                    completed++;
+                },
+                instrumentPublished: (instrument, state) => { },
+                initialInstrumentEnumerationComplete: () => { },
+                collectionError: exception => Assert.Fail(exception.ToString()),
+                timeSeriesLimitReached: () => Assert.Fail("Unexpected time series limit."),
+                histogramLimitReached: () => Assert.Fail("Unexpected histogram limit."),
+                observableInstrumentCallbackError: exception => Assert.Fail(exception.ToString()))
+                .SetCollectionPeriod(TimeSpan.FromHours(1));
+            try
+            {
+                manager.Include(meter.Name);
+                manager.Start();
+                Assert.Equal(1, completed);
+                Assert.False(counter.Enabled);
+                Assert.Empty((IEnumerable)typeof(AggregationManager).GetField("_instruments", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(manager)!);
+            }
+            finally
+            {
+                manager.Dispose();
+            }
+        }
+    }
+
     public class AggregationStoreTests
     {
         [Fact]

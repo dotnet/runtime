@@ -146,8 +146,8 @@ typedef PTR_Object OBJECTREF;
 typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
-Thread* GetThread();
-Thread* GetThreadNULLOk();
+Thread* GetThread() noexcept;
+Thread* GetThreadNULLOk() noexcept;
 
 EXTERN_C Thread* STDCALL GetThreadHelper();
 
@@ -173,7 +173,9 @@ Thread * const CURRENT_THREAD = NULL;
 AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
+#ifdef TARGET_WINDOWS
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
+#endif
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {

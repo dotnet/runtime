@@ -33,7 +33,7 @@ namespace System.Runtime
 {
     internal static class Constants
     {
-        public static readonly int ThunkDataSize = 2 * IntPtr.Size;
+        public static int ThunkDataSize => 2 * IntPtr.Size;
         public static readonly int ThunkCodeSize = RuntimeImports.RhpGetThunkSize();
         public static readonly int NumThunksPerBlock = RuntimeImports.RhpGetNumThunksPerBlock();
         public static readonly int NumThunkBlocksPerMapping = RuntimeImports.RhpGetNumThunkBlocksPerMapping();

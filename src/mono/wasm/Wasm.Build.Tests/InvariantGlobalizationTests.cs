@@ -39,11 +39,11 @@ namespace Wasm.Build.Tests
         // TODO: What else should we use to verify a relinked build?
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native"), TestCategory("wasm-opt")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [Theory]
         [BuildAndRun(aot: false, config: Configuration.Release)]
         [TestCategory("workload")]
         public void CoreCLRInvariantGlobalizationDoesNotLinkGlobalizationNative(Configuration config, bool aot)

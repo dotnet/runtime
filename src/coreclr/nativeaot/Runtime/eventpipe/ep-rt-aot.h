@@ -399,7 +399,7 @@ void
 ep_rt_provider_invoke_callback (
     EventPipeCallback callback_func,
     const uint8_t *source_id,
-    unsigned long is_enabled,
+    uint32_t is_enabled,
     uint8_t level,
     uint64_t match_any_keywords,
     uint64_t match_all_keywords,
@@ -1121,15 +1121,10 @@ ep_rt_temp_path_get (
     EP_ASSERT (buffer != NULL);
     EP_ASSERT (buffer_len > 0);
 
+    // Must match the out-of-process clients that compute the same names (Path.GetTempPath() rules).
     const ep_char8_t *path = getenv ("TMPDIR");
-    if (path == NULL){
-        path = getenv ("TMP");
-        if (path == NULL){
-            path = getenv ("TEMP");
-            if (path == NULL)
-                path = "/tmp/";
-        }
-    }
+    if (path == NULL || path[0] == '\0')
+        path = "/tmp/";
 
     int32_t result = snprintf (buffer, buffer_len, path[strlen(path) - 1] == '/' ? "%s" : "%s/", path);
     if (result <= 0 || (uint32_t)result >= buffer_len)
@@ -1636,7 +1631,12 @@ ep_rt_thread_set_activity_id (
 }
 
 #undef EP_YIELD_WHILE
-#define EP_YIELD_WHILE(condition) {}//YIELD_WHILE(condition)
+#define EP_YIELD_WHILE(condition) do { \
+    uint32_t switch_count = 0; \
+    while (condition) { \
+        minipal_switch_to_thread (++switch_count); \
+    } \
+} while (0)
 
 /*
  * Volatile.

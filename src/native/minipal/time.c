@@ -186,10 +186,34 @@ void minipal_sleep(uint32_t milliseconds)
 #endif
 }
 
+bool minipal_switch_to_thread(uint32_t switchCount)
+{
+    // Short yield loops avoid sleeps; prolonged contention must eventually
+    // sleep so that a lower-priority thread can make progress. These thresholds
+    // correspond to roughly the same spinning time on ARM and other CPUs.
+#if defined(HOST_ARM)
+    const uint32_t sleepStartThreshold = 5 * 1024;
+#else
+    const uint32_t sleepStartThreshold = 32 * 1024;
+#endif
+    if (switchCount >= sleepStartThreshold)
+    {
+        minipal_sleep(1);
+    }
+
+#if HOST_WINDOWS
+    return SwitchToThread() != 0;
+#elif defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    return false;
+#else
+    return sched_yield() == 0;
+#endif
+}
+
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
 #if HOST_WINDOWS
-    if (usecs > 1000)
+    if (usecs >= 1000)
     {
         Sleep(usecs / 1000);
         if (usecsSinceYield)
@@ -203,11 +227,11 @@ void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
     if (usecs > 10)
     {
         struct timespec requested;
-        requested.tv_sec = usecs / 1000;
-        requested.tv_nsec = (usecs - requested.tv_sec * 1000) * 1000;
+        requested.tv_sec = usecs / 1000000;
+        requested.tv_nsec = (usecs % 1000000) * 1000;
 
         struct timespec remaining;
-        while (nanosleep(&requested, &remaining) == EINTR)
+        while (nanosleep(&requested, &remaining) == -1 && errno == EINTR)
         {
             requested = remaining;
         }

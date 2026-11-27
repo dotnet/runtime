@@ -54,7 +54,6 @@ private:
 
 enum class common_property
 {
-    TrustedPlatformAssemblies,
     NativeDllSearchDirectories,
     PlatformResourceRoots,
     AppContextBaseDirectory,
@@ -81,6 +80,7 @@ public:
     bool add(common_property key, const pal::char_t *value);
     bool add(const pal::char_t *key, const pal::char_t *value);
 
+    bool contains(const pal::char_t *key) const;
     bool try_get(common_property key, const pal::char_t **value) const;
     bool try_get(const pal::char_t *key, const pal::char_t **value) const;
 

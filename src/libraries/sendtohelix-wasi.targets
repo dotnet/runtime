@@ -32,9 +32,8 @@
 
   <PropertyGroup>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnWasmtime'">true</IsRunningLibraryTests>
-    <!-- Distinguish CoreCLR-WASI work items from Mono ones sharing the wasi_wasm queue
-         (mirror of the browser -CLR-ST- prefix in sendtohelix-browser.targets). -->
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">$(Scenario)-CLR-ST-</WorkItemPrefix>
+    <!-- Mirror of the browser -CLR-ST- prefix in sendtohelix-browser.targets). -->
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == ''">$(Scenario)-CLR-ST-</WorkItemPrefix>
     <WasiEngine Condition="'$(Scenario)' == 'WasmTestOnWasmtime' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == ''">wasmtime</WasiEngine>
     <NeedsWasmtime Condition="'$(WasiEngine)' == 'wasmtime'">true</NeedsWasmtime>
 
@@ -102,6 +101,8 @@
     <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)" Include="$(WasmtimeDirForHelixPayload)" />
   </ItemGroup>
 
+  <Import Project="$(TestArchiveRoot)**\*.helix.targets" />
+
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 
@@ -135,9 +136,6 @@
     <ItemGroup Condition="'$(RuntimeFlavor)' != 'CoreCLR'">
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"         Destination="build/WasmAppBuilder" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"        Destination="build/MonoAOTCompiler" />
-      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"           Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"       Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
     <ItemGroup>

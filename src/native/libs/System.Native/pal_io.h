@@ -183,6 +183,12 @@ enum
     PAL_O_NOFOLLOW = 0x0200, // Fails to open the target if it's a symlink, parent symlinks are allowed
     PAL_O_NONBLOCK_READ = 0x0400,  // Set O_NONBLOCK on the read end of a pipe
     PAL_O_NONBLOCK_WRITE = 0x0800, // Set O_NONBLOCK on the write end of a pipe
+    PAL_O_DIRECTORY = 0x1000, // Fails to open the target if it's not a directory
+};
+
+enum
+{
+    PAL_AT_REMOVEDIR = 0x0001, // Remove the entry as a directory
 };
 
 /**
@@ -376,6 +382,13 @@ PALEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
 PALEXPORT intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode);
 
 /**
+ * Open or create a file or device relative to a directory descriptor. Implemented as shim to openat(2).
+ *
+ * Returns file descriptor or -1 for failure. Sets errno on failure.
+ */
+PALEXPORT intptr_t SystemNative_OpenAt(intptr_t dirfd, const char* path, int32_t flags, int32_t mode);
+
+/**
  * Close a file descriptor. Implemented as shim to open(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
@@ -395,6 +408,13 @@ PALEXPORT intptr_t SystemNative_Dup(intptr_t oldfd);
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_Unlink(const char* path);
+
+/**
+ * Delete an entry relative to a directory descriptor. Implemented as shim to unlinkat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+PALEXPORT int32_t SystemNative_UnlinkAt(intptr_t dirfd, const char* path, int32_t flags);
 
 /**
  * Check if the system supports memfd_create(2). 
@@ -519,6 +539,13 @@ PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNon
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
 PALEXPORT int32_t SystemNative_MkDir(const char* path, int32_t mode);
+
+/**
+ * Create a directory relative to a directory descriptor. Implemented as a shim to mkdirat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */
+PALEXPORT int32_t SystemNative_MkDirAt(intptr_t dirfd, const char* path, int32_t mode);
 
 /**
  * Change permissions of a file. Implemented as a shim to chmod(2).

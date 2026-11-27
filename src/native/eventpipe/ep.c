@@ -83,6 +83,10 @@ disable_holding_lock (
 
 static
 void
+capture_session_provider_state (EventPipeSessionID id);
+
+static
+void
 stop_session (EventPipeSessionID id);
 
 static
@@ -758,7 +762,7 @@ disable_holding_lock (
 			ep_session_wait_for_inflight_thread_ops (session);
 
 			bool ignored;
-			ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
+			ep_session_write_all_buffers_to_file (session, true, &ignored);
 
 			ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
 
@@ -796,16 +800,18 @@ ep_event_is_enabled_for_current_thread (EventPipeEvent *ep_event)
 	return ep_event_is_enabled (ep_event);
 }
 
-#ifdef PERFTRACING_DISABLE_THREADS
-// Give the runtime a chance to emit end-of-session data (e.g. block-count PGO) into the stopping session
-// before it is disabled. Bind the current thread to that session as its rundown session so the runtime's
-// emitted events route only to it (see ep_event_is_enabled_for_current_thread and the rundown path in
-// write_event_2), invoke the hook, then restore the previous binding. Runs before the disable lock because
-// emitting events re-enters the write path, which must not run with the lock held.
 static
 void
 session_stopping (EventPipeSessionID id)
 {
+	capture_session_provider_state (id);
+
+#ifdef PERFTRACING_DISABLE_THREADS
+	// Give the runtime a chance to emit end-of-session data (e.g. block-count PGO) into the stopping session
+	// before it is disabled. Bind the current thread to that session as its rundown session so the runtime's
+	// emitted events route only to it (see ep_event_is_enabled_for_current_thread and the rundown path in
+	// write_event_2), invoke the hook, then restore the previous binding. Runs before the disable lock because
+	// emitting events re-enters the write path, which must not run with the lock held.
 	EventPipeThread *thread = ep_thread_get_or_create ();
 	if (thread == NULL)
 		return;
@@ -838,16 +844,60 @@ ep_on_error:
 	if (bound)
 		ep_thread_set_as_rundown_thread (thread, prev_rundown_session);
 	ep_exit_error_handler ();
-}
-#else
-static
-inline
-void
-session_stopping (EventPipeSessionID id)
-{
-	(void)id;
-}
 #endif
+}
+
+static
+void
+capture_session_provider_state (EventPipeSessionID id)
+{
+	// Capture-state maps to SendManifest for managed providers. Only notify providers whose handler
+	// explicitly supports flushing; this is not a general capture-state notification.
+	static const ep_char8_t *const provider_names [] = {
+		"System.Runtime.CompilerServices.AsyncProfilerEventSource"
+	};
+
+	EventPipeThread *thread = ep_thread_get_or_create ();
+	if (thread == NULL || ep_thread_get_capturing_provider_state (thread))
+		return;
+
+	ep_thread_set_capturing_provider_state (thread, true);
+	for (uint32_t i = 0; i < sizeof (provider_names) / sizeof (provider_names [0]); ++i) {
+		EventPipeProviderCallbackData callback_data;
+		bool prepared = false;
+
+		EP_LOCK_ENTER (section1)
+			if (is_session_id_in_collection (id)) {
+				EventPipeSession *session = (EventPipeSession *)(uintptr_t)id;
+				uint64_t session_mask = ep_session_get_mask (session);
+				EventPipeProvider *provider = config_get_provider (ep_config_get (), provider_names [i]);
+				if ((ep_volatile_load_allow_write () & session_mask) != 0 &&
+					provider != NULL && ep_provider_is_enabled_by_mask (provider, session_mask)) {
+					// Release producers before waiting for a provider's own flush lock.
+					EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (session);
+					if (buffer_manager != NULL)
+						ep_buffer_manager_abort_blocked_writers (buffer_manager);
+					provider_prepare_capture_state_callback (provider, &callback_data, id);
+					prepared = true;
+				}
+			}
+		EP_LOCK_EXIT (section1)
+
+		if (prepared) {
+			// Do not bind a rundown session: shared provider buffers belong to all matching sessions.
+			ep_rt_prepare_provider_invoke_callback (&callback_data);
+			provider_invoke_capture_state_callback (&callback_data);
+			ep_provider_callback_data_fini (&callback_data);
+		}
+	}
+
+ep_on_exit:
+	ep_thread_set_capturing_provider_state (thread, false);
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
 
 // Disable driver, entered without the lock from ep_disable and the deferred-disable replay in ep_finish_init:
 // take the lock and run the teardown, then dispatch the balanced provider-disable callbacks outside the lock.
@@ -868,14 +918,11 @@ stop_session (EventPipeSessionID id)
 	// Don't block GC during clean-up.
 	EP_GCX_PREEMP_ENTER
 
+		session_stopping (id);
+
 		EventPipeProviderCallbackDataQueue callback_data_queue;
 		EventPipeProviderCallbackData provider_callback_data;
 		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
-
-		// Give the runtime a chance to emit end-of-session data (e.g. block-count PGO) into the still-live
-		// session before it is disabled; session_stopping binds this thread to that session so the emitted
-		// events route only to it, and is a no-op on multithreaded runtimes.
-		session_stopping (id);
 
 		EP_LOCK_ENTER (section2)
 			if (is_session_id_in_collection (id))
@@ -1195,7 +1242,7 @@ bool
 session_requested_sampling (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
+	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ()) != NULL;
 }
 
 static
@@ -1559,7 +1606,18 @@ ep_create_provider (
 	EventPipeCallback callback_func,
 	void *callback_data)
 {
+	return ep_create_provider_with_events (provider_name, callback_func, callback_data, NULL);
+}
+
+EventPipeProvider *
+ep_create_provider_with_events (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	void *callback_data,
+	const EventPipeEventTable *event_table)
+{
 	ep_return_null_if_nok (provider_name != NULL);
+	EP_ASSERT (event_table == NULL || event_table->events_len == 0 || (event_table->definitions != NULL && event_table->events != NULL));
 
 	ep_requires_lock_not_held ();
 
@@ -1569,7 +1627,7 @@ ep_create_provider (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&data_queue);
 
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue, event_table);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -1723,6 +1781,12 @@ ep_init (void)
 
 	// Allow overriding the sampling rate via DOTNET_EventPipeThreadSamplingRate (in milliseconds).
 	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
+#ifdef PERFTRACING_DISABLE_THREADS
+	// Reserve INT32_MAX for sampling every instrumentation point in cooperative profilers.
+	if (configured_rate_ms == INT32_MAX)
+		ep_sample_profiler_set_sampling_rate (0);
+	else
+#endif
 	if (configured_rate_ms > 0)
 		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);
 	else

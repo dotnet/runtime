@@ -1371,10 +1371,11 @@ public:
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
+    // Returns true if vn is a non-handle integral constant that fits in T.
     template <typename T>
     bool IsVNIntegralConstant(ValueNum vn, T* value)
     {
-        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if (!IsVNConstantNonHandle(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
             *value = 0;
             return false;
@@ -2241,14 +2242,19 @@ private:
     };
 
     typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;
-    MapSelectWorkCache* m_mapSelectWorkCache = nullptr;
-    MapSelectWorkCache* GetMapSelectWorkCache()
+    // The value of a map select through a phi depends on the VN kind used for its arguments.
+    MapSelectWorkCache* m_mapSelectWorkCacheLiberal      = nullptr;
+    MapSelectWorkCache* m_mapSelectWorkCacheConservative = nullptr;
+    MapSelectWorkCache* GetMapSelectWorkCache(ValueNumKind vnk)
     {
-        if (m_mapSelectWorkCache == nullptr)
+        assert((vnk == VNK_Liberal) || (vnk == VNK_Conservative));
+        MapSelectWorkCache*& cache =
+            (vnk == VNK_Liberal) ? m_mapSelectWorkCacheLiberal : m_mapSelectWorkCacheConservative;
+        if (cache == nullptr)
         {
-            m_mapSelectWorkCache = new (m_alloc) MapSelectWorkCache(m_alloc);
+            cache = new (m_alloc) MapSelectWorkCache(m_alloc);
         }
-        return m_mapSelectWorkCache;
+        return cache;
     }
 
     // We reserve Chunk 0 for "special" VNs.

@@ -591,6 +591,7 @@ namespace System.Net
             bool commentUriSet = false;
             bool domainSet = false;
             bool expiresSet = false;
+            bool maxAgeSet = false;
             bool pathSet = false;
             bool portSet = false; // Special case: may have no value in header.
             bool versionSet = false;
@@ -642,11 +643,12 @@ namespace System.Net
                                     break;
 
                                 case CookieToken.Expires:
-                                    if (!expiresSet)
+                                    // Max-Age takes precedence over Expires (RFC 6265 section 4.1.2.2).
+                                    if (!expiresSet && !maxAgeSet)
                                     {
                                         expiresSet = true;
 
-                                        if (DateTime.TryParse(CheckQuoted(_tokenizer.Value),
+                                        if (DateTime.TryParse(CheckQuotedSpan(_tokenizer.Value),
                                             CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AdjustToUniversal, out DateTime expires))
                                         {
                                             cookie!.Expires = expires;
@@ -660,16 +662,17 @@ namespace System.Net
                                     break;
 
                                 case CookieToken.MaxAge:
-                                    if (!expiresSet)
+                                    if (!maxAgeSet)
                                     {
-                                        expiresSet = true;
-                                        if (int.TryParse(CheckQuoted(_tokenizer.Value), out int parsed))
+                                        maxAgeSet = true;
+                                        if (int.TryParse(CheckQuotedSpan(_tokenizer.Value), out int parsed))
                                         {
                                             cookie!.Expires = DateTime.UtcNow.AddSeconds(parsed);
                                         }
-                                        else
+                                        else if (!expiresSet)
                                         {
-                                            // This cookie will be rejected
+                                            // This cookie will be rejected, unless an Expires attribute came first,
+                                            // in which case the invalid Max-Age is ignored and Expires is kept.
                                             InternalSetNameMethod(cookie!, string.Empty);
                                         }
                                     }
@@ -704,7 +707,7 @@ namespace System.Net
                                     {
                                         versionSet = true;
                                         int parsed;
-                                        if (int.TryParse(CheckQuoted(_tokenizer.Value), out parsed))
+                                        if (int.TryParse(CheckQuotedSpan(_tokenizer.Value), out parsed))
                                         {
                                             cookie!.Version = parsed;
                                             IsQuotedVersionField.SetValue(cookie, _tokenizer.Quoted);
@@ -852,8 +855,14 @@ namespace System.Net
 
         internal static string CheckQuoted(string value)
         {
-            return (value.Length >= 2 && value.StartsWith('\"') && value.EndsWith('\"'))
-                ? value.Substring(1, value.Length - 2)
+            ReadOnlySpan<char> unquoted = CheckQuotedSpan(value);
+            return unquoted.Length == value.Length ? value : unquoted.ToString();
+        }
+
+        internal static ReadOnlySpan<char> CheckQuotedSpan(ReadOnlySpan<char> value)
+        {
+            return value is ['"', .., '"']
+                ? value.Slice(1, value.Length - 2)
                 : value;
         }
 

@@ -3,15 +3,21 @@
 
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
-namespace ILAssembler;
+namespace Microsoft.DotNet.ILAssembler;
 
 internal static class MetadataExtensions
 {
     extension(TypeAttributes)
     {
-        public static TypeAttributes ExtendedLayout => (TypeAttributes)0x18;
         public static TypeAttributes Forwarder => (TypeAttributes)0x00200000;
+    }
+
+    extension(UnmanagedType)
+    {
+        public static int ArraySizeParamIndexSpecified => 0x0001;
+        public static UnmanagedType Max => (UnmanagedType)0x50;
     }
 
     extension(DeclarativeSecurityAction)
@@ -33,5 +39,8 @@ internal static class MetadataExtensions
     extension(ILOpCode)
     {
         public static ILOpCode Unused => (ILOpCode)0xFE22;
+
+        // The 'no.' prefix (ECMA-335 III.2.2).
+        public static ILOpCode No => (ILOpCode)0xFE19;
     }
 }

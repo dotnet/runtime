@@ -67,10 +67,11 @@ namespace System
                 {
                     int nextIndex;
 
-                    if (((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0 && (((nextIndex = MatchChars(value, index, info.PositiveSignTChar<TChar>())) >= 0) || (((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0) && (number.IsNegative = true))))
+                    if (((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0 && ((nextIndex = MatchSignChars(value, index, info, out bool leadingSignIsNegative)) >= 0))
                     {
                         state |= StateSign;
                         index = nextIndex;
+                        number.IsNegative = leadingSignIsNegative;
                     }
                     else if (ch == '(' && ((styles & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
                     {
@@ -183,7 +184,7 @@ namespace System
                 ch = index < value.Length ? TChar.CastToUInt32(value[index]) : '\0';
             }
 
-            bool negExp = false;
+            bool negExp;
             number.DigitsCount = digEnd;
             number.Digits[digEnd] = (byte)'\0';
             if ((state & StateDigits) != 0)
@@ -194,17 +195,11 @@ namespace System
                     index++;
                     ch = index < value.Length ? TChar.CastToUInt32(value[index]) : '\0';
 
-                    int nextIndex = MatchChars(value, index, info.PositiveSignTChar<TChar>());
+                    int nextIndex = MatchSignChars(value, index, info, out negExp);
                     if (nextIndex >= 0)
                     {
                         index = nextIndex;
                         ch = index < value.Length ? TChar.CastToUInt32(value[index]) : '\0';
-                    }
-                    else if ((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0)
-                    {
-                        index = nextIndex;
-                        ch = index < value.Length ? TChar.CastToUInt32(value[index]) : '\0';
-                        negExp = true;
                     }
 
                     if (IsDigit(ch))
@@ -264,10 +259,11 @@ namespace System
                     {
                         int nextIndex;
 
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && (((nextIndex = MatchChars(value, index, info.PositiveSignTChar<TChar>())) >= 0) || ((((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0)) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((nextIndex = MatchSignChars(value, index, info, out bool trailingSignIsNegative)) >= 0))
                         {
                             state |= StateSign;
                             index = nextIndex;
+                            number.IsNegative = trailingSignIsNegative;
                         }
                         else if (ch == ')' && ((state & StateParens) != 0))
                         {
@@ -370,6 +366,65 @@ namespace System
             }
 
             return nextIndex;
+        }
+
+        private static int MatchSignChars<TChar>(ReadOnlySpan<TChar> value, int index, NumberFormatInfo info, out bool isNegative)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (HasInvariantNumberSigns(info))
+            {
+                if ((uint)index < (uint)value.Length)
+                {
+                    uint ch = TChar.CastToUInt32(value[index]);
+                    if (ch == '-')
+                    {
+                        isNegative = true;
+                        return index + 1;
+                    }
+                    if (ch == '+')
+                    {
+                        isNegative = false;
+                        return index + 1;
+                    }
+                }
+
+                isNegative = false;
+                return -1;
+            }
+
+            ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+            int positiveSignIndex = MatchChars(value, index, positiveSign);
+            if (positiveSignIndex >= 0)
+            {
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                // Prefer the longer token when signs overlap; retain positive precedence for equal-length signs.
+                if (info.PositiveSign.Length >= info.NegativeSign.Length || MatchChars(negativeSign, 0, positiveSign) < 0)
+                {
+                    isNegative = false;
+                    return positiveSignIndex;
+                }
+            }
+
+            int negativeSignIndex = MatchNegativeSignChars(value, index, info);
+
+            if (positiveSignIndex >= negativeSignIndex)
+            {
+                isNegative = false;
+                return positiveSignIndex;
+            }
+
+            isNegative = true;
+            return negativeSignIndex;
+        }
+
+        private static bool HasInvariantNumberSigns(NumberFormatInfo info)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            return info.HasInvariantNumberSigns;
+#else
+            return info.PositiveSign == "+" && info.NegativeSign == "-";
+#endif
         }
 
         private static int MatchChars<TChar>(ReadOnlySpan<TChar> source, int index, ReadOnlySpan<TChar> value)

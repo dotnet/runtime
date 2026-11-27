@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -156,6 +157,47 @@ namespace System.Diagnostics.Tests
             Assert.True(tags.Contains(new KeyValuePair<string, object>("Key3", 3)));
             Assert.False(tags.Remove(new KeyValuePair<string, object>("Key3", 4)));
             Assert.True(tags.Remove(new KeyValuePair<string, object>("Key3", 3)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void TestEnumeratorReset(int advances)
+        {
+            var expected = new KeyValuePair<string, object>[]
+            {
+                new KeyValuePair<string, object>("first", 1),
+                new KeyValuePair<string, object>("second", 2)
+            };
+            var tags = new ActivityTagsCollection(expected);
+            IEnumerator enumerator = tags.GetEnumerator();
+            for (int i = 0; i < advances; i++)
+            {
+                enumerator.MoveNext();
+            }
+
+            for (int repeat = 0; repeat < 2; repeat++)
+            {
+                enumerator.Reset();
+                foreach (KeyValuePair<string, object> item in expected)
+                {
+                    Assert.True(enumerator.MoveNext());
+                    Assert.Equal(item, enumerator.Current);
+                }
+                Assert.False(enumerator.MoveNext());
+            }
+        }
+
+        [Fact]
+        public void TestEnumeratorResetAfterModification()
+        {
+            var tags = new ActivityTagsCollection { { "first", 1 } };
+            IEnumerator enumerator = tags.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            tags.Add("second", 2);
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
         }
 
         [Fact]

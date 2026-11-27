@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -34,23 +33,11 @@ namespace System.Threading
         private ManagedThreadId _managedThreadId;
         [DataContract]
         private string? _name;
-        private StartHelper? _startHelper;
-        private Exception? _startException;
-
-        // Protects starting the thread and setting its priority
-        private Lock _lock = new Lock(useTrivialWaits: true);
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
-
-        // so far the only place we initialize it is `WaitForForegroundThreads`
-        // and only in the case when there are running foreground threads
-        // by the moment of `StartupCodeHelpers.Shutdown()` invocation
-        private static ManualResetEvent s_allDone;
-
-        private static int s_foregroundRunningCount;
 
         private Thread()
         {
@@ -69,18 +56,11 @@ namespace System.Threading
             RegisterThreadExitCallback();
         }
 
-        private static unsafe void RegisterThreadExitCallback()
-        {
-            RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
-        }
+        static unsafe partial void RegisterThreadExitCallback();
 
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return RuntimeImports.RhCurrentOSThreadId();
-            }
-        }
+        static partial void IncrementRunningForeground();
+
+        static partial void DecrementRunningForeground();
 
         // Slow path executed once per thread
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -93,6 +73,7 @@ namespace System.Threading
 
             ThreadState state = 0;
 
+#if FEATURE_MULTITHREADING
             // The main thread is foreground, other ones are background
             if (currentThread._managedThreadId.Id != System.Threading.ManagedThreadId.IdMainThread)
             {
@@ -100,8 +81,9 @@ namespace System.Threading
             }
             else
             {
-                Interlocked.Increment(ref s_foregroundRunningCount);
+                IncrementRunningForeground();
             }
+#endif
 
             currentThread._threadState = (int)(state | ThreadState.Running);
             currentThread.PlatformSpecificInitializeExistingThread();
@@ -248,8 +230,10 @@ namespace System.Threading
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }
 
+#if FEATURE_MULTITHREADING
                 // Prevent race condition with starting this thread
                 using (_lock.EnterScope())
+#endif
                 {
                     if (HasStarted() && !SetPriorityLive(value))
                     {
@@ -311,195 +295,6 @@ namespace System.Threading
             return millisecondsTimeout;
         }
 
-        /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
-        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
-        /// appropriate for the processor.
-        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
-        /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
-
-        // Max iterations to be done in RhSpinWait.
-        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-        private const int SpinWaitCoopThreshold = 1024;
-
-        internal static void SpinWaitInternal(int iterations)
-        {
-            Debug.Assert(iterations <= SpinWaitCoopThreshold);
-            if (iterations > 0)
-            {
-                RuntimeImports.RhSpinWait(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        private static void LongSpinWait(int iterations)
-        {
-            RuntimeImports.RhLongSpinWait(iterations);
-        }
-
-        public static void SpinWait(int iterations)
-        {
-            if (iterations > SpinWaitCoopThreshold)
-            {
-                LongSpinWait(iterations);
-            }
-            else
-            {
-                SpinWaitInternal(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        public static bool Yield() => RuntimeImports.RhYield();
-
-        private void StartCore()
-        {
-            using (_lock.EnterScope())
-            {
-                if (!GetThreadStateBit(ThreadState.Unstarted))
-                {
-                    throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
-                }
-
-                bool waitingForThreadStart = false;
-                GCHandle<Thread> threadHandle = new GCHandle<Thread>(this);
-
-                try
-                {
-                    if (!CreateThread(threadHandle))
-                    {
-                        throw new OutOfMemoryException();
-                    }
-
-                    // Skip cleanup if any asynchronous exception happens while waiting for the thread start
-                    waitingForThreadStart = true;
-
-                    // Wait until the new thread either dies or reports itself as started
-                    while (GetThreadStateBit(ThreadState.Unstarted) && !JoinInternal(0))
-                    {
-                        Yield();
-                    }
-
-                    waitingForThreadStart = false;
-                }
-                finally
-                {
-                    Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
-                    if (!waitingForThreadStart)
-                    {
-                        threadHandle.Dispose();
-                    }
-                }
-
-                if (GetThreadStateBit(ThreadState.Unstarted))
-                {
-                    Exception? startException = _startException;
-                    _startException = null;
-
-                    throw new ThreadStartException(startException ?? new OutOfMemoryException());
-                }
-
-                Debug.Assert(_startException == null);
-            }
-        }
-
-        private static void StartThread(IntPtr parameter)
-        {
-            Thread thread = GCHandle<Thread>.FromIntPtr(parameter).Target;
-
-            try
-            {
-                t_currentThread = thread;
-                System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
-                thread.InitializeComOnNewThread();
-            }
-            catch (Exception e)
-            {
-                thread._startException = e;
-
-#if TARGET_UNIX
-                // This should go away once OnThreadExit stops using t_currentThread to signal
-                // shutdown of the thread on Unix.
-                thread._stopped!.Set();
-#endif
-                // Terminate the current thread. The creator thread will throw a ThreadStartException.
-                return;
-            }
-
-            // Report success to the creator thread, which will free threadHandle
-            int state = thread.ClearThreadStateBit(ThreadState.Unstarted);
-            if ((state & (int)ThreadState.Background) == 0)
-            {
-                IncrementRunningForeground();
-            }
-
-            try
-            {
-                StartHelper? startHelper = thread._startHelper;
-                Debug.Assert(startHelper != null);
-                thread._startHelper = null;
-
-                startHelper.Run();
-            }
-            catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
-            {
-                // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
-            }
-            finally
-            {
-                thread.SetThreadStateBit(ThreadState.Stopped);
-            }
-        }
-
-        private static void StopThread(Thread thread)
-        {
-            if ((thread._threadState & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
-            {
-                thread.SetThreadStateBit(ThreadState.Stopped);
-            }
-
-            int state = thread.ClearThreadStateBit(ThreadState.Background);
-            if ((state & (int)ThreadState.Background) == 0)
-            {
-                DecrementRunningForeground();
-            }
-        }
-
-        internal static void IncrementRunningForeground()
-        {
-            Interlocked.Increment(ref s_foregroundRunningCount);
-        }
-
-        internal static void DecrementRunningForeground()
-        {
-            if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0)
-            {
-                // Interlocked.Decrement issues full memory barrier
-                // so most recent write to s_allDone should be visible here
-                s_allDone?.Set();
-            }
-        }
-
-        internal static void WaitForForegroundThreads()
-        {
-            Thread.CurrentThread.IsBackground = true;
-            // last read/write inside `IsBackground` issues full barrier no matter of logic flow
-            // so we can just read `s_foregroundRunningCount`
-            if (s_foregroundRunningCount == 0)
-            {
-                // current thread is the last foreground thread, so let the runtime finish
-                return;
-            }
-            Volatile.Write(ref s_allDone, new ManualResetEvent(false));
-            // other foreground threads could have their job finished meanwhile
-            // Volatile.Write above issues release barrier
-            // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
-            if (Volatile.Read(ref s_foregroundRunningCount) == 0)
-            {
-                return;
-            }
-            s_allDone.WaitOne();
-        }
+        partial void StartCore();
     }
 }

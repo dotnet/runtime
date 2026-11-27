@@ -7,6 +7,9 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
+// IModuleSymbol.MemorySafetyRulesVersion is experimental
+#pragma warning disable RSEXPERIMENTAL006
+
 namespace Microsoft.Interop
 {
     public static class CompilationExtensions
@@ -22,14 +25,23 @@ namespace Microsoft.Interop
             {
                 flags |= EnvironmentFlags.DisableRuntimeMarshalling;
             }
-            // Roslyn does not expose the memory safety rules version through a public API yet
-            // (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
-            // reads is used. Parse options are per-project, so any tree answers for the whole compilation.
-            if (compilation.SyntaxTrees.FirstOrDefault()?.Options.Features.ContainsKey("updated-memory-safety-rules") == true)
+            if (compilation.UsesUpdatedMemorySafetyRules())
             {
                 flags |= EnvironmentFlags.UpdatedMemorySafetyRules;
             }
             return flags;
         }
+
+        /// <summary>
+        /// Determines whether the compilation uses the updated memory safety rules.
+        /// </summary>
+        public static bool UsesUpdatedMemorySafetyRules(this Compilation compilation)
+            => compilation.SourceModule.UsesUpdatedMemorySafetyRules();
+
+        /// <summary>
+        /// Determines whether a module uses the updated memory safety rules.
+        /// </summary>
+        public static bool UsesUpdatedMemorySafetyRules(this IModuleSymbol module)
+            => (int)module.MemorySafetyRulesVersion >= 2;
     }
 }

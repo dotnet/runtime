@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
@@ -14,8 +15,7 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
-    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
-    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">false</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
@@ -60,14 +60,23 @@
     <!-- Referenced so dotnet-pgo is restored and built for _AddDotnetPgoToTestPayload. Private="false"
          keeps its apphost and dependencies out of $(OutDir) so they don't collide with the dotnet-pgo/
          subfolder that target creates there. -->
-    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
-                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
+    <ProjectReference Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false" />
 
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(MonoProjectRoot)nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets;
+                   $(MonoProjectRoot)nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets;
+                   $(MonoProjectRoot)nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.Precompressed.targets"
+          Link="data\precompressed\%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepositoryEngineeringDir)WasmRuntimePack.targets"
+          Link="data\precompressed\WasmRuntimePack.targets" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(BrowserWasmMibcProfile)"
+          Condition="'$(BrowserWasmMibcProfile)' != ''"
+          Link="data\DotNet_Blazor_Wasm.mibc"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so
@@ -75,7 +84,7 @@
        than a post-Build copy into OutDir) so they flow into the Helix test payload, exactly like the
        testassets/data items above; a plain copy into OutDir is not part of the browser test archive.
        dotnet-pgo is built explicitly because ProjectReferences aren't resolved this early in the build. -->
-  <Target Name="_AddDotnetPgoToTestPayload" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" BeforeTargets="AssignTargetPaths">
+  <Target Name="_AddDotnetPgoToTestPayload" BeforeTargets="AssignTargetPaths">
     <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
     </MSBuild>
@@ -107,7 +116,7 @@
       <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+    <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
     </ItemGroup>
@@ -140,8 +149,8 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmRunWasmOpt)' == 'true'">$(_XUnitTraitArg) -trait category=wasm-opt</_XUnitTraitArg>
+      <_XUnitTraitArg>$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -173,6 +182,9 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_RUN_WASM_OPT=$(WasmRunWasmOpt)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_RUN_WASM_OPT=$(WasmRunWasmOpt)" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 
@@ -187,6 +199,15 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK=$(AspNetCoreAppCurrent)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK=$(AspNetCoreAppCurrent)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WBT_NETCOREAPP_MAXIMUM_VERSION=$(NetCoreAppCurrentVersion)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WBT_NETCOREAPP_MAXIMUM_VERSION=$(NetCoreAppCurrentVersion)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -194,10 +215,13 @@
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
-    <ItemGroup>
-      <!-- net11 Add new entry when adding major version -->
-      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" />
 
+    <ItemGroup>
+      <!-- net12 Add new entry when adding major version -->
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER12" />
+
+      <_RuntimePackVersions Include="$(PackageVersionNet11)" EnvVarName="RUNTIME_PACK_VER11" Condition="'$(PackageVersionNet11)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" Condition="'$(PackageVersionNet11)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet10)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' != ''" />
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />
@@ -258,8 +282,7 @@
         these categories would only produce a work item that runs nothing.
       -->
       <_HelixJobsListExcludedCategory Include="no-workload;IgnoreForCI;failing" />
-      <_HelixJobsListExcludedCategory Include="mono" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-      <_HelixJobsListExcludedCategory Include="coreclr" Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
+      <_HelixJobsListExcludedCategory Include="mono" />
     </ItemGroup>
 
     <GenerateXunitTestClassList Assembly="$(TargetPath)"

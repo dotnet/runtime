@@ -9,35 +9,245 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using Xunit;
-using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
-namespace ILAssembler.Tests
+namespace Microsoft.DotNet.ILAssembler.Tests
 {
     public class NativeExportTests
     {
+        [Theory]
+        [InlineData(Machine.I386, 8)]
+        [InlineData(Machine.Amd64, 8)]
+        [InlineData(Machine.Arm64, 8)]
+        [InlineData(Machine.I386, 10)]
+        [InlineData(Machine.Amd64, 10)]
+        public void ExportDirective_WithoutVTableFixup_SynthesizesNativeExports(Machine machine, int tripleOrdinal)
+        {
+            string source = $$"""
+                .assembly test { }
+                .data Existing = int8(42)
+                .field public static uint8 ExistingField at Existing
+                .method public static int32 Triple(int32 input) cil managed
+                {
+                    .export [{{tripleOrdinal}}]
+                    ldarg.0
+                    ldc.i4.3
+                    mul
+                    ret
+                }
+                .method public static int32 Double(int32 input) cil managed
+                {
+                    .export [7] as Twice
+                    ldarg.0
+                    ldc.i4.2
+                    mul
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Machine = machine });
+            Assert.False(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+            Assert.Equal(machine == Machine.I386, pe.PEHeaders.CorHeader.Flags.HasFlag(CorFlags.Requires32Bit));
+            DirectoryEntry fixups = pe.PEHeaders.CorHeader.VtableFixupsDirectory;
+            Assert.Equal(8, fixups.Size);
+            int slotsRva = ReadInt32(pe, fixups.RelativeVirtualAddress);
+            int slotSize = machine == Machine.I386 ? sizeof(int) : sizeof(long);
+            Assert.Equal(0, slotsRva % slotSize);
+            Assert.Equal(2, ReadUInt16(pe, fixups.RelativeVirtualAddress + 4));
+            Assert.Equal(machine == Machine.I386 ? 5 : 6, ReadUInt16(pe, fixups.RelativeVirtualAddress + 6));
+            Assert.Equal(0x06000002, ReadInt32(pe, slotsRva));
+            Assert.Equal(0x06000001, ReadInt32(pe, slotsRva + slotSize));
+            if (slotSize == sizeof(long))
+            {
+                Assert.Equal(0, ReadInt32(pe, slotsRva + sizeof(int)));
+                Assert.Equal(0, ReadInt32(pe, slotsRva + slotSize + sizeof(int)));
+            }
+
+            MetadataReader reader = pe.GetMetadataReader();
+            int fieldRva = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions)).GetRelativeVirtualAddress();
+            Assert.Equal(42, pe.GetSectionData(fieldRva).GetContent(0, 1)[0]);
+            Assert.True(slotsRva > fieldRva);
+
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            Assert.NotEqual(0, exports.RelativeVirtualAddress);
+            Assert.Equal(7, ReadInt32(pe, exports.RelativeVirtualAddress + 16));
+            Assert.Equal(tripleOrdinal - 7 + 1, ReadInt32(pe, exports.RelativeVirtualAddress + 20));
+            Assert.Equal(2, ReadInt32(pe, exports.RelativeVirtualAddress + 24));
+            int addressTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 28);
+            int nameTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 32);
+            int ordinalTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 36);
+            Assert.Equal("Triple", ReadAsciiString(pe, ReadInt32(pe, nameTableRva)));
+            Assert.Equal("Twice", ReadAsciiString(pe, ReadInt32(pe, nameTableRva + 4)));
+            Assert.Equal(tripleOrdinal - 7, ReadUInt16(pe, ordinalTableRva));
+            Assert.Equal(0, ReadUInt16(pe, ordinalTableRva + 2));
+            Assert.Equal(".text", GetContainingSection(pe, ReadInt32(pe, addressTableRva)).Name);
+            Assert.Equal(".text", GetContainingSection(pe, ReadInt32(pe, addressTableRva + (tripleOrdinal - 7) * 4)).Name);
+            for (int ordinal = 8; ordinal < tripleOrdinal; ordinal++)
+            {
+                Assert.Equal(0, ReadInt32(pe, addressTableRva + (ordinal - 7) * 4));
+            }
+        }
+
         [Fact]
-        public void ExportDirective_WithoutVTableFixup_DoesNotEmitNativeExportArtifacts()
+        public void ExportDirective_WithoutVTableFixup_ReservesExplicitSlotsBeforeImplicitSlots()
         {
             string source = """
                 .assembly test { }
-                .assembly extern mscorlib { }
-                .class public auto ansi Test extends [mscorlib]System.Object
+                .method public static void Explicit() cil managed
                 {
-                    .method public static void ExportedMethod() cil managed
-                    {
-                        .export [1] as MyExport
-                        ret
-                    }
+                    .vtentry 1 : 2
+                    .export [1] as Explicit
+                    ret
+                }
+                .method public static void Implicit() cil managed
+                {
+                    .export [2] as Implicit
+                    ret
                 }
                 """;
 
             using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            DirectoryEntry fixups = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+            int slotsRva = ReadInt32(pe, fixups.RelativeVirtualAddress);
+            Assert.Equal(2, ReadUInt16(pe, fixups.RelativeVirtualAddress + sizeof(int)));
 
-            Assert.False(pe.PEHeaders.SectionHeaders.Any(section => section.Name == ".sdata"));
+            MetadataReader reader = pe.GetMetadataReader();
+            int explicitToken = MetadataTokens.GetToken(FindMethod(reader, "Explicit"));
+            int implicitToken = MetadataTokens.GetToken(FindMethod(reader, "Implicit"));
+            Assert.Equal(implicitToken, ReadInt32(pe, slotsRva));
+            Assert.Equal(explicitToken, ReadInt32(pe, slotsRva + sizeof(int)));
 
-            DirectoryEntry exportTableDirectory = pe.PEHeaders.PEHeader!.ExportTableDirectory;
-            Assert.Equal(0, exportTableDirectory.RelativeVirtualAddress);
-            Assert.Equal(0, exportTableDirectory.Size);
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            int addressTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 28);
+            int explicitStubRva = ReadInt32(pe, addressTableRva);
+            int implicitStubRva = ReadInt32(pe, addressTableRva + sizeof(int));
+            uint imageBase = (uint)pe.PEHeaders.PEHeader.ImageBase;
+            Assert.Equal(
+                imageBase + (uint)slotsRva + (uint)sizeof(int),
+                ReadUInt32(pe, explicitStubRva + 2));
+            Assert.Equal(
+                imageBase + (uint)slotsRva,
+                ReadUInt32(pe, implicitStubRva + 2));
+        }
+
+        [Fact]
+        public void ExportDirective_WithoutVTableFixup_SharedExplicitSlotsDoNotCreateEmptySlots()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void First() cil managed
+                {
+                    .vtentry 1 : 1
+                    .export [1] as First
+                    ret
+                }
+                .method public static void Second() cil managed
+                {
+                    .vtentry 1 : 1
+                    .export [2] as Second
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            DirectoryEntry fixups = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+            int slotsRva = ReadInt32(pe, fixups.RelativeVirtualAddress);
+
+            Assert.Equal(1, ReadUInt16(pe, fixups.RelativeVirtualAddress + sizeof(int)));
+            Assert.NotEqual(0, ReadInt32(pe, slotsRva));
+
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            int addressTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 28);
+            int firstStubRva = ReadInt32(pe, addressTableRva);
+            int secondStubRva = ReadInt32(pe, addressTableRva + sizeof(int));
+            Assert.Equal(
+                ReadUInt32(pe, firstStubRva + 2),
+                ReadUInt32(pe, secondStubRva + 2));
+        }
+
+        [Fact]
+        public void ExportDirective_WithoutVTableFixup_SparseExplicitSlotsReportDiagnosticAndOmitFixup()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Exported() cil managed
+                {
+                    .vtentry 1 : 2
+                    .export [1] as Exported
+                    ret
+                }
+                """;
+
+            (ImmutableArray<Diagnostic> diagnostics, PEReader pe) = CompileErrorTolerant(source);
+            using (pe)
+            {
+                Assert.Contains(
+                    diagnostics,
+                    diagnostic => diagnostic.Id == DiagnosticIds.UnassignedVTableSlot);
+                Assert.Equal(0, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.RelativeVirtualAddress);
+                Assert.Equal(0, pe.PEHeaders.PEHeader!.ExportTableDirectory.RelativeVirtualAddress);
+            }
+        }
+
+        [Theory]
+        [InlineData(2, 1, false)]
+        [InlineData(1, 0, false)]
+        [InlineData(2, 1, true)]
+        [InlineData(1, 0, true)]
+        public void ExportDirective_WithoutVTableFixup_InvalidExplicitEntryReportsDiagnostic(
+            int entry,
+            int slot,
+            bool hasValidExport)
+        {
+            string validExport = hasValidExport
+                ? """
+                    .method public static void Valid() cil managed
+                    {
+                        .export [2] as Valid
+                        ret
+                    }
+                    """
+                : string.Empty;
+            string source = $$"""
+                .assembly test { }
+                .method public static void Invalid() cil managed
+                {
+                    .vtentry {{entry}} : {{slot}}
+                    .export [1] as Invalid
+                    ret
+                }
+                {{validExport}}
+                """;
+
+            var (strictDiagnostics, strictResult) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options());
+            Diagnostic strictError = Assert.Single(strictDiagnostics);
+            Assert.Equal(
+                hasValidExport ? DiagnosticIds.InvalidVTableEntry : DiagnosticIds.InvalidVTableExport,
+                strictError.Id);
+            Assert.Equal(DiagnosticSeverity.Error, strictError.Severity);
+            Assert.Null(strictResult);
+
+            (ImmutableArray<Diagnostic> diagnostics, PEReader pe) = CompileErrorTolerant(source);
+            using (pe)
+            {
+                Diagnostic error = Assert.Single(diagnostics);
+                Assert.Equal(strictError.Id, error.Id);
+                DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+                DirectoryEntry fixups = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+                if (hasValidExport)
+                {
+                    Assert.NotEqual(0, exports.RelativeVirtualAddress);
+                    Assert.Equal(8, fixups.Size);
+                    Assert.Equal(1, ReadInt32(pe, exports.RelativeVirtualAddress + 24));
+                    int nameTableRva = ReadInt32(pe, exports.RelativeVirtualAddress + 32);
+                    Assert.Equal("Valid", ReadAsciiString(pe, ReadInt32(pe, nameTableRva)));
+                }
+                else
+                {
+                    Assert.Equal(0, exports.RelativeVirtualAddress);
+                    Assert.Equal(0, fixups.Size);
+                }
+            }
         }
 
         [Fact]
@@ -133,9 +343,118 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3)]
-        [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10)]
-        [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10)]
+        [InlineData(Machine.I386, false, false)]
+        [InlineData(Machine.I386, false, true)]
+        [InlineData(Machine.I386, true, false)]
+        [InlineData(Machine.I386, true, true)]
+        [InlineData(Machine.Amd64, false, false)]
+        [InlineData(Machine.Amd64, false, true)]
+        [InlineData(Machine.Amd64, true, false)]
+        [InlineData(Machine.Amd64, true, true)]
+        [InlineData(Machine.Arm64, false, false)]
+        [InlineData(Machine.Arm64, false, true)]
+        [InlineData(Machine.Arm64, true, false)]
+        [InlineData(Machine.Arm64, true, true)]
+        public void MixedDataSections_PreserveFieldsReferencesAndExports(Machine machine, bool tls, bool vtable)
+        {
+            string pointerType = machine == Machine.I386 ? "int32" : "int64";
+            string tlsDeclarations = tls
+                ? """
+                  .data tls TlsValue = int32(0x11223344)
+                  .data tls TlsPointer = &(CilValue)
+                  .field public static int32 TlsField at TlsValue
+                  .field public static native int TlsReference at TlsPointer
+                  """
+                : string.Empty;
+            string vtableDeclaration = vtable ? $".vtfixup [1] {pointerType} fromunmanaged at VT" : string.Empty;
+            string vtableEntry = vtable ? ".vtentry 1 : 1" : string.Empty;
+            string target = tls ? "TlsValue" : "RegularValue";
+            string source = $$"""
+                .assembly test { }
+                .data cil CilValue = int32(0x12345678)
+                .data VT = {{pointerType}}(0)
+                {{tlsDeclarations}}
+                .data cil CilPointer = &({{target}})
+                .data RegularValue = int32(0x55667788)
+                .data RegularPointer = &(CilValue)
+                {{vtableDeclaration}}
+                .field public static int32 CilField at CilValue
+                .field public static int32 RegularField at RegularValue
+                .field public static native int CilReference at CilPointer
+                .field public static native int RegularReference at RegularPointer
+                .field public static {{pointerType}} VTableField at VT
+                .method public static void Exported() cil managed
+                {
+                    {{vtableEntry}}
+                    {{(vtable ? ".export [1] as Exported" : string.Empty)}}
+                    ret
+                }
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                source, new Options { Machine = machine });
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, int> fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name), field => field.GetRelativeVirtualAddress());
+            Assert.Equal(".text", GetContainingSection(pe, fields["CilField"]).Name);
+            Assert.Equal(".text", GetContainingSection(pe, fields["CilReference"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["RegularField"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["RegularReference"]).Name);
+            Assert.Equal(".sdata", GetContainingSection(pe, fields["VTableField"]).Name);
+            Assert.Equal(0x12345678, ReadInt32(pe, fields["CilField"]));
+            Assert.Equal(0x55667788, ReadInt32(pe, fields["RegularField"]));
+            Assert.Equal(vtable ? 0x06000001 : 0, ReadInt32(pe, fields["VTableField"]));
+            DirectoryEntry exports = pe.PEHeaders.PEHeader!.ExportTableDirectory;
+            if (vtable)
+            {
+                Assert.Equal(fields["VTableField"], ReadInt32(
+                    pe, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.RelativeVirtualAddress));
+                int stubRva = ReadInt32(pe, ReadInt32(pe, exports.RelativeVirtualAddress + 28));
+                Assert.Equal(".text", GetContainingSection(pe, stubRva).Name);
+            }
+            else
+            {
+                Assert.Equal(default, pe.PEHeaders.CorHeader!.VtableFixupsDirectory);
+                Assert.Equal(default, exports);
+            }
+
+            int relocationType = machine == Machine.I386 ? 3 : 10;
+            ulong imageBase = pe.PEHeaders.PEHeader.ImageBase;
+            Assert.Equal(imageBase + (uint)fields["CilField"], ReadPointer(fields["RegularReference"]));
+            Assert.True(HasBaseRelocation(pe, fields["RegularReference"], relocationType));
+            Assert.Equal(imageBase + (uint)fields[tls ? "TlsField" : "RegularField"], ReadPointer(fields["CilReference"]));
+            Assert.True(HasBaseRelocation(pe, fields["CilReference"], relocationType));
+            if (tls)
+            {
+                Assert.Equal(".tls", GetContainingSection(pe, fields["TlsField"]).Name);
+                Assert.Equal(".tls", GetContainingSection(pe, fields["TlsReference"]).Name);
+                Assert.Equal(0x11223344, ReadInt32(pe, fields["TlsField"]));
+                Assert.Equal(imageBase + (uint)fields["CilField"], ReadPointer(fields["TlsReference"]));
+                Assert.True(HasBaseRelocation(pe, fields["TlsReference"], relocationType));
+                int tlsDirectoryRva = pe.PEHeaders.PEHeader.ThreadLocalStorageTableDirectory.RelativeVirtualAddress;
+                int pointerSize = machine == Machine.I386 ? sizeof(uint) : sizeof(ulong);
+                for (int i = 0; i < 4; i++)
+                {
+                    Assert.True(HasBaseRelocation(pe, tlsDirectoryRva + (i * pointerSize), relocationType));
+                }
+            }
+            else
+            {
+                Assert.DoesNotContain(pe.PEHeaders.SectionHeaders, section => section.Name == ".tls");
+                Assert.Equal(default, pe.PEHeaders.PEHeader.ThreadLocalStorageTableDirectory);
+            }
+
+            ulong ReadPointer(int rva) => machine == Machine.I386 ? ReadUInt32(pe, rva) : ReadUInt64(pe, rva);
+        }
+
+        [Theory]
+        [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3, "")]
+        [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10, "")]
+        [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10, "")]
+        [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3, "cil")]
+        [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10, "cil")]
+        [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10, "cil")]
         public void ExportStub_TargetMachine_IsExecutableAndRelocatable(
             Machine machine,
             string expectedPrefix,
@@ -143,13 +462,14 @@ namespace ILAssembler.Tests
             int addressSize,
             int addressAlignment,
             int stubSize,
-            int relocationType)
+            int relocationType,
+            string section)
         {
             string slotType = addressSize == sizeof(ulong) ? "int64" : "int32";
             string source = $$"""
                 .assembly test { }
                 .assembly extern mscorlib { }
-                .data VT = {{slotType}}(0)
+                .data {{section}} VT = {{slotType}}(0)
                 .vtfixup [1] {{slotType}} fromunmanaged at VT
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
@@ -173,6 +493,8 @@ namespace ILAssembler.Tests
             var stubSection = GetContainingSection(pe, stubRva);
 
             Assert.Equal(machine, pe.PEHeaders.CoffHeader.Machine);
+            Assert.Equal(section == "cil" ? ".text" : ".sdata", GetContainingSection(pe, slotRva).Name);
+            Assert.Equal(0x06000001, ReadInt32(pe, slotRva));
             Assert.NotEqual(0, exports.RelativeVirtualAddress);
             Assert.Equal(".text", stubSection.Name);
             Assert.True(stubSection.SectionCharacteristics.HasFlag(SectionCharacteristics.MemExecute));
@@ -197,18 +519,23 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData(Machine.I386, "int32", sizeof(uint), 3)]
-        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10)]
+        [InlineData(Machine.I386, "int32", sizeof(uint), 3, "")]
+        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10, "")]
+        [InlineData(Machine.I386, "int32", sizeof(uint), 3, "cil")]
+        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10, "cil")]
+        [InlineData(Machine.I386, "int32", sizeof(uint), 3, "tls")]
+        [InlineData(Machine.Amd64, "int64", sizeof(ulong), 10, "tls")]
         public void DataLabelReference_UsesPointerWidthAbsoluteAddressAndRelocation(
             Machine machine,
             string pointerType,
             int pointerSize,
-            int relocationType)
+            int relocationType,
+            string section)
         {
             string source = $$"""
                 .assembly test { }
-                .data Target = int32(0x12345678)
-                .data Pointer = &(Target)
+                .data {{section}} Target = int32(0x12345678)
+                .data {{section}} Pointer = &(Target)
                 .class public explicit ansi sealed DataHolder
                 {
                     .field [0] public static int32 TargetField at Target
@@ -234,12 +561,50 @@ namespace ILAssembler.Tests
             Assert.False(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
         }
 
-        [Fact]
-        public void DataLabelReference_MissingTarget_ReportsDiagnosticAndOmitsRelocation()
+        [Theory]
+        [InlineData(Machine.I386, sizeof(uint), 3)]
+        [InlineData(Machine.Amd64, sizeof(ulong), 10)]
+        [InlineData(Machine.Arm64, sizeof(ulong), 10)]
+        public void TlsDirectory_WithoutOtherFixups_EmitsBaseRelocations(
+            Machine machine, int pointerSize, int relocationType)
         {
-            string source = """
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                ".assembly test {} .data tls int32(42)", new Options { Machine = machine });
+            DirectoryEntry directory = pe.PEHeaders.PEHeader!.ThreadLocalStorageTableDirectory;
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.True(HasBaseRelocation(pe, directory.RelativeVirtualAddress + (i * pointerSize), relocationType));
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void ZeroSlotVTableFixup_EmptyData_DoesNotRequireBackingBytes(string section)
+        {
+            string source = $$"""
+                .assembly test {}
+                .data {{section}} Empty = int8[0]
+                .vtfixup [0] int32 at Empty
+                """;
+
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            DirectoryEntry directory = pe.PEHeaders.CorHeader!.VtableFixupsDirectory;
+            Assert.Equal(8, directory.Size);
+            Assert.Equal(0, ReadUInt16(pe, directory.RelativeVirtualAddress + sizeof(int)));
+            Assert.DoesNotContain(pe.PEHeaders.SectionHeaders, header => header.Name == ".tls");
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void DataLabelReference_MissingTarget_ReportsDiagnosticAndOmitsRelocation(string section)
+        {
+            string source = $$"""
                 .assembly test { }
-                .data Pointer = &(Missing)
+                .data {{section}} Pointer = &(Missing)
                 .class public explicit ansi sealed DataHolder
                 {
                     .field [0] public static int32 PointerField at Pointer
@@ -259,7 +624,7 @@ namespace ILAssembler.Tests
                 int pointerRva = field.GetRelativeVirtualAddress();
                 Assert.Equal(0U, ReadUInt32(pe, pointerRva));
                 Assert.False(HasBaseRelocation(pe, pointerRva, 3));
-                Assert.True(pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
+                Assert.Equal(section != "tls", pe.PEHeaders.CorHeader!.Flags.HasFlag(CorFlags.ILOnly));
             }
         }
 
@@ -327,25 +692,27 @@ namespace ILAssembler.Tests
             }
         }
 
-        [Fact]
-        public void Export_DuplicateOrdinalForDifferentTargets_ReportsDiagnosticAndOmitsDuplicate()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Export_DuplicateOrdinalForDifferentTargets_ReportsDiagnosticAndOmitsDuplicate(bool explicitFixup)
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
                 .assembly extern mscorlib { }
                 .data VT = int32(0) int32(0)
-                .vtfixup [2] int32 fromunmanaged at VT
+                {{(explicitFixup ? ".vtfixup [2] int32 fromunmanaged at VT" : string.Empty)}}
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public static void First() cil managed
                     {
-                        .vtentry 1 : 1
+                        {{(explicitFixup ? ".vtentry 1 : 1" : string.Empty)}}
                         .export [1] as First
                         ret
                     }
                     .method public static void Second() cil managed
                     {
-                        .vtentry 1 : 2
+                        {{(explicitFixup ? ".vtentry 1 : 2" : string.Empty)}}
                         .export [1] as Second
                         ret
                     }
@@ -443,25 +810,27 @@ namespace ILAssembler.Tests
             }
         }
 
-        [Fact]
-        public void ExportOrdinal_ExtremeSparseRange_ReportsDiagnosticAndOmitsInvalidExport()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExportOrdinal_ExtremeSparseRange_ReportsDiagnosticAndOmitsInvalidExport(bool explicitFixup)
         {
             string source = $$"""
                 .assembly test { }
                 .assembly extern mscorlib { }
                 .data VT = int32(0) int32(0)
-                .vtfixup [2] int32 fromunmanaged at VT
+                {{(explicitFixup ? ".vtfixup [2] int32 fromunmanaged at VT" : string.Empty)}}
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public static void Low() cil managed
                     {
-                        .vtentry 1 : 1
+                        {{(explicitFixup ? ".vtentry 1 : 1" : string.Empty)}}
                         .export [1] as Low
                         ret
                     }
                     .method public static void High() cil managed
                     {
-                        .vtentry 1 : 2
+                        {{(explicitFixup ? ".vtentry 1 : 2" : string.Empty)}}
                         .export [{{int.MaxValue}}] as InvalidHigh
                         ret
                     }
@@ -626,13 +995,16 @@ namespace ILAssembler.Tests
             }
         }
 
-        [Fact]
-        public void VTableFixup_InsufficientDataLabelStorage_ReportsDiagnosticAndOmitsFixup()
+        [Theory]
+        [InlineData("")]
+        [InlineData("cil")]
+        [InlineData("tls")]
+        public void VTableFixup_InsufficientDataLabelStorage_ReportsDiagnosticAndOmitsFixup(string section)
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
-                .data VT = int32(0)
-                .data FollowingData = int32(0)
+                .data {{section}} VT = int32(0)
+                .data {{section}} FollowingData = int32(0)
                 .vtfixup [2] int32 fromunmanaged at VT
                 """;
 
@@ -642,13 +1014,17 @@ namespace ILAssembler.Tests
                 Diagnostic error = Assert.Single(
                     diagnostics,
                     diagnostic => diagnostic.Id == DiagnosticIds.InsufficientVTableData);
-                Assert.Contains("VT", error.Message);
+                Assert.Contains("'VT' has 4 bytes available", error.Message);
                 Assert.Equal(0, pe.PEHeaders.CorHeader!.VtableFixupsDirectory.RelativeVirtualAddress);
             }
         }
 
         private static int ReadInt32(PEReader pe, int rva) =>
             BinaryPrimitives.ReadInt32LittleEndian(pe.GetSectionData(rva).GetContent().AsSpan(0, sizeof(int)));
+
+        private static MethodDefinitionHandle FindMethod(MetadataReader reader, string name) =>
+            reader.MethodDefinitions
+                .First(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == name);
 
         private static uint ReadUInt32(PEReader pe, int rva) =>
             BinaryPrimitives.ReadUInt32LittleEndian(pe.GetSectionData(rva).GetContent().AsSpan(0, sizeof(uint)));

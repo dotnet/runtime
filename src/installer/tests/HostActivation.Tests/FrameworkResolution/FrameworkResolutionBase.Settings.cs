@@ -111,58 +111,5 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
-        public static Func<TestSettings, TestSettings> RollForwardOnNoCandidateFxSetting(
-            SettingLocation location,
-            int? value,
-            string frameworkReferenceName = Constants.MicrosoftNETCoreApp)
-        {
-            if (!value.HasValue || location == SettingLocation.None)
-            {
-                return testSettings => testSettings;
-            }
-
-            switch (location)
-            {
-                case SettingLocation.Environment:
-                    return testSettings => testSettings.WithEnvironment(Constants.RollForwardOnNoCandidateFxSetting.EnvironmentVariable, value.ToString());
-                case SettingLocation.CommandLine:
-                    return testSettings => testSettings.WithCommandLine(Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument, value.ToString());
-                case SettingLocation.RuntimeOptions:
-                    return testSettings => testSettings.WithRuntimeConfigCustomizer(rc => rc.WithRollForwardOnNoCandidateFx(value));
-                case SettingLocation.FrameworkReference:
-                    return testSettings => testSettings.WithRuntimeConfigCustomizer(rc =>
-                    {
-                        rc.GetFramework(frameworkReferenceName).WithRollForwardOnNoCandidateFx(value);
-                        return rc;
-                    });
-                default:
-                    throw new Exception($"RollForwardOnNoCandidateFx doesn't support setting location {location}.");
-            }
-        }
-
-        public static Func<TestSettings, TestSettings> ApplyPatchesSetting(
-            SettingLocation location,
-            bool? value,
-            string frameworkReferenceName = Constants.MicrosoftNETCoreApp)
-        {
-            if (!value.HasValue || location == SettingLocation.None)
-            {
-                return testSettings => testSettings;
-            }
-
-            switch (location)
-            {
-                case SettingLocation.RuntimeOptions:
-                    return testSettings => testSettings.WithRuntimeConfigCustomizer(rc => rc.WithApplyPatches(value));
-                case SettingLocation.FrameworkReference:
-                    return testSettings => testSettings.WithRuntimeConfigCustomizer(rc =>
-                    {
-                        rc.GetFramework(frameworkReferenceName).WithApplyPatches(value);
-                        return rc;
-                    });
-                default:
-                    throw new Exception($"ApplyPatches doesn't support setting location {location}.");
-            }
-        }
     }
 }

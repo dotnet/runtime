@@ -1698,6 +1698,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 
     assert(dfsTree->IsForWasm());
+
+    // Layout below only covers blocks the DFS reaches; any other block would be
+    // emitted out of place and can produce an invalid function body.
+    //
+    if (dfsTree->GetPostOrderCount() != fgBBcount)
+    {
+        JITDUMP("\nWasm DFS reached %u of %u blocks\n", dfsTree->GetPostOrderCount(), fgBBcount);
+        NYI_WASM("Method has blocks not reachable from any wasm function entry");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // We should have transformed these away earlier
@@ -2020,6 +2031,61 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 JITDUMPEXEC(loopI->Dump());
                 assert(!"Try and loop intervals must perfectly nest");
             }
+        }
+    }
+
+    // Verify that an adjacent forward edge that cannot fall through, because a Try or
+    // ExnRefWrapper interval ends at its target (see BasicBlock::CanRemoveJumpToTarget),
+    // has a plain Block interval enclosing the source and ending at the target, so the
+    // explicit branch codegen emits has a label to bind to. For example, a callfinally
+    // whose continuation follows the end of a try_table:
+    //
+    //   block                ;; Block interval ending at the continuation
+    //     try_table ...
+    //       ...
+    //       call_indirect    ;; call the finally
+    //       br 1             ;; branch to the continuation
+    //     end                ;; end of try_table
+    //     unreachable        ;; fall-through from the try_table would trap here
+    //   end
+    //   ...                  ;; continuation
+    //
+    for (unsigned cursor = 0; cursor < numBlocks; cursor++)
+    {
+        BasicBlock* const block = initialLayout[cursor];
+        BasicBlock* const next  = initialLayout[cursor + 1];
+
+        bool const fallsToNext = (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && block->TargetIs(next)) ||
+                                 (block->KindIs(BBJ_COND) && block->FalseTargetIs(next));
+        if (!fallsToNext)
+        {
+            continue;
+        }
+
+        bool endsTryOrWrapper = false;
+        bool hasBlockTarget   = false;
+        for (WasmInterval* const interval : *fgWasmIntervals)
+        {
+            if (interval->End() != (cursor + 1))
+            {
+                continue;
+            }
+
+            if (interval->IsTry() || interval->IsExnRefWrapper())
+            {
+                endsTryOrWrapper = true;
+            }
+            else if (!interval->IsLoop() && (interval->Start() <= cursor))
+            {
+                hasBlockTarget = true;
+            }
+        }
+
+        if (endsTryOrWrapper && !hasBlockTarget)
+        {
+            JITDUMP(FMT_BB "[%u] -> " FMT_BB "[%u] crosses a Try/ExnRefWrapper end without a Block target\n",
+                    block->bbNum, cursor, next->bbNum, cursor + 1);
+            assert(!"Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
         }
     }
 #endif
@@ -2351,12 +2417,167 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
+{
+    if (tree->IsCall())
+    {
+        // All non-helper calls are considered safe points. A helper is a GC safepoint if it is not marked as NoGC.
+        return !tree->IsHelperCall() || !comp->s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum());
+    }
+
+    return tree->OperIs(GT_GCPOLL);
+}
+
+//------------------------------------------------------------------------
+// fgWasmFindGCRefCandidates: Identify GC ref locals which are candidates to live in Wasm locals by determining if they
+// are GC-safe (unexposed to GC).
+//
+// Notes:
+//    This is a dataflow analysis which uses existing liveness information to identify JIT locals which may be placed in
+//    Wasm locals at regalloc time. We limit these to locals which do not require a gc-visible home. For Wasm, a
+//    gc-visible home is on the shadow stack. We mark a gc-ref local as a candidate for a Wasm local if the analysis
+//    determines there is no liveness across a GC safepoint for the local definition itself. A GC safepoint is an
+//    operation whose codegen instructions may trigger a GC. We split safepoints into exceptional and non-exceptional
+//    safepoints. Non exceptional safepoints are:
+//      - Any explicit GC_POLL
+//      - All calls, except helpers marked as NO_GC
+//      - Invocations of a finally funclet (the only safepoint not explicitly expressed as an LIR node)
+//    Exceptional safepoints are:
+//       - Any node NOT otherwise in the first category which may throw. In these cases the only possible GC collecting
+//       path is the throwing path.
+//         Exceptional safepoint nodes are treated differently, because locals live into them are only meaningfully
+//         exposed to GC if they are also live into a reachable handler block.
+//    IMPORTANT: A tree temporary that is the result of a LCL_VAR may still be live across a safepoint even if the local
+//    is dead at that safepoint from a liveness perspective. fgWasmSpillRefs handles these cases by checking the list of
+//    candidates generated from this pass and giving a temporary a gc-visible home if necessary.
+PhaseStatus Compiler::fgWasmFindGCRefCandidates()
+{
+#define DISP_SAFEPOINT(msg, block, tree, liveInto)                                                                     \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        JITDUMP((msg), (block)->bbNum);                                                                                \
+        DISPNODE((tree));                                                                                              \
+        JITDUMP("Live across: ");                                                                                      \
+        JITDUMPEXEC(dumpConvertedVarSet(this, (liveInto)));                                                            \
+        JITDUMP("\n");                                                                                                 \
+    } while (0)
+
+    if (lvaTrackedCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    VARSET_TP              liveAcrossGC = VarSetOps::MakeEmpty(this);
+    VARSET_TP              liveInto     = VarSetOps::MakeEmpty(this);
+    TreeLifeUpdater<false> lifeUpdater(this);
+    VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        VARSET_TP ehLive = VarSetOps::MakeEmpty(this);
+        if (block->HasPotentialEHSuccs(this))
+        {
+            MemoryKindSet memoryLive = 0;
+            fgAddHandlerLiveVars(block, ehLive, memoryLive);
+        }
+
+        compCurLifeTree = nullptr;
+        VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            // compCurLife should reflect liveness into this tree;
+            VarSetOps::Assign(this, liveInto, compCurLife);
+
+            if (treeIsNonExceptGCSafePoint(tree, this))
+            {
+                VarSetOps::UnionD(this, liveAcrossGC, liveInto);
+                DISP_SAFEPOINT("GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
+            }
+            else if (tree->OperMayThrow(this))
+            {
+                // All operations which may throw are considered potential GC on safepoints on the exceptional path, as
+                // a GC could occur during exception handling before a catch. This includes null checks, divide by zero,
+                // and array bounds checks. Only locals still live into the exceptional path need to be considered for
+                // EH-only GC safepoints.
+                VarSetOps::IntersectionD(this, liveInto, ehLive);
+                VarSetOps::UnionD(this, liveAcrossGC, liveInto);
+                DISP_SAFEPOINT("EH-Only GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
+            }
+
+            lifeUpdater.UpdateLife<false>(tree);
+        }
+
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            // At this point, compCurLife should reflect the set of locals live after all IR trees in the block have
+            // been processed. If this block calls a finally funclet, locals which are in bbLiveOut would potentially
+            // cross a GC safepoint as well, so account for this.
+            BitVec liveAcross = VarSetOps::Intersection(this, compCurLife, block->bbLiveOut);
+            VarSetOps::UnionD(this, liveAcrossGC, liveAcross);
+        }
+    }
+
+    JITDUMP("All Vars Live across GC safepoints:\n");
+    JITDUMPEXEC(dumpConvertedVarSet(this, liveAcrossGC));
+    JITDUMP("\n");
+
+    // Build our set of candiates from gc-ref typed locals which are not live across a safepoint
+    m_wasmGCRefCandidates  = new (this, CMK_WasmGCRefCandidates) BitVec();
+    *m_wasmGCRefCandidates = VarSetOps::MakeEmpty(this);
+    for (unsigned varIndex = 0; varIndex < lvaTrackedCount; varIndex++)
+    {
+        LclVarDsc* varDsc = lvaGetDescByTrackedIndex(varIndex);
+        if (varTypeIsGC(varDsc->TypeGet()) && !VarSetOps::IsMember(this, liveAcrossGC, varIndex))
+        {
+            VarSetOps::AddElemD(this, *m_wasmGCRefCandidates, varIndex);
+        }
+    }
+
+    JITDUMP("Identified GC ref candidates:\n");
+    JITDUMPEXEC(dumpConvertedVarSet(this, *m_wasmGCRefCandidates));
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
 PhaseStatus Compiler::fgWasmSpillRefs()
 {
     bool anyChanges = false;
 
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
     jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
+
+    // Helper to remove used nodes from the defs list when they're no longer meaningfully 'live'. A contained operand is
+    //  not itself on the operand stack, so look through it to the operands that are.
+    auto removeUses = [](GenTree* op, jitstd::vector<GenTree*>& defs, auto& recurse) -> void {
+        if (!op->IsValue())
+        {
+            return;
+        }
+
+        if (op->isContained())
+        {
+            op->VisitOperands([&recurse, &defs](GenTree* innerOp) {
+                recurse(innerOp, defs, recurse);
+                return GenTree::VisitResult::Continue;
+            });
+            return;
+        }
+
+        if (!op->TypeIs(TYP_REF, TYP_BYREF))
+        {
+            return;
+        }
+
+        for (size_t i = defs.size(); i > 0; i--)
+        {
+            if (op == defs[i - 1])
+            {
+                defs[i - 1] = defs[defs.size() - 1];
+                defs.pop_back();
+                break;
+            }
+        }
+    };
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2380,9 +2601,19 @@ PhaseStatus Compiler::fgWasmSpillRefs()
         {
             if (tree->IsCall())
             {
-                // For any ref/byref values live at the point of a call, spill them into pinned slots
-                //  on the stack where the GC can see them so it won't move them.
-                if (!defs.empty())
+                // If we have a call, consume the call's operands from the defs list BEFORE spilling
+                // any live refs. This is because a GC-ref node which is only live INTO (and not across) another call
+                // does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
+                // incoming GC ref args.
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+
+                // For any ref/byref values which are still live at the point of a call and not consumed by the current
+                // call, spill them into pinned slots on the stack where the GC can see them so it won't move them.
+                // These cases should only be for nested calls like F(x, G()) where x is a GC ref.
+                if (!defs.empty() && IsPotentialGCSafePoint(tree))
                 {
                     if (m_wasmSpillSlots == nullptr)
                     {
@@ -2454,49 +2685,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 }
             }
 
-            // FIXME: Should this happen before the spilling of the live defs list?
-            // I think the answer is no, because live defs being passed as arguments to the current call
-            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
-            //  them. If we can somehow guarantee that all callees will spill their ref parameters
-            //  immediately, we could do this before the block above.
-
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
-            //  not itself on the operand stack, so look through it to the operands that are.
-            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
-                if (!op->IsValue())
-                    return;
-                if (op->isContained())
-                {
-                    op->VisitOperands([&recurse](GenTree* innerOp) {
-                        recurse(innerOp, recurse);
-                        return GenTree::VisitResult::Continue;
-                    });
-                    return;
-                }
-                if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return;
-
-                for (size_t i = defs.size(); i > 0; i--)
-                {
-                    if (op == defs[i - 1])
-                    {
-                        defs[i - 1] = defs[defs.size() - 1];
-                        defs.pop_back();
-                        break;
-                    }
-                }
-            };
-
-            // A contained node is part of its parent, so it is visited as part of the parent instead.
             if (tree->isContained())
             {
                 continue;
             }
 
-            tree->VisitOperands([&removeUses](GenTree* op) {
-                removeUses(op, removeUses);
-                return GenTree::VisitResult::Continue;
-            });
+            if (!tree->IsCall())
+            {
+                // If the tree isn't a call, then we haven't already removed the current tree's operands from the defs
+                // list. These operands are no longer meaningfully live so we should remove them now.
+                assert(!tree->IsCall() || tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsHelperCall());
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+            }
 
             // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
             //  nodes appropriately
@@ -2505,14 +2708,19 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
-            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
-            //  and we won't need to spill it.
             if (tree->OperIs(GT_LCL_VAR))
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
                 LclVarDsc*           dsc    = lvaGetDesc(lclVar);
-                if (!dsc->IsAddressExposed())
+                bool                 isRefLocalCandidate =
+                    dsc->lvTracked && VarSetOps::IsMember(this, *m_wasmGCRefCandidates, dsc->lvVarIndex);
+
+                // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+                // it won't be mutated between its def (here) and its use (the call that would produce a spill).
+                // Locals outside the GC-safe candidate set have pinned stack homes, including write-through
+                // candidates. Their reads need no additional spill. Temporary reads of GC-safe candidates still
+                // need protection if they are live across a call.
+                if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;
                 }
@@ -3434,6 +3642,540 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 }
 
 //-----------------------------------------------------------------------------
+// fgWasmProfInstrument: insert EventPipe CPU-sampling samplepoints
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Mirrors the interpreter's INTOP_PROF_SAMPLEPOINT placement (see
+//   src/coreclr/interpreter/compiler.cpp): one samplepoint at method entry and
+//   one on every loop back-edge. Emitted only for methods matching the
+//   WasmPerformanceInstrumentation MethodSet filter (same key the interpreter
+//   uses, so both engines share the filter and the runtime skip counter).
+//
+//   Each samplepoint is a call to CORINFO_HELP_WASM_PROF_SAMPLEPOINT. The later
+//   fgWasmVirtualIP phase inserts its per-block Virtual IP store ahead of the
+//   samplepoint, giving the cooperative stack walk a correct Virtual IP.
+//
+PhaseStatus Compiler::fgWasmProfInstrument()
+{
+    // Codegen only supports single-threaded wasm today; the shared runtime skip
+    // counter and cooperative sampling both assume PERFTRACING_DISABLE_THREADS.
+    assert(!WASM_THREAD_SUPPORT);
+
+    if (!JitConfig.WasmPerformanceInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                             &info.compMethodInfo->args))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    auto insertSamplepoint = [this](BasicBlock* block) {
+        GenTree* samplepoint = gtNewHelperCallNode(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, TYP_VOID);
+        samplepoint          = fgMorphCall(samplepoint->AsCall());
+        gtSetEvalOrder(samplepoint);
+
+        LIR::Range& range = LIR::AsRange(block);
+        if ((block == fgFirstBB) && opts.IsReversePInvoke())
+        {
+            // Sampling must run in cooperative mode, after the reverse P/Invoke transition.
+            GenTree* insertAfter = nullptr;
+            for (GenTree* node : range)
+            {
+                if (node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                    node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                {
+                    insertAfter = node;
+                    break;
+                }
+            }
+
+            noway_assert(insertAfter != nullptr);
+            range.InsertAfter(insertAfter, LIR::SeqTree(this, samplepoint));
+        }
+        else
+        {
+            range.InsertBefore(range.FirstNonCatchArgNode(), LIR::SeqTree(this, samplepoint));
+        }
+    };
+
+    unsigned samplepointsAdded = 0;
+
+    // Use the Wasm graph: EH resumptions are explicit by this phase, while modeled
+    // two-pass EH edges can form cycles that are not executable loops.
+    // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks.
+    FgWasm                  fgWasm(this);
+    bool                    hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
+    if (hasBlocksOnlyReachableViaEH)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    BitVecTraits traits = dfsTree->PostOrderTraits();
+    BitVec       samplepointBlocks(BitVecOps::MakeEmpty(&traits));
+
+    // Method entry.
+    BitVecOps::AddElemD(&traits, samplepointBlocks, fgFirstBB->bbPostorderNum);
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* const source = dfsTree->GetPostOrder(i);
+        FgWasm::VisitWasmSuccs(this, source, [&](BasicBlock* target) {
+            assert(dfsTree->Contains(target));
+            if (dfsTree->IsAncestor(target, source))
+            {
+                BitVecOps::AddElemD(&traits, samplepointBlocks, target->bbPostorderNum);
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    BitVecOps::VisitBits(&traits, samplepointBlocks, [&](unsigned postorderNum) {
+        insertSamplepoint(dfsTree->GetPostOrder(postorderNum));
+        samplepointsAdded++;
+        return true;
+    });
+
+    JITDUMP("Added %u Wasm profiler samplepoint(s)\n", samplepointsAdded);
+    return (samplepointsAdded > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmForwardLocalCopies: forward single-use local-to-local copies, and
+//   rematerialize single-use locals holding invariant values.
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Rewrites "STORE_LCL_VAR<tmp>(LCL_VAR<src>) ... LCL_VAR<tmp>" into a use of
+//   "src" when "tmp" has no other references and "src" is not redefined in
+//   between. CSE commonly leaves such copies behind in place of morph argument
+//   temps. The Wasm register allocator gives every candidate its own local and
+//   does not coalesce, so each copy would otherwise cost a local.get/local.set
+//   pair and a local.
+//
+//   Single-use locals holding constants or invariant loads are handled first,
+//   by fgWasmRematerializeInvariantLocals.
+//
+//   Only blocks recorded by lowering are visited. This runs after late liveness
+//   so that ref counts are exact, and keeps last-use flags up to date.
+//
+PhaseStatus Compiler::fgWasmForwardLocalCopies()
+{
+    if (!opts.OptimizationEnabled() || !backendRequiresLocalVarLifetimes())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool modified = fgWasmRematerializeInvariantLocals();
+
+    if (m_wasmLocalCopyBlocks == nullptr)
+    {
+        return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    struct PendingCopy
+    {
+        GenTreeLclVar* Store;
+        unsigned       SrcLclNum;
+        // The latest read of "src" marked as its last use, if any.
+        GenTree* SrcLastUse;
+    };
+
+    // GC refs are excluded: forwarding could extend a wasm-local GC ref's lifetime across a safepoint.
+    auto isCopyableType = [](var_types type) {
+        return varTypeIsEnregisterable(type) && !varTypeIsStruct(type) && !varTypeIsGC(type) && !varTypeIsSmall(type);
+    };
+
+    // Locals with defs not visible as local stores in IR. Implicitly referenced locals include
+    // the shadow stack pointer, which LCLHEAP updates.
+    auto hasHiddenDefs = [this](LclVarDsc* varDsc) {
+        if (varDsc->lvIsStructField)
+        {
+            LclVarDsc* parentDsc = lvaGetDesc(varDsc->lvParentLcl);
+            if (parentDsc->IsAddressExposed())
+            {
+                return true;
+            }
+        }
+
+        return varDsc->lvImplicitlyReferenced || varDsc->IsAddressExposed() || varDsc->lvPromoted;
+    };
+
+    // Capping the pending set bounds the per-node scans, keeping the phase linear in the size of the
+    // visited blocks. Calls with many arguments can have one pending copy per argument.
+    const int               maxPendingCopies = 256;
+    ArrayStack<PendingCopy> pending(getAllocator(CMK_Lower));
+    auto                    removePending = [&pending](int index) {
+        pending.BottomRef(index) = pending.Top();
+        pending.Pop();
+    };
+
+    for (BasicBlock* const block : m_wasmLocalCopyBlocks->BottomUpOrder())
+    {
+        if (block->HasFlag(BBF_REMOVED))
+        {
+            continue;
+        }
+
+        LIR::Range& range = LIR::AsRange(block);
+        pending.Reset();
+
+        for (GenTree* node : range)
+        {
+            if (pending.Height() != 0)
+            {
+                if (node->OperIs(GT_LCL_VAR) && !node->isContained())
+                {
+                    unsigned lclNum = node->AsLclVar()->GetLclNum();
+                    for (int i = 0; i < pending.Height(); i++)
+                    {
+                        PendingCopy& copy = pending.BottomRef(i);
+                        if ((copy.SrcLclNum == lclNum) && node->HasLastUse())
+                        {
+                            copy.SrcLastUse = node;
+                            continue;
+                        }
+
+                        if ((copy.Store->GetLclNum() != lclNum) || (node->TypeGet() != copy.Store->TypeGet()))
+                        {
+                            continue;
+                        }
+
+                        JITDUMP("Forwarding V%02u into [%06u] in place of single-use copy V%02u [%06u]\n",
+                                copy.SrcLclNum, dspTreeID(node), lclNum, dspTreeID(copy.Store));
+
+                        // "src" is now read here; move its last-use flag here if it died earlier.
+                        node->gtFlags &= ~GTF_VAR_DEATH;
+                        if (copy.SrcLastUse != nullptr)
+                        {
+                            copy.SrcLastUse->gtFlags &= ~GTF_VAR_DEATH;
+                            node->gtFlags |= GTF_VAR_DEATH;
+                        }
+
+                        range.Remove(copy.Store->Data());
+                        range.Remove(copy.Store);
+                        node->AsLclVar()->SetLclNum(copy.SrcLclNum);
+                        node->AsLclVar()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+
+                        LclVarDsc* tmpDsc = lvaGetDesc(lclNum);
+                        tmpDsc->setLvRefCnt(0);
+                        tmpDsc->setLvRefCntWtd(0);
+
+                        const unsigned srcLclNum = copy.SrcLclNum;
+                        removePending(i);
+
+                        // This is now the latest read of "src" for other pending copies of it.
+                        if (node->HasLastUse())
+                        {
+                            for (int j = 0; j < pending.Height(); j++)
+                            {
+                                if (pending.Bottom(j).SrcLclNum == srcLclNum)
+                                {
+                                    pending.BottomRef(j).SrcLastUse = node;
+                                }
+                            }
+                        }
+
+                        modified = true;
+                        break;
+                    }
+                }
+                else if (node->OperIs(GT_LCL_ADDR))
+                {
+                    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == lclNum)
+                        {
+                            removePending(i);
+                        }
+                    }
+                }
+
+                node->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                    for (int i = pending.Height() - 1; i >= 0; i--)
+                    {
+                        if (pending.Bottom(i).SrcLclNum == def.GetLclNum())
+                        {
+                            removePending(i);
+                        }
+                    }
+                    return GenTree::VisitResult::Continue;
+                });
+            }
+
+            if (!node->OperIs(GT_STORE_LCL_VAR) || (pending.Height() >= maxPendingCopies))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* store   = node->AsLclVar();
+            GenTree*       srcNode = store->Data();
+            if (!srcNode->OperIs(GT_LCL_VAR) || srcNode->isContained() ||
+                ((srcNode->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            unsigned   tmpLclNum = store->GetLclNum();
+            unsigned   srcLclNum = srcNode->AsLclVar()->GetLclNum();
+            LclVarDsc* tmpDsc    = lvaGetDesc(tmpLclNum);
+            LclVarDsc* srcDsc    = lvaGetDesc(srcLclNum);
+            var_types  type      = tmpDsc->TypeGet();
+
+            if ((tmpLclNum == srcLclNum) || (tmpDsc->lvRefCnt() != 2) || tmpDsc->lvIsParam || tmpDsc->lvIsStructField ||
+                tmpDsc->lvIsOSRLocal || hasHiddenDefs(tmpDsc) || hasHiddenDefs(srcDsc) || !isCopyableType(type) ||
+                (srcDsc->TypeGet() != type) || (store->TypeGet() != type) || (srcNode->TypeGet() != type))
+            {
+                continue;
+            }
+
+            pending.Push({store, srcLclNum, srcNode->HasLastUse() ? srcNode : nullptr});
+        }
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmIsRematerializableValue: check whether a value can be evaluated
+//   anywhere without changing its result or faulting.
+//
+// Arguments:
+//   node - the value
+//
+// Returns:
+//   true if the node is a constant, or an invariant, non-faulting load of
+//   an invariant address (such as a ReadyToRun handle)
+//
+bool Compiler::fgWasmIsRematerializableValue(GenTree* node)
+{
+    if (node->OperIsConst())
+    {
+        return true;
+    }
+
+    // Volatile loads have ordering side effects and must not move.
+    const GenTreeFlags invariantLoad = GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+    const GenTreeFlags unmovable     = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF | GTF_IND_VOLATILE;
+    return node->OperIs(GT_IND) && ((node->gtFlags & invariantLoad) == invariantLoad) &&
+           ((node->gtFlags & unmovable) == 0) && node->AsIndir()->Addr()->IsInvariant();
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmRematerializeInvariantLocals: move invariant values to the single
+//   use of the local they are stored to.
+//
+// Returns:
+//   true if the IR was modified
+//
+// Notes:
+//   Statement splitting, CSE and morph can leave "STORE_LCL_VAR<tmp>(V) ... LCL_VAR<tmp>"
+//   where V is a constant or an invariant load (see fgWasmIsRematerializableValue).
+//   Evaluating V at the use instead saves the store, the load of "tmp" and a Wasm local.
+//
+//   The def and use may be in different blocks. "tmp" must not be live into the method
+//   or a handler, so the single def reaches the use on every path. Uses in blocks with
+//   a higher weight than the def are skipped, so that hoisted values stay hoisted.
+//
+//   Runs after late liveness, so ref counts are exact.
+//
+bool Compiler::fgWasmRematerializeInvariantLocals()
+{
+    if (m_wasmRematBlocks == nullptr)
+    {
+        return false;
+    }
+
+    struct Candidate
+    {
+        BasicBlock*    Block;
+        GenTreeLclVar* Store;
+    };
+
+    using CandidateMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, Candidate>;
+
+    CandidateMap candidates(getAllocator(CMK_Lower));
+
+    // Locals live into the method entry or any handler entry.
+    VARSET_TP liveIntoEntries(VarSetOps::MakeCopy(this, fgFirstBB->bbLiveIn));
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdHndBeg->bbLiveIn);
+        if (HBtab->HasFilter())
+        {
+            VarSetOps::UnionD(this, liveIntoEntries, HBtab->ebdFilter->bbLiveIn);
+        }
+    }
+
+    for (BasicBlock* const block : m_wasmRematBlocks->BottomUpOrder())
+    {
+        if (block->HasFlag(BBF_REMOVED))
+        {
+            continue;
+        }
+
+        for (GenTree* const node : LIR::AsRange(block))
+        {
+            if (!node->OperIs(GT_STORE_LCL_VAR))
+            {
+                continue;
+            }
+
+            GenTreeLclVar* const store = node->AsLclVar();
+            GenTree* const       value = store->Data();
+            if (!fgWasmIsRematerializableValue(value) || ((value->gtLIRFlags & LIR::Flags::MultiplyUsed) != 0))
+            {
+                continue;
+            }
+
+            LclVarDsc* const dsc  = lvaGetDesc(store);
+            var_types const  type = dsc->TypeGet();
+
+            // GC refs are excluded to keep GC reporting of Wasm locals unchanged.
+            if ((dsc->lvRefCnt() != 2) || !dsc->lvTracked || dsc->lvIsParam || dsc->lvIsStructField ||
+                dsc->lvIsOSRLocal || dsc->lvPromoted || dsc->IsAddressExposed() || dsc->lvImplicitlyReferenced ||
+                !varTypeIsEnregisterable(type) || varTypeIsStruct(type) || varTypeIsGC(type) || varTypeIsSmall(type) ||
+                (store->TypeGet() != type) || (genActualType(value) != type) ||
+                VarSetOps::IsMember(this, liveIntoEntries, dsc->lvVarIndex))
+            {
+                continue;
+            }
+
+            candidates.Set(store->GetLclNum(), {block, store}, CandidateMap::Overwrite);
+        }
+    }
+
+    if (candidates.GetCount() == 0)
+    {
+        return false;
+    }
+
+    VARSET_TP removed(VarSetOps::MakeEmpty(this));
+    bool      modified = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (candidates.GetCount() == 0)
+        {
+            break;
+        }
+
+        LIR::Range& range = LIR::AsRange(block);
+        for (GenTree* node = range.FirstNode(); (node != nullptr) && (candidates.GetCount() != 0);)
+        {
+            GenTree* const next = node->gtNext;
+            Candidate      candidate;
+
+            if (node->OperIs(GT_LCL_VAR) && !node->isContained() &&
+                candidates.Lookup(node->AsLclVar()->GetLclNum(), &candidate) &&
+                (block->bbWeight <= candidate.Block->bbWeight) && (node->TypeGet() == candidate.Store->TypeGet()))
+            {
+                LIR::Range&        defRange   = LIR::AsRange(candidate.Block);
+                GenTree*           value      = candidate.Store->Data();
+                bool               isClosed   = false;
+                LIR::ReadOnlyRange valueRange = defRange.GetTreeRange(value, &isClosed);
+                LIR::Use           use;
+
+                if (isClosed && range.TryGetUse(node, &use))
+                {
+                    unsigned const lclNum = node->AsLclVar()->GetLclNum();
+                    JITDUMP("Rematerializing [%06u] from " FMT_BB " at [%06u] in " FMT_BB
+                            " in place of single-use V%02u\n",
+                            dspTreeID(value), candidate.Block->bbNum, dspTreeID(node), block->bbNum, lclNum);
+
+                    defRange.Remove(candidate.Store);
+                    LIR::Range moved = defRange.Remove(std::move(valueRange));
+                    range.InsertBefore(node, std::move(moved));
+
+                    value->gtLIRFlags |= (node->gtLIRFlags & LIR::Flags::MultiplyUsed);
+                    use.ReplaceWith(value);
+                    range.Remove(node);
+
+                    LclVarDsc* const dsc = lvaGetDesc(lclNum);
+                    dsc->setLvRefCnt(0);
+                    dsc->setLvRefCntWtd(0);
+                    VarSetOps::AddElemD(this, removed, dsc->lvVarIndex);
+                    candidates.Remove(lclNum);
+                    modified = true;
+                }
+            }
+
+            node = next;
+        }
+    }
+
+    if (modified)
+    {
+        // The rematerialized locals are no longer live anywhere.
+        for (BasicBlock* const block : Blocks())
+        {
+            VarSetOps::DiffD(this, block->bbLiveIn, removed);
+            VarSetOps::DiffD(this, block->bbLiveOut, removed);
+        }
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmMayEmitCall: determine if codegen may emit a call for this method
+//
+// Returns:
+//   true if any node may be emitted as a call
+//
+// Notes:
+//   Must cover every codegen path that calls ensureCurrentFuncIsUnwindable.
+//   EH and inline throw helpers (debuggable code) are not handled here;
+//   callers must exclude those cases.
+//
+bool Compiler::fgWasmMayEmitCall()
+{
+    assert(compHndBBtabCount == 0);
+    assert(fgUseThrowHelperBlocks());
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (GenTree* const node : LIR::AsRange(block))
+        {
+            switch (node->OperGet())
+            {
+                case GT_CALL:
+                case GT_LCLHEAP:
+                    return true;
+
+                case GT_STOREIND:
+                    if (codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(node->AsStoreInd()))
+                    {
+                        return true;
+                    }
+                    break;
+
+                case GT_STORE_BLK:
+                {
+                    // Only the native opcode and loop forms avoid write barrier helper calls.
+                    GenTreeBlk* const blk = node->AsBlk();
+                    if ((blk->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) &&
+                        (blk->gtBlkOpKind != GenTreeBlk::BlkOpKindLoop))
+                    {
+                        return true;
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // fgWasmVirtualIP: set up virtual IP mapping for EH and calls
 //
 // Returns:
@@ -3645,7 +4387,9 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             PerBlockData& data = blockData[block->bbNum];
             data.requiredVip   = virtualIP;
             data.funcIndex     = vipFuncIdx;
-            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            // Throw helpers inherit the throwing site's Virtual IP.
+            data.isRequired =
+                !block->HasFlag(BBF_THROW_HELPER) && (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY));
             if (vipFirstInFunc)
             {
                 data.isFuncEntry = true;
@@ -3703,6 +4447,39 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
         func->endVirtualIP = virtualIP;
         vipFuncIdx++;
+    }
+
+    if (!IsNativeAot() && (compHndBBtabCount == 0))
+    {
+        assert(virtualIP == 2);
+        // The only observable virtual IP is 1, so no virtual IP stores are needed.
+        //
+        // A method that makes no calls does not need a frame header.
+        // Only check for this when optimizing, to save throughput.
+        //
+        bool needsFrameHeader = false;
+        for (BasicBlock* const block : Blocks())
+        {
+            if (blockData[block->bbNum].isRequired)
+            {
+                needsFrameHeader = true;
+                break;
+            }
+        }
+
+        if (needsFrameHeader && opts.OptimizationEnabled() && !fgWasmMayEmitCall())
+        {
+            JITDUMP("Method makes no calls; omitting frame header\n");
+            needsFrameHeader = false;
+        }
+
+        if (needsFrameHeader)
+        {
+            getVirtualIPLclNum();
+        }
+
+        JITDUMP("Virtual IP is always 1; omitting frame stores\n");
+        return lvaWasmVirtualIP == BAD_VAR_NUM ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
     }
 
     // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its

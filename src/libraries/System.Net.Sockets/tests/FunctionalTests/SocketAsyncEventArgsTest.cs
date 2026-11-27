@@ -1175,22 +1175,48 @@ namespace System.Net.Sockets.Tests
             saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
             saea.Completed += (_, _) => mres.Set();
 
-            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            bool pending = Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel);
+            if (pending)
             {
-                mres.Wait(TestSettings.PassingTestTimeout);
+                Assert.True(mres.Wait(TestSettings.PassingTestTimeout), "Completed did not get called in time");
             }
             // we should see attempt to both sockets
-            Assert.NotNull(saea.ConnectSocket);
-            Assert.True(saea.ConnectSocket.Connected);
-            if (preferIPv6)
+            if (saea.ConnectSocket is null)
             {
-                Assert.Equal(AddressFamily.InterNetworkV6, saea.ConnectSocket.AddressFamily);
-                Assert.Equal(a.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+                var socketException = new SocketException((int)saea.SocketError);
+
+                Assert.Fail(
+                    $"Connect failed with {socketException.GetType().Name}: {socketException.Message} " +
+                    $"(SocketError: {saea.SocketError}, pending: {pending}). " +
+                    $"localhost resolution: {GetLocalhostResolution()}. " +
+                    $"IPv6 endpoint: {a.LocalEndPoint}; IPv4 endpoint: {b.LocalEndPoint}; preferIPv6: {preferIPv6}.");
             }
-            else
+
+            Assert.True(saea.ConnectSocket.Connected);
+            AddressFamily expectedAddressFamily = preferIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+            EndPoint expectedRemoteEndPoint = preferIPv6 ? a.LocalEndPoint : b.LocalEndPoint;
+            if (saea.ConnectSocket.AddressFamily != expectedAddressFamily ||
+                !Equals(saea.ConnectSocket.RemoteEndPoint, expectedRemoteEndPoint))
             {
-                Assert.Equal(AddressFamily.InterNetwork, saea.ConnectSocket.AddressFamily);
-                Assert.Equal(b.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+                Assert.Fail(
+                    $"Expected {expectedAddressFamily} connected to {expectedRemoteEndPoint}, but got " +
+                    $"{saea.ConnectSocket.AddressFamily} with local endpoint {saea.ConnectSocket.LocalEndPoint} " +
+                    $"and remote endpoint {saea.ConnectSocket.RemoteEndPoint}. " +
+                    $"IPv6 endpoint: {a.LocalEndPoint}; IPv4 endpoint: {b.LocalEndPoint}. " +
+                    $"localhost resolution: {GetLocalhostResolution()}. preferIPv6: {preferIPv6}.");
+            }
+
+            static string GetLocalhostResolution()
+            {
+                try
+                {
+                    return string.Join(", ", Dns.GetHostAddresses("localhost").Select(
+                        static address => $"{address} ({address.AddressFamily})"));
+                }
+                catch (SocketException exception)
+                {
+                    return $"{exception.GetType().Name}: {exception.Message} (SocketError: {exception.SocketErrorCode})";
+                }
             }
         }
     }

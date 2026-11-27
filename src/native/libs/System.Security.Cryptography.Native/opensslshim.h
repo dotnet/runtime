@@ -38,6 +38,7 @@
 
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
+#define OPENSSL_VERSION_4_1_RTM 0x40100000L
 #define OPENSSL_VERSION_4_0_RTM 0x40000000L
 #define OPENSSL_VERSION_3_0_2_RTM 0x3000002FL
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
@@ -771,6 +772,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_SESSION_set_ex_data) \
     REQUIRED_FUNCTION(SSL_SESSION_get0_hostname) \
     REQUIRED_FUNCTION(SSL_SESSION_set1_hostname) \
+    REQUIRED_FUNCTION(SSL_SESSION_up_ref) \
     REQUIRED_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
@@ -1379,6 +1381,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_SESSION_free SSL_SESSION_free_ptr
 #define SSL_SESSION_get0_hostname SSL_SESSION_get0_hostname_ptr
 #define SSL_SESSION_set1_hostname SSL_SESSION_set1_hostname_ptr
+#define SSL_SESSION_up_ref SSL_SESSION_up_ref_ptr
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_SESSION_get_ex_data SSL_SESSION_get_ex_data_ptr
 #define SSL_SESSION_set_ex_data SSL_SESSION_set_ex_data_ptr
@@ -1521,10 +1524,10 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_X509_pop_free(stack, freefunc) OPENSSL_sk_pop_free((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (OPENSSL_sk_freefunc)(1 ? freefunc : (sk_X509_freefunc)0))
 
 // type-safe OPENSSL_sk_value
-#define sk_ASN1_OBJECT_value(stack, idx) (ASN1_OBJECT*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(ASN1_OBJECT)*)0), idx)
-#define sk_GENERAL_NAME_value(stack, idx) (GENERAL_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(GENERAL_NAME)*)0), idx)
-#define sk_X509_NAME_value(stack, idx) (X509_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0), idx)
-#define sk_X509_value(stack, idx) (X509*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0), idx)
+#define sk_ASN1_OBJECT_value(stack, idx) ((ASN1_OBJECT*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(ASN1_OBJECT)*)0), idx))
+#define sk_GENERAL_NAME_value(stack, idx) ((GENERAL_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(GENERAL_NAME)*)0), idx))
+#define sk_X509_NAME_value(stack, idx) ((X509_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0), idx))
+#define sk_X509_value(stack, idx) ((X509*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0), idx))
 
 #endif
 

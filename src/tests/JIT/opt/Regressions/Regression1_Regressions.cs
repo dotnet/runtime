@@ -23,6 +23,7 @@ public class Program
    public static IRuntime s_rt;
    public static int[][] s_13 = new int[][] { new int[] { 0 } };
 
+   [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasi), nameof(TestLibrary.PlatformDetection.IsReadyToRunCompiled))]
    [Fact]
    public static int TestEntryPoint()
    {

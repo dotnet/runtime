@@ -152,6 +152,24 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Parse_OverlappingSignsWithSpaceNormalization()
+        {
+            NumberFormatInfo nfi = new NumberFormatInfo { PositiveSign = "\u00A0", NegativeSign = " +" };
+            const NumberStyles style = NumberStyles.AllowLeadingSign;
+            const string input = " +123";
+            byte[] utf8Input = Encoding.UTF8.GetBytes(input);
+            BigInteger expected = new BigInteger(-123);
+
+            Assert.Equal(expected, BigInteger.Parse(input, style, nfi));
+            Assert.Equal(expected, BigInteger.Parse(utf8Input, style, nfi));
+
+            Assert.True(BigInteger.TryParse(input.AsSpan(), style, nfi, out BigInteger result));
+            Assert.Equal(expected, result);
+            Assert.True(BigInteger.TryParse(utf8Input.AsSpan(), style, nfi, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
         public static void ParseUtf8_EmptySubspan_Fails()
         {
             BigInteger result;
@@ -349,15 +367,16 @@ namespace System.Numerics.Tests
         [OuterLoop("The test needs ~1.2GB memory")]
         public static void TryParse_VeryLargeNegativeNumber()
         {
-            // 8 is from IBigIntegerHexOrBinaryParser<BigIntegerHexParser<char>, char>.DigitsPerBlock;
-            Span<char> largeSpan = new char[BigInteger.MaxLength * 8 + 2].AsSpan();
+            const int HexDigitsPerByte = 2;
+            int hexDigitsPerLimb = nint.Size * HexDigitsPerByte;
+            Span<char> largeSpan = new char[BigInteger.MaxLength * hexDigitsPerLimb + 2].AsSpan();
             largeSpan.Fill('0');
             largeSpan[0] = 'F';
 
             Assert.False(BigInteger.TryParse(largeSpan, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
             Assert.True(BigInteger.TryParse(largeSpan[..^2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
 
-            // The following line shouldn't throw. Previously it threw rather than returned false.
+            // The leading 'F' is sign extension, but the magnitude still needs one extra limb.
             Assert.False(BigInteger.TryParse(largeSpan[..^1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
         }
 

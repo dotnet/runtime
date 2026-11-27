@@ -1144,6 +1144,57 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
 
 #ifndef RIGHT_SIDE_COMPILE
 
+#ifdef TARGET_UNIX
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#ifdef TARGET_BROWSER
+#include <emscripten/heap.h>
+#endif
+
+// Returns true if the whole range is readable (and writable, if requested) without faulting.
+static bool ProbeMemory(const void *start, size_t len, bool writeAccess)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_BROWSER)
+    return (uintptr_t)start + len <= emscripten_get_heap_size();
+#elif defined(TARGET_WASM)
+    // wasm linear memory is one contiguous region (64 KiB pages).
+    return (uintptr_t)start + len <= __builtin_wasm_memory_size(0) * 65536;
+#else
+    // write() and read() fail with EFAULT instead of faulting when they reach an inaccessible page.
+    int fds[2];
+    if (pipe(fds) != 0)
+    {
+        return false;
+    }
+
+    fcntl(fds[0], F_SETFL, fcntl(fds[0], F_GETFL, 0) | O_NONBLOCK);
+    fcntl(fds[1], F_SETFL, fcntl(fds[1], F_GETFL, 0) | O_NONBLOCK);
+
+    // Check the first byte, then the first byte of each following page.
+    size_t pageSize = minipal_getpagesize();
+    bool result = true;
+    for (uint8_t *current = (uint8_t *)start, *end = current + len; current < end;
+         current = (uint8_t *)ALIGN_DOWN((size_t)current, pageSize) + pageSize)
+    {
+        uint8_t scratch;
+        if (write(fds[1], current, 1) == -1 || read(fds[0], writeAccess ? current : &scratch, 1) == -1)
+        {
+            _ASSERTE(errno == EFAULT);
+            result = false;
+            break;
+        }
+    }
+
+    close(fds[0]);
+    close(fds[1]);
+    return result;
+#endif
+}
+#endif // TARGET_UNIX
+
 // Check read and optionally write memory access to the specified range of bytes. Used to check
 // ReadProcessMemory and WriteProcessMemory requests.
 HRESULT DbgTransportSession::CheckBufferAccess(_In_reads_(cbBuffer) PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
@@ -1197,7 +1248,7 @@ HRESULT DbgTransportSession::CheckBufferAccess(_In_reads_(cbBuffer) PBYTE pbBuff
     }
     while (cbBuffer > 0);
 #else
-    if (!PAL_ProbeMemory(pbBuffer, cbBuffer, fWriteAccess))
+    if (!ProbeMemory(pbBuffer, cbBuffer, fWriteAccess))
     {
         return HRESULT_FROM_WIN32(ERROR_INVALID_ADDRESS);
     }
@@ -2191,6 +2242,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_DISABLE_OPTS_RESULT:
     case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
     case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2370,6 +2422,12 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->ApplyChanges);
         break;
 
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_1:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT:
+    case DB_IPCE_RESOLVE_UPDATE_METADATA_2:
+        cbAdditionalSize = sizeof(pEvent->MetadataUpdateRequest);
+        break;
+
     case DB_IPCE_IS_TRANSITION_STUB:
         cbAdditionalSize = sizeof(pEvent->IsTransitionStub);
         break;
@@ -2428,6 +2486,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_DISPOSE_HANDLE:
         cbAdditionalSize = sizeof(pEvent->DisposeHandle);
+        break;
+
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
+        cbAdditionalSize = sizeof(pEvent->DisposeExternalMemoryOwner);
         break;
 
     case DB_IPCE_INTERCEPT_EXCEPTION:

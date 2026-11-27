@@ -110,7 +110,7 @@ class CrstBase
     friend class ListLockEntryBase;
     friend struct SavedExceptionInfo;
     friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
-    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
+    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept;
     friend class CodeVersionManager;
 
     friend class Debugger;
@@ -151,20 +151,24 @@ private:
 #if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
     // There is no wait to make GC-safe, no other thread to orphan a shutdown lock,
     // and no debugger helper thread to exclude. Keep these inline so holders disappear too.
-    void Enter() { LIMITED_METHOD_CONTRACT; }
-    void Leave() { LIMITED_METHOD_CONTRACT; }
+    void Enter() noexcept { LIMITED_METHOD_CONTRACT; }
+    void Leave() noexcept { LIMITED_METHOD_CONTRACT; }
 #else
+#ifdef DACCESS_COMPILE
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
-    void Leave();
+#else
+    void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK)) noexcept;
+#endif
+    void Leave() noexcept;
 #endif
 
 #ifndef DACCESS_COMPILE
-    DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
+    DEBUG_NOINLINE static void AcquireLock(CrstBase *c) noexcept {
         WRAPPER_NO_CONTRACT;
         c->Enter();
     }
 
-    DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
+    DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) noexcept {
         WRAPPER_NO_CONTRACT;
         c->Leave();
     }
@@ -185,7 +189,7 @@ private:
         }
     };
 
-    static void ReleaseLock(CrstBase *c)
+    static void ReleaseLock(CrstBase *c) noexcept
     {
         SUPPORTS_DAC;
     };
@@ -331,15 +335,19 @@ private:
 public:
     //
     // CrstHolder is optimized for the common use that takes the lock in constructor
-    // and releases it in destructor. Users that require all Holder features
-    // can use CrstHolderWithState.
+    // and releases it in destructor. Callers that need to release and reacquire
+    // the lock can use CrstHolderWithState.
     //
     class CrstHolder
     {
         CrstBase * m_pCrst;
 
     public:
+#ifdef DACCESS_COMPILE
         CrstHolder(CrstBase* pCrst)
+#else
+        CrstHolder(CrstBase* pCrst) noexcept
+#endif
             : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;
@@ -358,15 +366,120 @@ public:
         CrstHolder& operator=(CrstHolder&& other) = delete;
     };
 
+private:
+    struct CrstLockHolderTraits final
+    {
+        using Type = CrstBase*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type crst) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifndef DACCESS_COMPILE
+            if (crst != NULL)
+                ReleaseLock(crst);
+#endif // !DACCESS_COMPILE
+        }
+    };
+
+    struct CrstInverseLockHolderTraits final
+    {
+        using Type = CrstBase*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type crst) noexcept
+        {
+            STATIC_CONTRACT_WRAPPER;
+#ifndef DACCESS_COMPILE
+            if (crst != NULL)
+                AcquireLock(crst);
+#endif // !DACCESS_COMPILE
+        }
+    };
+
+public:
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
     // aren't allowed to use more than HOLDER_CODE_MINIMUM_STACK_LIMIT pages of stack.
-    typedef DacHolder<CrstBase *, CrstBase::AcquireLock, CrstBase::ReleaseLock, 0, CompareDefault> CrstHolderWithState;
+    class CrstHolderWithState
+    {
+        CrstBase* const m_crst;
+        LifetimeHolder<CrstLockHolderTraits> m_lock;
 
-    // We have some situations where we're already holding a lock, and we need to release and reacquire the lock across a window.
-    // This is a dangerous construct because the backout code can block.
-    // Generally, it's better to use a regular CrstHolder, and then use the Release() / Acquire() methods on it.
-    // This just exists to convert legacy OS Critical Section patterns over to holders.
-    typedef DacHolder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault> UnsafeCrstInverseHolder;
+    public:
+        CrstHolderWithState(CrstBase* crst, BOOL acquire = TRUE)
+            : m_crst(crst)
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            if (acquire)
+                Acquire();
+        }
+
+        void Acquire()
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+            _ASSERTE(static_cast<CrstBase*>(m_lock) == NULL);
+            if (m_crst != NULL)
+            {
+                AcquireLock(m_crst);
+                m_lock = m_crst;
+            }
+        }
+
+        void Release()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_lock.Free();
+        }
+
+        CrstBase* Detach()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_lock.Detach();
+        }
+
+        CrstBase* GetValue() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_crst;
+        }
+
+        CrstHolderWithState(const CrstHolderWithState&) = delete;
+        CrstHolderWithState& operator=(const CrstHolderWithState&) = delete;
+    };
+
+    // Temporarily releasing a lock is dangerous because reacquiring it during backout can block.
+    class UnsafeCrstInverseHolder final
+    {
+        LifetimeHolder<CrstInverseLockHolderTraits> m_reacquire;
+
+    public:
+        explicit UnsafeCrstInverseHolder(CrstBase* crst)
+            : m_reacquire(crst)
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+#ifndef DACCESS_COMPILE
+            if (crst != NULL)
+                ReleaseLock(crst);
+#endif // !DACCESS_COMPILE
+        }
+
+        void SuppressAcquire()
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_reacquire.Detach();
+        }
+
+        UnsafeCrstInverseHolder(const UnsafeCrstInverseHolder&) = delete;
+        UnsafeCrstInverseHolder& operator=(const UnsafeCrstInverseHolder&) = delete;
+    };
+
+    static UnsafeCrstInverseHolder ReleaseForScope(CrstBase* crst)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        return UnsafeCrstInverseHolder(crst);
+    }
 
     class CrstAndForbidSuspendForDebuggerHolder
     {

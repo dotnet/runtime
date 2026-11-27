@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public bool InstrumentPublished(Instrument instrument, out object? userState);
 
         /// <summary>
-        /// Called when a instrument is disabled by the producer or a rules change.
+        /// Called when an instrument is disabled by the producer or a rules change.
         /// </summary>
         /// <param name="instrument">The <see cref="Instrument"/> being disabled.</param>
         /// <param name="userState">The original listener state returned by <see cref="InstrumentPublished(Instrument, out object?)"/>.</param>

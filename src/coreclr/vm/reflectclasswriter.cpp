@@ -12,50 +12,35 @@
 //* constructor for RefClassWriter
 //*
 //******************************************************
-HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
+HRESULT RefClassWriter::Init(
+    IMDInternalEmit *pEmitter,
+    IMDInternalImport *pInternalImport,
+    LPCWSTR szName)
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
 
-        PRECONDITION(CheckPointer(pCeeGen));
-        PRECONDITION(CheckPointer(pUnk));
+        PRECONDITION(CheckPointer(pEmitter));
+        PRECONDITION(CheckPointer(pInternalImport));
     }
     CONTRACTL_END;
 
     // Initialize the Import and Emitter interfaces
     m_emitter = NULL;
-    m_importer = NULL;
     m_internalimport = NULL;
     m_ulResourceSize = 0;
 
-    m_pCeeGen = pCeeGen;
-    pCeeGen->AddRef();
-
-    // Get the interfaces
-    HRESULT hr = pUnk->QueryInterface(IID_IMetaDataEmit2, (void**)&m_emitter);
-    if (FAILED(hr))
-        return hr;
-
-    hr = pUnk->QueryInterface(IID_IMetaDataImport, (void**)&m_importer);
-    if (FAILED(hr))
-        return hr;
-
-    hr = pUnk->QueryInterface(IID_IMetaDataEmitHelper, (void**)&m_pEmitHelper);
-    if (FAILED(hr))
-        return hr;
-
-    hr = GetMDInternalInterfaceFromPublic(pUnk, IID_IMDInternalImport, (void**)&m_internalimport);
-    if (FAILED(hr))
-        return hr;
+    m_emitter = pEmitter;
+    m_emitter->AddRef();
+    m_internalimport = pInternalImport;
+    m_internalimport->AddRef();
 
     // <TODO> We will need to set this at some point.</TODO>
-    hr = m_emitter->SetModuleProps(szName);
+    HRESULT hr = m_emitter->SetModuleProps(szName);
     if (FAILED(hr))
         return hr;
 
     _ASSERTE(m_emitter != nullptr);
-    _ASSERTE(m_importer != nullptr);
-    _ASSERTE(m_pEmitHelper != nullptr);
     _ASSERTE(m_internalimport != nullptr);
     return S_OK;
 }
@@ -81,20 +66,7 @@ RefClassWriter::~RefClassWriter()
         m_emitter->Release();
     }
 
-    if (m_importer) {
-        m_importer->Release();
-    }
-
-    if (m_pEmitHelper) {
-        m_pEmitHelper->Release();
-    }
-
     if (m_internalimport) {
         m_internalimport->Release();
-    }
-
-    if (m_pCeeGen) {
-        m_pCeeGen->Release();
-        m_pCeeGen = NULL;
     }
 }

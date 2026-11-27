@@ -36,20 +36,14 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal ItemElement(List<GrammarBuilderBase> builders, int minRepeat, int maxRepeat)
         {
-            foreach (GrammarBuilderBase builder in builders)
-            {
-                Items.Add(builder);
-            }
+            Items.AddRange(builders);
             _minRepeat = minRepeat;
             _maxRepeat = maxRepeat;
         }
 
         internal ItemElement(GrammarBuilder builders)
         {
-            foreach (GrammarBuilderBase builder in builders.InternalBuilder.Items)
-            {
-                Items.Add(builder);
-            }
+            Items.AddRange(builders.InternalBuilder.Items);
         }
 
         #endregion

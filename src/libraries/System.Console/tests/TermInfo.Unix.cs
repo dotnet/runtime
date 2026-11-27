@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Tests;
 using Xunit;
 
-[SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Android, Browser, iOS, MacCatalyst, or tvOS.")]
+[SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Android, Browser, WASI, iOS, MacCatalyst, or tvOS.")]
 public class TermInfoTests
 {
     [Fact]

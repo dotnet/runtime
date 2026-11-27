@@ -3,9 +3,7 @@
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
-    <!-- Managed ilasm consumes excessive amount of memory -->
-    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
-    <_UseOutOfProcessPhysicalPromotionTests Condition="'$(TargetsMobile)' != 'true' or ('$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr')">true</_UseOutOfProcessPhysicalPromotionTests>
+    <_UseOutOfProcessPhysicalPromotionTests Condition="'$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true'">true</_UseOutOfProcessPhysicalPromotionTests>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />

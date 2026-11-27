@@ -81,8 +81,10 @@ Written in 2006, by:
     * [2.10.6 For more details...](#2.10.6)
   * [2.11 Using standard headers](#2.11)
     * [2.11.1 Do not use wchar_t](#2.11.1)
-	* [2.11.2 Do not use C++ Standard-defined exceptions](#2.11.2)
-	* [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+    * [2.11.2 C++ Standard-defined exceptions](#2.11.2)
+    * [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+    * [2.11.4 Restrictions on C++ Standard Library types](#2.11.4)
+      * [2.11.4.1 C++ Standard Library APIs that are legal to call in `MODE_COOPERATIVE`](#2.11.4.1)
   * [2.12 Is your code DAC compliant?](#2.12)
 
 # <a name="1"></a>1 Why you must read this document
@@ -535,33 +537,34 @@ Suppose you want to auto-close the handle if an error occurs but keep the handle
 
 ### <a name="2.2.3"></a>2.2.3 Common Features of Holders
 
-All holders, no matter how complex or simple, offer these basic services:
+Holders manage resource ownership through scope-based cleanup. `LifetimeHolder` provides these basic services:
 
 - When the holder goes out of scope, via an exception or normal flow, it invokes a RELEASE function supplied by the holder's designer. The RELEASE function is responsible for the cleanup.
-- A holder declared without an explicit initializer will be initialized to a default value. The precise value of the default is supplied by the holder's designer.
-- Holders know about "null" values. The holder guarantees never to call RELEASE or ACQUIRE on a null value. The designer can specify any number of null values or no null value at all.
-- Holders expose a public SuppressRelease() method which eliminates the auto-release in the destructor. Use this for conditional backout.
-- Holders also support an ACQUIRE method when a resource can be meaningfully released and reacquired (e.g. locks.)
+- A holder declared without an explicit initializer is initialized to the traits type's default value.
+- Cleanup is invoked even for the default value, so the traits type must handle that value safely.
+- `Free()` cleans up the current value and resets it to the default.
+- `Detach()` returns the current value and resets it to the default without cleanup. Use this to transfer ownership.
+- Custom lock guards can expose `Acquire()` and `Release()` when callers need to release and reacquire a captured lock.
 
-In addition, some holders derive from the Wrapper class. Wrappers are like holders but also implement operator overloads for type casting, assignment, comparison, etc. so that the holder proxies the object smart-pointer style. The HandleHolder object is actually a wrapper.
+`LifetimeHolder` also supports assignment, conversion to the resource type, and pointer-like access for pointer resources.
 
 ### <a name="2.2.4"></a>2.2.4 Where do I find a holder?
 
 First, look for a prebaked holder that does what you want. Some common ones are described below.
 
-If no existing holder fits your need, make one. If it's your first holder, start by reading [src\inc\holder.h][holder.h]. Decide if you want a holder or a wrapper. If you don't do much with a resource except acquire and release it, use a holder. Otherwise, you want the wrapper since its overloaded operators make it much easier to replace the resource variable with the wrapper.
+If no existing holder fits your need, make one. If it's your first holder, start by reading [src\coreclr\inc\holder.h][holder.h]. Prefer `LifetimeHolder` for resources that only need cleanup.
 
 [holder.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/holder.h
 
-Instantiate the holder or wrapper template with the required parameters. You must supply the data type being managed, the RELEASE function, the default value for uninitialized constructions, the IS_NULL function and the ACQUIRE function. Unless you're implementing a critical section holder, you can probably supply a NOP for ACQUIRE . Most resources can't be meaningfully released and reacquired so it's easier to allocate the resource outside the holder and pass it in through its constructor. For convenience, [holder.h][holder.h] defines a DoNothing<Type> template that creates a NOP ACQUIRE function for any given resource type. There are also convenience templates for writing RELEASE functions. See [holder.h][holder.h] for their definitions and examples of their use.
+Instantiate `LifetimeHolder` with a traits type that supplies `Type`, `Default()`, and `Free(Type)`. The holder adopts an already acquired resource; it does not acquire it. Cleanup must accept the default value and must not throw. Use `Free()` to release and reset the resource, or `Detach()` to transfer ownership without cleanup. For locks, use a factory that acquires the lock before returning the holder. If callers need to release and reacquire a captured resource, a custom guard can retain its identity and compose a `LifetimeHolder` for the active ownership.
 
-Publish the holder in the most global header file possible. [src\inc\holder.h][holder.h] is ideal for OS-type resources. Otherwise, put it in the header file that owns the type being managed.
+Publish the holder in the most global header file possible. [src\coreclr\inc\holder.h][holder.h] is ideal for OS-type resources. Otherwise, put it in the header file that owns the type being managed.
 
 ### <a name="2.2.5"></a>2.2.5 Can I bake my own holder?
 
-When we first put holders into the code, we encouraged developers to inherit from the base holder class rather than writing their own. But the reality has been that many holders only need destruction and SuppressRelease() and it's proven easier for developers to write them from scratch rather than try to master the formidable C++ template magic that goes on in [holder.h][holder.h] It is better that you write your own holders than give up the design pattern altogether because you don't want to tackle [holder.h].
+Use a custom holder when the resource needs state or operations that `LifetimeHolder` does not provide. Prefer composition: `LifetimeHolder` is final and cannot be used as a base class.
 
-But however you decide to implement it, if you call your object a "holder", please make sure its external behavior conforms to the conventions listed above in "Common Features of Holders."
+Custom holders should make acquisition, cleanup, and ownership transfer explicit and prevent accidental copying.
 
 ### <a name="2.2.6"></a>2.2.6 What if my backout code throws an exception?
 
@@ -573,7 +576,7 @@ Often, you can avoid failures in backout code by designing a better data structu
 
 ### <a name="2.2.7"></a>2.2.7 Pay attention to holder initialization semantics
 
-Holders consistently release on destruction – that's their whole purpose. Sadly, we are not so consistent when it comes the initialization semantics. Some holders, such as the Crst holder, do an implicit Acquire on initialization. Others, such as the ComHolder do not (initializing a ComHolder does _not_ do an AddRef.) The BaseHolder class constructor leaves it up to the holder designer to make the choice. This is an easy source of bugs so pay attention to this.
+Holders consistently release on destruction – that's their whole purpose. Pay attention to initialization semantics: a `CrstHolder` acquires its lock on construction, whereas a `LifetimeHolder` adopts an already acquired resource without acquiring it again. In particular, initializing a `ComHolder` does _not_ call `AddRef`. Acquiring factories should make this distinction explicit.
 
 ### <a name="2.2.8"></a>2.2.8 Some generally useful prebaked holders
 
@@ -1188,29 +1191,37 @@ See the big block comment at the start of [src\inc\contract.h][contract.h].
 
 The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
 
-Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
+Code that will only run in other processes, such as `createdump` or other extraneous tools, has fewer restrictions.
+
+For Linux builds, we build against an older C++ runtime to support older Linux distributions, but we bundle a newer C++ Standard Library implementation. This means CoreCLR code can use new C++ library features, but there may be some corners where particular features are not supported and fail at link time. Those features are not supported in CoreCLR code and should be avoided.
 
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
 The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
 
-### <a name="2.11.2"></a> 2.11.2 Do not use C++ Standard-defined exceptions
+### <a name="2.11.2"></a> 2.11.2 C++ Standard-defined exceptions
 
-The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. There is one standard C++ exception type the CoreCLR infrastructure supports, `std::bad_alloc`. Since CoreCLR supports `std::bad_alloc`, the standard container allocators, `std::allocator<T>` and the standard C++ containers, can be used as long as only the non-throwing members are used.
+The CoreCLR exception handling mechanisms convert exceptions derived from `std::exception` to the closest existing managed exception type. `std::bad_alloc` is converted to `OutOfMemoryException`, `std::system_error` is converted through the runtime's Win32 exception handling, and unknown `std::exception` types are converted to `System.Exception`.
 
-For example, `std::vector<T>::at()` should not be used as it may throw an `std::out_of_range` exception. Check the C++ standard or [cppreference.com](https://en.cppreference.com) for each member you plan to use to ensure that it will not throw a C++ standard exception other than `std::bad_alloc`.
+Standard library APIs that can throw must only be used in code with a `THROWS` contract and within the scope of the runtime's exception handling infrastructure. Do not throw types that do not derive from `std::exception`.
 
 ### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
 
 The POSIX API `setenv` is not thread safe with `getenv` and can lead to crashes. CoreCLR provides a `PAL_getenv` API that is thread-safe. This API should be used instead when on non-Windows platforms.
 
-### <a name="2.11.4"></a> 2.11.4 Limit usage of standard template types in shipping executables
+### <a name="2.11.4"></a> 2.11.4 Restrictions on C++ Standard Library types
 
-For Linux x64 and amd64 platforms, we build against a very old libstdc++, the version that shipped with Ubuntu 16.04. As a result, we strive to reduce our usage of template types (where code from the headers will be inserted into our binaries) in shipping executables and libraries.
+Using types and algorithms from the C++ standard is supported within the CoreCLR code base; however, we do not support it in our DAC/cDAC tooling. Do not use C++ Standard-defined containers, smart pointers, etc. for any fields accessed by the DAC or cDAC. Only use our collections that have cDAC contracts when you need to expose them for diagnostic tooling.
 
-This rule applies to both `coreclr` as well as shipping external executables like `createdump`.
+For cases where diagnostic tooling integration is not required, you may use C++ Standard-defined types and algorithms meeting the C++ standard version CoreCLR builds with (defined in [eng/native/configurecompiler.cmake](../../eng/native/configurecompiler.cmake)).
 
-For non-shipping native code, like the `superpmi` tools suite, standard headers can be used without limitation.
+Additionally, code that calls C++ standard APIs must be marked `THROWS` unless the called API is marked `noexcept`.
+
+Except for APIs listed in the following section, code that calls C++ standard APIs must be marked as `MODE_PREEMPTIVE` or within a `GCX_PREEMP()` scope. For an item to be listed in the following list, it must, at minimum, not perform an unbounded set of operations.
+
+#### <a name="2.11.4.1"></a>2.11.4.1 C++ Standard Library APIs that are legal to call in `MODE_COOPERATIVE`
+
+There are no C++ Standard Library APIs currently legal to call in `MODE_COOPERATIVE`.
 
 ## <a name="2.12"></a>2.12 Is your code DAC compliant?
 

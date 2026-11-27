@@ -6,6 +6,7 @@
 #ifndef __GENANALYSIS_H__
 #define __GENANALYSIS_H__
 
+#ifdef FEATURE_GCGENANALYSIS
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadaptertypes.h"
 #else
@@ -24,7 +25,6 @@ enum GcGenAnalysisState
 #define GENAWARE_DUMP_FILE_NAME W("gcgenaware.{pid}.dmp")
 #define GENAWARE_COMPLETION_FILE_NAME W("gcgenaware.{pid}.nettrace.completed")
 
-extern bool s_forcedGCInProgress;
 extern GcGenAnalysisState gcGenAnalysisState;
 extern EventPipeSession* gcGenAnalysisEventPipeSession;
 extern uint64_t gcGenAnalysisEventPipeSessionId;
@@ -43,4 +43,6 @@ public:
     static void EnableGenerationalAwareSession();
 };
 
-#endif 
+#endif // FEATURE_GCGENANALYSIS
+
+#endif // __GENANALYSIS_H__

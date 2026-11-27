@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <coreclrhost.h>
 #include <dirent.h>
+#include <dlfcn.h>
 
 #include <corehost/host_runtime_contract.h>
 
@@ -64,8 +65,6 @@ static struct host_runtime_contract g_host_contract = {
 #else
 #error Unknown architecture
 #endif
-
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
 static void
 strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
@@ -142,6 +141,17 @@ external_assembly_probe(const char* relative_assembly_path, void** data, int64_t
     return true;
 }
 
+static const void*
+pinvoke_override (const char* library_name, const char* entry_point_name)
+{
+    if (strcmp (library_name, "__Internal") == 0)
+    {
+        return dlsym (RTLD_DEFAULT, entry_point_name);
+    }
+
+    return NULL;
+}
+
 static void
 free_resources ()
 {
@@ -186,7 +196,6 @@ mono_droid_runtime_init (const char* executable)
 
     // build using DiagnosticPorts property in AndroidAppBuilder
     // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
@@ -201,6 +210,7 @@ mono_droid_runtime_init (const char* executable)
     chdir (g_bundle_path);
 
     g_host_contract.external_assembly_probe = &external_assembly_probe;
+    g_host_contract.pinvoke_override = &pinvoke_override;
 
     const char* appctx_keys[PROPERTY_COUNT];
 %AppContextKeys%

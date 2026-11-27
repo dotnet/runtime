@@ -64,9 +64,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 //                   with SuppressGCTransitionAttribute.
 //
 // Notes:
-//    When not optimizing, the method relies on BBF_HAS_SUPPRESSGC_CALL flag to
-//    find the basic blocks that require GC polls; when optimizing the tree nodes
-//    are scanned to find calls to methods with SuppressGCTransitionAttribute.
+//    The tree nodes are scanned to find calls to methods with SuppressGCTransitionAttribute.
 //
 //    This must be done after any transformations that would add control flow between
 //    calls.
@@ -91,21 +89,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         compCurBB = block;
 
-        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
-        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
-        if (opts.OptimizationDisabled())
+        if (!blockNeedsGCPoll(block))
         {
-            if (!block->HasAnyFlag(BBF_HAS_SUPPRESSGC_CALL | BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-        }
-        else
-        {
-            if (!blockNeedsGCPoll(block))
-            {
-                continue;
-            }
+            continue;
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -484,10 +470,10 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because: %s\n****\n", reason);
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
-    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
-    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_INSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_PGO_INSTR_IF_LOOPS);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
-    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_PGO_OPT);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -755,6 +741,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED:
             // type = TYP_BYREF;
             break;
 
@@ -795,6 +783,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
     {
@@ -874,8 +864,11 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
-    // Wasm does not support dynamically created helpers
-    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    // CoreCLR Wasm does not support dynamically created helpers.
+    if (!IsNativeAot())
+    {
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    }
 #endif
 
 #ifdef FEATURE_READYTORUN
@@ -1011,6 +1004,9 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
 
+    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD
+    op = op->gtSkipReloadOrCopy();
+
     // Ignore the offset for locals
 
     if (op->OperIs(GT_LCL_ADDR))
@@ -1131,7 +1127,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1179,9 +1181,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                    // composing a helper
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1222,6 +1222,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)
@@ -5822,18 +5832,8 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    // Obtain the relop from the "test" tree.
-    GenTree* relop;
-    if (test->OperIs(GT_JTRUE))
-    {
-        relop = test->gtGetOp1();
-    }
-    else
-    {
-        assert(test->OperIs(GT_STORE_LCL_VAR));
-        relop = test->AsLclVar()->Data();
-    }
-
+    assert(test->OperIs(GT_JTRUE));
+    GenTree* relop = test->gtGetOp1();
     noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;
@@ -5867,9 +5867,10 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     // peeling the constant into LimitOffset and form-checking the base.
     // Morph canonicalizes commutative ops so that any constant operand sits on
     // op2, and folds `base ± 0`, so we only need to look for `base op2-cns`.
+    // An overflow-checked limit can throw instead of wrapping, so it is not peeled.
     int      peeledOffset = 0;
     GenTree* peeledBase   = nullptr;
-    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT))
+    if (limitOp->OperIs(GT_ADD, GT_SUB) && limitOp->TypeIs(TYP_INT) && !limitOp->gtOverflow())
     {
         GenTree* lop1 = limitOp->gtGetOp1();
         GenTree* lop2 = limitOp->gtGetOp2();

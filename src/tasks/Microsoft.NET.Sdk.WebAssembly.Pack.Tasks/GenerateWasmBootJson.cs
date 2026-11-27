@@ -54,6 +54,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public bool FilesystemUsageDetected { get; set; }
+
     public ITaskItem[] EnvVariables { get; set; }
 
     public ITaskItem[] Extensions { get; set; }
@@ -82,13 +84,15 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
-    public bool IsAot { get; set; }
+    public bool IsAot { get; set; }  // legacy, only used when targeting net11.0 and earlier
 
     public bool IsMultiThreaded { get; set; }
 
     public string? UseMonoRuntime { get; set; }
 
     public bool FingerprintAssets { get; set; }
+
+    public string? EnableIntegrityCheck { get; set; }
 
     public string ApplicationEnvironment { get; set; }
 
@@ -106,11 +110,21 @@ public class GenerateWasmBootJson : Task
 
     public override bool Execute()
     {
-        var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
-
         try
         {
-            WriteBootConfig(entryAssemblyName);
+            bool targetingNet12OrLater = IsTargeting120OrLater();
+            bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime)
+                ? !targetingNet12OrLater
+                : string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+
+            if (isMonoRuntime && targetingNet12OrLater)
+            {
+                Log.LogError("Mono runtime is no longer supported when targeting .NET 12 or later.");
+                return false;
+            }
+
+            var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
+            WriteBootConfig(entryAssemblyName, isMonoRuntime);
         }
         catch (Exception ex)
         {
@@ -120,9 +134,8 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    private void WriteBootConfig(string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName, bool isMonoRuntime)
     {
-        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before
@@ -130,11 +143,22 @@ public class GenerateWasmBootJson : Task
         // boot config, letting the loader stream-instantiate instead of buffering and parsing. The
         // AttachWebcilSizes task attaches these as PayloadSize/TableSize metadata on the resources.
         var webcilSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
+        // Routes of composite ReadyToRun owner images, flagged isCompositeImage in the boot config.
+        var compositeImages = new HashSet<string>(StringComparer.Ordinal);
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
         };
+
+        if (!string.IsNullOrEmpty(EnableIntegrityCheck))
+        {
+            result.disableIntegrityCheck = !bool.Parse(EnableIntegrityCheck);
+        }
+        else if (!isMonoRuntime && IsTargeting120OrLater())
+        {
+            result.disableIntegrityCheck = true;
+        }
 
         if (IsTargeting100OrLater())
         {
@@ -291,6 +315,14 @@ public class GenerateWasmBootJson : Task
                             resourceList = resourceData.pdb;
                         }
                     }
+                }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals("readyToRunComposite", assetTraitValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a composite ReadyToRun image.", resource.ItemSpec);
+                    compositeImages.Add(resourceRoute);
+                    resourceList = resourceData.coreAssembly;
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
@@ -515,7 +547,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages, !isMonoRuntime && IsTargeting120OrLater(), FilesystemUsageDetected);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
@@ -575,6 +607,7 @@ public class GenerateWasmBootJson : Task
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
     private static readonly Version version110 = new Version(11, 0);
+    private static readonly Version version120 = new Version(12, 0);
 
     private Version? parsedTargetFrameworkVersion;
     private Version ParsedTargetFrameworkVersion
@@ -602,6 +635,7 @@ public class GenerateWasmBootJson : Task
     private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
     private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
     private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+    private bool IsTargeting120OrLater() => ParsedTargetFrameworkVersion >= version120;
 
     /// <summary>
     /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion

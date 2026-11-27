@@ -23,7 +23,7 @@ public:
     MDInternalRW();
     virtual ~MDInternalRW();
     __checkReturn
-    HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly);
+    HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly, bool fIsDelta = false);
     __checkReturn
     HRESULT InitWithStgdb(IUnknown *pUnk, CLiteWeightStgdbRW *pStgdb);
     __checkReturn
@@ -33,17 +33,13 @@ public:
     __checkReturn
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
     STDMETHODIMP_(ULONG) AddRef(void);
-    STDMETHODIMP_(ULONG) Release(void);
+    STDMETHODIMP_(ULONG) Release(void) noexcept;
 
     __checkReturn
     STDMETHODIMP TranslateSigWithScope(
-        IMDInternalImport *pAssemImport,    // [IN] import assembly scope.
-        const void  *pbHashValue,           // [IN] hash value for the import assembly.
-        ULONG       cbHashValue,            // [IN] count of bytes in the hash value.
         PCCOR_SIGNATURE pbSigBlob,          // [IN] signature in the importing scope
         ULONG       cbSigBlob,              // [IN] count of bytes of signature
-        IMetaDataAssemblyEmit *pAssemEmit,  // [IN] assembly emit scope.
-        IMetaDataEmit *emit,                // [IN] emit interface
+        IMDInternalEmit *emit,              // [IN] emit interface
         CQuickBytes *pqkSigEmit,            // [OUT] buffer to hold translated signature
         ULONG       *pcbSig)                // [OUT] count of bytes in the translated signature
         DAC_UNEXPECTED();
@@ -101,22 +97,12 @@ public:
         HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
         DAC_UNEXPECTED();
 
-    STDMETHODIMP_(void) EnumMethodImplReset(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-        DAC_UNEXPECTED();
-
     __checkReturn
     STDMETHODIMP EnumMethodImplNext(        // return hresult (S_OK = TRUE, S_FALSE = FALSE or error code)
         HENUMInternal   *phEnumBody,        // [IN] input enum for MethodBody
         HENUMInternal   *phEnumDecl,        // [IN] input enum for MethodDecl
         mdToken         *ptkBody,           // [OUT] return token for MethodBody
         mdToken         *ptkDecl)           // [OUT] return token for MethodDecl
-        DAC_UNEXPECTED();
-
-    STDMETHODIMP_(void) EnumMethodImplClose(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
         DAC_UNEXPECTED();
 
     //*****************************************
@@ -563,16 +549,6 @@ public:
         ASSOCIATE_RECORD *pAssociateRec,    // [OUT] struct to fill for output
         ULONG       cAssociateRec);         // [IN] size of the buffer
 
-
-    //**********************************
-    // Get info about a PermissionSet.
-    //**********************************
-    __checkReturn
-    STDMETHODIMP GetPermissionSetProps(
-        mdPermission pm,                    // [IN] the permission token.
-        DWORD       *pdwAction,             // [OUT] CorDeclSecurity.
-        void const  **ppvPermission,        // [OUT] permission blob.
-        ULONG       *pcbPermission);        // [OUT] count of bytes of pvPermission.
 
     //****************************************
     // Get the String given the String token.

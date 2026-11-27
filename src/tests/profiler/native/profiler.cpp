@@ -807,14 +807,9 @@ extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback
 }
 
 #ifndef WIN32
-// pal_assert expects DebugBreak and GetCurrentProcessID
+// pal_assert expects DebugBreak
 void DebugBreak()
 {
 
-}
-
-DWORD GetCurrentProcessId()
-{
-    return -1;
 }
 #endif // WIN32

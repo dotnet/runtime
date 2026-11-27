@@ -668,16 +668,16 @@ public:
 
                 m_pCode->EmitLDARG(rank); // return param
                 m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
+                m_pCode->EmitLDC_I4(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // TypeHandle
 
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
+                m_pCode->EmitLDC_I4(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
-                m_pCode->EmitLDC(MethodTable::GetOffsetOfArrayElementTypeHandle());
+                m_pCode->EmitLDC_I4(MethodTable::GetOffsetOfArrayElementTypeHandle());
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I();
 
@@ -704,7 +704,7 @@ public:
 
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
+                m_pCode->EmitLDC_I4(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
 
@@ -719,13 +719,13 @@ public:
             // check if the array is SZArray.
             m_pCode->EmitLoadThis();
             m_pCode->EmitLDFLDA(tokRawData);
-            m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
+            m_pCode->EmitLDC_I4(Object::GetOffsetOfFirstField());
             m_pCode->EmitSUB();
             m_pCode->EmitLDIND_I();
-            m_pCode->EmitLDC(MethodTable::GetOffsetOfFlags());
+            m_pCode->EmitLDC_I4(MethodTable::GetOffsetOfFlags());
             m_pCode->EmitADD();
             m_pCode->EmitLDIND_I4();
-            m_pCode->EmitLDC(MethodTable::GetIfArrayThenSzArrayFlag());
+            m_pCode->EmitLDC_I4(MethodTable::GetIfArrayThenSzArrayFlag());
             m_pCode->EmitAND();
             m_pCode->EmitBRFALSE(pNotSZArray); // goto multi-dimmArray code if not szarray
 
@@ -733,7 +733,7 @@ public:
             // bounds check
             m_pCode->EmitLoadThis();
             m_pCode->EmitLDFLDA(tokRawData);
-            m_pCode->EmitLDC(ArrayBase::GetOffsetOfNumComponents() - Object::GetOffsetOfFirstField());
+            m_pCode->EmitLDC_I4(ArrayBase::GetOffsetOfNumComponents() - Object::GetOffsetOfFirstField());
             m_pCode->EmitADD();
             m_pCode->EmitLDIND_I4();
             m_pCode->EmitLDARG(firstIdx);
@@ -741,7 +741,7 @@ public:
 
             m_pCode->EmitLoadThis();
             m_pCode->EmitLDFLDA(tokRawData);
-            m_pCode->EmitLDC(ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField());
+            m_pCode->EmitLDC_I4(ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField());
             m_pCode->EmitADD();
             m_pCode->EmitLDARG(firstIdx);
             m_pCode->EmitBR(pCheckDone);
@@ -753,7 +753,7 @@ public:
             // Cache length
             m_pCode->EmitLoadThis();
             m_pCode->EmitLDFLDA(tokRawData);
-            m_pCode->EmitLDC((ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + i*sizeof(DWORD));
+            m_pCode->EmitLDC_I4((ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + i*sizeof(DWORD));
             m_pCode->EmitADD();
             m_pCode->EmitLDIND_I4();
             m_pCode->EmitSTLOC(dwLengthLocalNum);
@@ -766,7 +766,7 @@ public:
                 // Load lower bound
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC((ArrayBase::GetLowerBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + i*sizeof(DWORD));
+                m_pCode->EmitLDC_I4((ArrayBase::GetLowerBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + i*sizeof(DWORD));
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I4();
 
@@ -793,7 +793,7 @@ public:
         // Compute element address
         m_pCode->EmitLoadThis();
         m_pCode->EmitLDFLDA(tokRawData);
-        m_pCode->EmitLDC(ArrayBase::GetDataPtrOffset(pMT) - Object::GetOffsetOfFirstField());
+        m_pCode->EmitLDC_I4(ArrayBase::GetDataPtrOffset(pMT) - Object::GetOffsetOfFirstField());
         m_pCode->EmitADD();
         m_pCode->EmitLDLOC(dwTotalLocalNum);
 
@@ -804,7 +804,7 @@ public:
         SIZE_T elemSize = pMT->GetComponentSize();
         if (elemSize != 1)
         {
-            m_pCode->EmitLDC(elemSize);
+            m_pCode->EmitLDC_I4((INT32)elemSize);
             m_pCode->EmitMUL();
         }
         m_pCode->EmitADD();
@@ -844,7 +844,7 @@ public:
 
         m_pCode->EmitRET();
 
-        m_pCode->EmitLDC(0);
+        m_pCode->EmitLDC_I4(0);
         m_pCode->EmitLabel(pRangeExceptionLabel1); // Assumes that there is one "int" pushed on the stack
         m_pCode->EmitPOP();
 

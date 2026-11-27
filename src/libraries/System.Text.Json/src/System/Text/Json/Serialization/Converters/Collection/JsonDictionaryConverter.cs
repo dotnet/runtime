@@ -261,7 +261,7 @@ namespace System.Text.Json.Serialization
                                 }
                                 else
                                 {
-                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                    ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
                                 }
                             }
                         }

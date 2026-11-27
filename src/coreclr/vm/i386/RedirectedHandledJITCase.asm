@@ -74,14 +74,6 @@ _RedirectedHandledJITCaseFor&reason&_StubEnd@0:
 _RedirectedHandledJITCaseFor&reason&_Stub@0 ENDP
 
 ENDM
-
-; HijackFunctionStart and HijackFunctionEnd are used to tell BBT to keep the hijacking functions together.
-; Debugger uses range to check whether IP falls into one of them (see code:Debugger::s_hijackFunction).
-
-_HijackFunctionStart@0 proc public
-ret
-_HijackFunctionStart@0 endp
-
 GenerateRedirectedHandledJITCaseStub <GCThreadControl>
 GenerateRedirectedHandledJITCaseStub <DbgThreadControl>
 GenerateRedirectedHandledJITCaseStub <UserSuspend>
@@ -120,10 +112,5 @@ _ExceptionHijack@0 ENDP
 _HijackFunctionLast@0 proc public
 ret
 _HijackFunctionLast@0 endp
-
-; This is the first function outside the "keep together range". Used by BBT scripts.
-_HijackFunctionEnd@0 proc public
-ret
-_HijackFunctionEnd@0 endp
 
 END

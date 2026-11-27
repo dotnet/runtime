@@ -268,6 +268,8 @@ namespace System.Net.Security
         public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)
         {
             SslStreamCertificateContext? certificateContext = sslAuthenticationOptions.CertificateContext;
+            // The copy retains the underlying certificate handle while native credentials are acquired.
+            using X509Certificate2? certificate = certificateContext is null ? null : new X509Certificate2(certificateContext.TargetCertificate);
 
             try
             {
@@ -276,8 +278,8 @@ namespace System.Net.Security
                 // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                    AcquireCredentialsHandleSchannelCred(sslAuthenticationOptions) :
-                    AcquireCredentialsHandleSchCredentials(sslAuthenticationOptions);
+                    AcquireCredentialsHandleSchannelCred(sslAuthenticationOptions, certificate) :
+                    AcquireCredentialsHandleSchCredentials(sslAuthenticationOptions, certificate);
 #pragma warning restore SYSLIB0040
 
                 if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
@@ -298,8 +300,8 @@ namespace System.Net.Security
             }
             catch (Win32Exception e) when (e.NativeErrorCode == (int)Interop.SECURITY_STATUS.NoCredentials && certificateContext != null)
             {
-                Debug.Assert(certificateContext.TargetCertificate.HasPrivateKey);
-                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateContext.TargetCertificate.Handle);
+                Debug.Assert(certificate!.HasPrivateKey);
+                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
                 // on Windows we do not support ephemeral keys.
                 throw new AuthenticationException(safeCertContextHandle.HasEphemeralPrivateKey ? SR.net_auth_ephemeral : SR.net_auth_SSPI, e);
             }
@@ -332,12 +334,11 @@ namespace System.Net.Security
 
         // This is legacy crypto API used on older Windows versions.
         // It only supports TLS up to 1.2
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions, X509Certificate2? certificate)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
-            Interop.SspiCli.SCHANNEL_CRED.Flags flags;
+            Interop.SspiCli.SCHANNEL_CRED.Flags flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE;
             Interop.SspiCli.CredentialUse direction;
 
             bool allowTlsResume = authOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume;
@@ -345,7 +346,7 @@ namespace System.Net.Security
             if (!isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
@@ -362,7 +363,7 @@ namespace System.Net.Security
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 if (!allowTlsResume)
@@ -384,7 +385,7 @@ namespace System.Net.Security
             }
 #pragma warning restore SYSLIB0040
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
             Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
                 flags,
                 protocolFlags,
@@ -395,24 +396,23 @@ namespace System.Net.Security
                 secureCredential.dwSessionLifespan = -1;
             }
 
-            Interop.Crypt32.CERT_CONTEXT* certificateHandle;
-            if (certificate != null)
+            Interop.Crypt32.CERT_CONTEXT* certificateContext;
+            if (certificate is not null)
             {
                 secureCredential.cCreds = 1;
-                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
-                secureCredential.paCred = &certificateHandle;
+                certificateContext = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
+                secureCredential.paCred = &certificateContext;
             }
 
             return AcquireCredentialsHandle(direction, &secureCredential);
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions, X509Certificate2? certificate)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
-            Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
+            Interop.SspiCli.SCH_CREDENTIALS.Flags flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE;
             Interop.SspiCli.CredentialUse direction;
 
             bool allowTlsResume = authOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume;
@@ -420,7 +420,7 @@ namespace System.Net.Security
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 if (!allowTlsResume)
@@ -432,7 +432,7 @@ namespace System.Net.Security
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
@@ -477,15 +477,15 @@ namespace System.Net.Security
                 credential.dwSessionLifespan = -1;
             }
 
-            Interop.Crypt32.CERT_CONTEXT* certificateHandle;
-            if (certificate != null)
+            Interop.Crypt32.CERT_CONTEXT* certificateContext;
+            if (certificate is not null)
             {
                 credential.cCreds = 1;
-                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
-                credential.paCred = &certificateHandle;
+                certificateContext = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
+                credential.paCred = &certificateContext;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
 
             Interop.SspiCli.TLS_PARAMETERS tlsParameters = default;
             credential.cTlsParameters = 1;

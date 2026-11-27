@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
+  echo "                                  linux-musl, linux-bionic, openharmony, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -40,12 +40,9 @@ usage()
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
-  echo "  -runtimeFlavor (-rf)            Runtime flavor: CoreCLR or Mono."
-  echo "                                  [Default: CoreCLR]"
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
-  echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   echo "  --dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
   echo "                                  Also enables the interpreter when dynamic code compilation is disabled."
@@ -72,8 +69,8 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net11.0 or net481."
-  echo "                             [Default: net11.0]"
+  echo "  --framework (-f)           Build framework: net12.0 or net481."
+  echo "                             [Default: net12.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -123,14 +120,8 @@ usage()
   echo "Further information on this can be found here:"
   echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/cross-building.md"
   echo ""
-  echo "* Build Mono runtime for Linux x64 on Release configuration."
-  echo "./build.sh mono -c release"
-  echo ""
   echo "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
   echo "./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release"
-  echo ""
-  echo "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
-  echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
   echo ""
   echo ""
   echo "For more general information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
@@ -146,8 +137,9 @@ initDistroRid()
     local isCrossBuild="$3"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
-        passedRootfsDir=${ROOTFS_DIR}
+    # OpenHarmony uses its NDK toolchain, so no rootfs is required either.
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "openharmony" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
+        passedRootfsDir=${ROOTFS_DIR:-}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
@@ -310,6 +302,8 @@ while [[ $# -gt 0 ]]; do
           os="linux"
           __PortableTargetOS=linux-musl
           ;;
+        openharmony)
+          os="openharmony" ;;
         haiku)
           os="haiku" ;;
         *)
@@ -364,31 +358,6 @@ while [[ $# -gt 0 ]]; do
       esac
       arguments+=("/p:RuntimeConfiguration=$val")
       shift 2
-      ;;
-
-     -runtimeflavor|-rf)
-      if [ -z ${2+x} ]; then
-        echo "No runtime flavor supplied. See help (--help) for supported runtime flavors." 1>&2
-        exit 1
-      fi
-      passedRuntimeFlav="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      case "$passedRuntimeFlav" in
-        coreclr|mono)
-          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeFlav:0:1})${passedRuntimeFlav:1}"
-          ;;
-        *)
-          echo "Unsupported runtime flavor '$2'."
-          echo "The allowed values are CoreCLR and Mono."
-          exit 1
-          ;;
-      esac
-      arguments+=("/p:RuntimeFlavor=$val")
-      shift 2
-      ;;
-
-     -usemonoruntime)
-      arguments+=("/p:PrimaryRuntimeFlavor=Mono")
-      shift 1
       ;;
 
      -clrinterpreter)

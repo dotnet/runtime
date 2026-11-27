@@ -41,6 +41,7 @@ public static class Constants
         public const string CanonMethodTable = nameof(CanonMethodTable);
         public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
+        public const string ExternalMemoryHandles = nameof(ExternalMemoryHandles);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);

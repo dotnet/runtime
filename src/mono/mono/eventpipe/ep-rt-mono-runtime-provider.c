@@ -3520,7 +3520,7 @@ gc_heap_dump_context_alloc_bulk_data (
 	data->index = 0;
 	data->count = 0;
 
-	return data->data_start;
+	return data->data_start != NULL;
 }
 
 static
@@ -4633,7 +4633,7 @@ void
 EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
-	unsigned long is_enabled,
+	uint32_t is_enabled,
 	uint8_t level,
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,

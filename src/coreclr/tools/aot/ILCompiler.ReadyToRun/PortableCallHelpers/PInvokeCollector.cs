@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -138,6 +139,7 @@ namespace ILCompiler.PortableCallHelpers
                     CollectPInvokesForMethod(method);
                     if (IsMethodCallback(method))
                         callbacks.Add(new PInvokeCallback(method));
+                    CollectUnmanagedCalliSignatures(signatures, method);
                 }
                 catch (Exception ex) when (ex is not LogAsErrorException)
                 {
@@ -175,6 +177,80 @@ namespace ILCompiler.PortableCallHelpers
                 pinvokes.Add(new PInvokeInfo(metadata.Name, metadata.Module, method, wasmLinkage));
 
                 AddSignature(signatures, method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly, "pinvoke");
+            }
+        }
+
+        /// <summary>
+        /// Adds the signature of every <c>calli</c> through an unmanaged function pointer in the
+        /// method's body. The interpreter calls those through the same thunks as P/Invokes, and a
+        /// function pointer's signature appears nowhere else the scan looks.
+        /// </summary>
+        private void CollectUnmanagedCalliSignatures(Dictionary<string, MethodDesc> signatures, EcmaMethod method)
+        {
+            if (method.IsPInvoke || method.IsAbstract)
+                return;
+
+            MethodIL methodIL = EcmaMethodIL.Create(method);
+            if (methodIL is null)
+                return;
+
+            ILReader reader = new ILReader(methodIL.GetILBytes());
+            while (reader.HasNext)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.calli)
+                {
+                    reader.Skip(opcode);
+                    continue;
+                }
+
+                if (methodIL.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) is not MethodSignature calliSignature
+                    || (calliSignature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) is 0 or MethodSignatureFlags.CallingConventionVarargs)
+                {
+                    continue;
+                }
+
+                if (IsUnsupportedOnPlatform(method))
+                    return;
+
+                // A signature over the enclosing generic parameters has no single native shape.
+                if (ContainsSignatureVariables(calliSignature))
+                {
+                    log.Verbose($"Skipping generic unmanaged calli in '{method.OwningType}.{method.Name.ToString()}'");
+                    continue;
+                }
+
+                string signature;
+                try
+                {
+                    signature = WasmLowering.GetSignature(calliSignature, WasmLowering.LoweringFlags.None).SignatureString;
+                    foreach (string token in InteropSignature.ParseSignatureTokens(signature))
+                        InteropSignature.TokenToNativeType(token);
+                }
+                catch (Exception ex) when (ex is InvalidSignatureCharException or LogAsErrorException or TypeSystemException)
+                {
+                    // A P/Invoke with such a signature is a build error, but a calli is only a call
+                    // site that may never run. Leave it to fail at run time rather than fail the build.
+                    log.Verbose($"Skipping unmanaged calli in '{method.OwningType}.{method.Name.ToString()}': {ex.Message}");
+                    continue;
+                }
+
+                if (signatures.TryAdd(signature, method))
+                    log.Verbose($"Adding calli signature {signature} for method '{method.OwningType}.{method.Name.ToString()}'");
+            }
+
+            static bool ContainsSignatureVariables(MethodSignature signature)
+            {
+                if (signature.ReturnType.ContainsSignatureVariables())
+                    return true;
+
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    if (signature[i].ContainsSignatureVariables())
+                        return true;
+                }
+
+                return false;
             }
         }
 

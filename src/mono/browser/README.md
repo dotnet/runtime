@@ -14,6 +14,44 @@ Windows build [requirements](../../../docs/workflow/requirements/windows-require
 
 At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
+### CoreCLR QCall and FCall table trimming
+
+CoreCLR browser and WASI native relinking generates one static QCall/FCall
+entrypoint table in `callhelpers-pinvoke.cpp` from the bundled managed closure.
+Only `System.Private.CoreLib` contributes QCalls and fixed-address FCalls. For
+trimmed apps, the generator scans the surviving declarations in the actual
+post-trim IL, not the runtime-pack CoreLib or ReadyToRun/webcil images.
+
+The generated table uses the QCall resolver for both kinds of entrypoint.
+Static FCalls have C-linkage names derived from the managed type and method,
+such as `Math_Ceiling`. Their FCall calling convention and hidden arguments
+remain unchanged; they do not become P/Invokes or acquire a QCall transition.
+The generator rejects conflicting native lookup names and emits a deterministic,
+ordinally sorted table.
+
+The three generated sources (`callhelpers-pinvoke.cpp`, `callhelpers-reverse.cpp`,
+and `callhelpers-interp-to-managed.cpp`) replace `libcoreclr_gen_static.a` during
+app and runtime-test relinking. The native linker can then discard unused
+static entrypoints and implementations, unless independent native references
+retain them. Prebuilt WASM runtimes use the checked-in full-framework helpers and
+the configuration-specific full native entrypoint table; other CoreCLR platforms
+also use that full table.
+
+The generator is available as
+`crossgen2 --generate-portable-callhelpers <output-dir> --targetos browser
+--targetarch wasm <managed-assemblies>`.
+For WASI, use `--targetos wasi`. Include the actual bundled CoreLib and use
+matching managed/native sources and target configuration. No separate manifest,
+SDK header, or build identity is required. See
+[Generating CoreCLR WebAssembly call helpers](../../coreclr/vm/wasm/generate-coreclr-helpers.md)
+for regenerating the checked-in full-framework sources.
+
+The nine signature-qualified String constructors and `String.FastAllocateString`
+remain in a separate, non-trimmable dynamic mechanism with unchanged dynamic IDs
+and binder roots. Delegate constructors retain their special runtime handling.
+The signature-only `RuntimeHelpers.NewobjHelperDummy` is not emitted as a static
+entrypoint. These exclusions do not remove interpreter signature thunks.
+
 ## macOS
 
 * To build the whole repository, including libraries:
@@ -225,16 +263,14 @@ There is also the [wa-edit](https://github.com/radekdoulik/wa-info#wa-edit) tool
 
 Relinking is the process of rebuilding the native WebAssembly runtime (`dotnet.native.js`, `dotnet.native.wasm`, etc.) with updated or trimmed content, often resulting in a smaller or more optimized output. This is necessary when certain configuration properties or source changes require regeneration of the native artifacts.
 
-### Properties That Trigger Relinking in `browser.proj`
+### Properties That Trigger Relinking in `BrowserWasmApp.CoreCLR.targets`
 
 The following MSBuild properties will trigger a relinking (full rebuild of native artifacts) during the browser/wasm build process:
 
 - **`WasmBuildNative`** - `/p:WasmBuildNative=true` - Forces a fresh build of the native runtime components.
 - **`WasmRelinkNative`** - `/p:WasmRelinkNative=true` - Explicitly requests relinking, even if not otherwise required by other property changes.
-- **`RunAOTCompilation`** - `/p:RunAOTCompilation=true` - Enables Ahead-of-Time (AOT) compilation. Changing this requires relinking to produce the correct output.
 - **`WasmEnableExceptionHandling`** - `/p:WasmEnableExceptionHandling=true` - Changes exception handling mechanisms in the native runtime.
 - **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
-- **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.
 - **`EmccMaximumHeapSize`** - `/p:EmccMaximumHeapSize=...` - Controls memory layout configuration.
 - **`EmccInitialHeapSize`** - `/p:EmccInitialHeapSize=...` - Controls memory layout together with `EmccMaximumHeapSize`. Heap size configuration applies only for browser scenarios.
 - **`WasmBuildArgs`** - Any change to arguments passed via `/p:WasmBuildArgs=...` (such as enabling/disabling additional features or options) will trigger a relink.
@@ -244,7 +280,7 @@ The following MSBuild properties will trigger a relinking (full rebuild of nativ
 
 - Relinking ensures that the produced WebAssembly binaries reflect the current set of build options and runtime features.
 - For incremental developer workflows, minimizing unnecessary relinks speeds up build times.
-- The relink process is managed by MSBuild targets in `browser.proj`—refer to that file for the most up-to-date logic.
+- The relink process is managed by `BrowserWasmApp.CoreCLR.targets`.
 - Source changes to native code (C/C++/Emscripten sources) in `src/mono/browser` or dependent directories will naturally trigger a relink.
 
 For questions or advanced scenarios, see the [WebAssembly build instructions](../../../docs/workflow/building/libraries/webassembly-instructions.md).

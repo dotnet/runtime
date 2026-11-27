@@ -837,6 +837,24 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                     JITDUMP(" ... Not a GC store at [%06u]\n", m_compiler->dspTreeID(tree));
                 }
             }
+            else
+            {
+                // Other definitions of tracked locals are not modelled in the connection graph. The defined
+                // locals may point anywhere, and escape since we cannot rewrite these definitions.
+                //
+                tree->VisitLogicalLocalDefs(m_compiler, [=](const auto& def) {
+                    unsigned const lclNum = def.GetLclNum();
+                    if (m_allocator->IsTrackedLocal(lclNum))
+                    {
+                        JITDUMP("V%02u defined by unmodelled node [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
+                        m_allocator->AddConnGraphEdgeIndex(m_allocator->LocalToIndex(lclNum),
+                                                           m_allocator->m_unknownSourceIndex);
+                        m_allocator->MarkLclVarAsEscaping(lclNum);
+                    }
+
+                    return GenTree::VisitResult::Continue;
+                });
+            }
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
     };
@@ -1176,7 +1194,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
         *reason = "[runtime disallows]";
         return false;
     }
-    if (allocType == OAT_NEWARR)
+    if ((allocType == OAT_NEWARR) || (allocType == OAT_NEWARR_R2R))
     {
         if (!enableArrays)
         {
@@ -1285,10 +1303,22 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         const bool isValueClass = m_compiler->info.compCompHnd->isValueClass(clsHnd);
         bool const canBeOnStack = isValueClass || m_compiler->info.compCompHnd->canAllocateOnStack(clsHnd);
         allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
+
+        if (canBeOnStack)
+        {
+            JITDUMP("Checking if we can stack allocate object [%06u] (%s)\n", m_compiler->dspTreeID(tree),
+                    m_compiler->eeGetClassName(clsHnd));
+        }
+        else
+        {
+            JITDUMP("Object [%06u] must be allocated on the heap (%s)\n", m_compiler->dspTreeID(tree),
+                    m_compiler->eeGetClassName(clsHnd));
+        }
     }
-    else if (!m_isR2R && tree->IsHelperCall())
+    else if (tree->IsHelperCall())
     {
         GenTreeCall* const call = tree->AsCall();
+
         switch (call->GetHelperNum())
         {
             case CORINFO_HELP_NEWARR_1_VC:
@@ -1299,6 +1329,26 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
                 if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
                 {
                     allocType = OAT_NEWARR;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                break;
+            }
+
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+            {
+                assert(m_isR2R);
+                if ((call->gtArgs.CountUserArgs() == 1) && call->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                {
+                    allocType = OAT_NEWARR_R2R;
+                    JITDUMP("Checking if we can stack allocate array [%06u]\n", m_compiler->dspTreeID(call));
+                }
+                else
+                {
+                    JITDUMP("Can't handle unknown length newarr [%06u]\n", m_compiler->dspTreeID(call));
                 }
                 break;
             }
@@ -1534,6 +1584,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     switch (candidate.m_allocType)
     {
         case OAT_NEWARR:
+        case OAT_NEWARR_R2R:
             return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
@@ -1558,14 +1609,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 {
     assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
-
-    // R2R not yet supported
-    //
-    if (m_isR2R)
-    {
-        candidate.m_onHeapReason = "[R2R array not yet supported]";
-        return false;
-    }
+    assert((candidate.m_allocType == OAT_NEWARR) || (candidate.m_allocType == OAT_NEWARR_R2R));
 
     GenTree* const data = candidate.m_tree->AsLclVar()->Data();
 
@@ -1587,7 +1631,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
     bool                 isExact   = false;
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+    GenTreeCall* const   call      = data->AsCall();
+    GenTree* const       len       = call->gtArgs.GetUserArgByIndex(call->gtArgs.CountUserArgs() - 1)->GetNode();
 
     assert(len != nullptr);
 
@@ -1615,7 +1660,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 
     JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
     const unsigned int stackLclNum =
-        MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
+        MorphNewArrNodeIntoStackAlloc(call, clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
                                       candidate.m_block, candidate.m_statement);
 
     // Keep track of this new local for later type updates.
@@ -1729,6 +1774,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     if (helperHasSideEffects)
     {
         helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+        helperCall->gtFlags |= GTF_GLOB_REF;
     }
 
 #ifdef FEATURE_READYTORUN
@@ -1777,10 +1823,23 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(newArr->IsHelperCall());
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
 
-    const bool         shortLifetime = false;
-    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
-    const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
-    LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
+    const bool shortLifetime = false;
+    bool       alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (!alignTo8)
+    {
+        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+        var_types elemType = JITtype2varType(m_compiler->info.compCompHnd->getChildType(clsHnd, &elemClsHnd));
+        alignTo8           = (elemType == TYP_LONG) || (elemType == TYP_DOUBLE);
+        if (elemType == TYP_STRUCT)
+        {
+            assert(elemClsHnd != NO_CLASS_HANDLE);
+            alignTo8 = m_compiler->info.compCompHnd->getClassAlignmentRequirement(elemClsHnd) == 8;
+        }
+    }
+#endif
+    const unsigned int lclNum = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
+    LclVarDsc* const   lclDsc = m_compiler->lvaGetDesc(lclNum);
 
     if (alignTo8)
     {
@@ -1822,7 +1881,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //
     GenTree* const stackLocalAddr = m_compiler->gtNewLclAddrNode(lclNum, 0);
     newArr->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(stackLocalAddr).WellKnown(WellKnownArg::StackArrayLocal));
-    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
     // Retype the call result as an unmanaged pointer
     //
@@ -2340,7 +2398,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 }
                 else if (call->IsDelegateInvoke())
                 {
-                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    // Explicit tail calls may use helpers that need the delegate after this frame returns.
+                    if (!call->IsTailPrefixedCall() && (tree == call->gtArgs.GetThisArg()->GetNode()))
                     {
                         JITDUMP("Delegate invoke this...\n");
                         canLclVarEscapeViaParentStack = false;
@@ -4245,13 +4304,13 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
         for (EnumeratorVarAppearance* const a : *(ev->m_appearances))
         {
-            // If this is a use, see if it's part of a GDV guard.
+            // If this is a use, see if it's part of a GDV guard for this allocation's type.
             //
             if (!a->m_isDef && (a->m_stmt == a->m_block->lastStmt()))
             {
                 GuardInfo      tempInfo;
                 GenTree* const guardingRelop = IsGuard(a->m_block, &tempInfo);
-                a->m_isGuard                 = (guardingRelop != nullptr);
+                a->m_isGuard                 = (guardingRelop != nullptr) && (tempInfo.m_type == info->m_type);
             }
 
             // If this is V, we're done
