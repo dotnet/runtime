@@ -10,7 +10,7 @@ namespace Runtime_138442;
 // For an unconstrained T, "value == null" is "box T; ldnull; ceq", "value != null" is
 // "box T; ldnull; cgt.un" and "if (value == null)" is "box T; brtrue". When T is a
 // Nullable<> these are hasValue checks and should not allocate, also when the
-// comparison is inlined into a loop.
+// comparison is inlined into a loop. For other value types they are constants.
 public class Runtime_138442
 {
     private struct S<T>
@@ -129,6 +129,15 @@ public class Runtime_138442
         Assert.Equal(2, SumNullToOne(values));
     }
 
+    private static void TestNotNull<T>(T value)
+    {
+        Assert.False(IsNull(value));
+        Assert.True(IsNotNull(value));
+        Assert.Equal(0, NullToOne(value));
+        Assert.Equal(2, Branches(value));
+        Assert.Equal(2 + (2 << 2), CallsEvaluatedOnce(value, value));
+    }
+
     private static void TestShared<U>(U value) => Test<S<U>?>(new S<U> { Value = value }, null);
 
     [Fact]
@@ -140,6 +149,9 @@ public class Runtime_138442
         Test<S<string>?>(new S<string> { Value = "a" }, null);
         TestShared("b");
         TestShared<object>(null);
+        Test<string>("c", null);
+        TestNotNull(42);
+        TestNotNull(new S<string> { Value = "d" });
     }
 
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
@@ -152,7 +164,7 @@ public class Runtime_138442
             values[i] = (i % 10 == 0) ? null : i;
         }
 
-        // Make sure both methods are compiled before measuring.
+        // Make sure the methods are compiled before measuring.
         CountNulls(values);
         CountNonNulls(values);
         SumNullToOne(values);

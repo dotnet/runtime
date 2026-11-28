@@ -3075,25 +3075,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return -1;
     }
 
-    // A boxed Nullable<T> is null iff its hasValue field is false, so a null check
-    // of the box only needs that field. Fold it here when impImportAndPushBoxForNullable
-    // would otherwise expand the box inline, since that allocation may not be removed
-    // later (e.g. when it is in a loop). Elsewhere the box is a CORINFO_HELP_BOX_NULLABLE
-    // call, and gtFoldBoxNullable folds the null check.
-    //
-    auto isFoldableNullableBox = [&]() {
-        return (opts == BoxPatterns::None) && !this->opts.OptimizationDisabled() && !compCurBB->isRunRarely() &&
-               (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX_NULLABLE) &&
-               !eeIsSharedInst(pResolvedToken->hClass);
-    };
-
-    auto pushNullableHasValueCheck = [&](genTreeOps oper) {
-        // Boxing allows the "initclass" flag, but not volatile/unaligned flags
-        GenTreeFlags indirFlags  = GTF_EMPTY;
-        GenTree*     nullableObj = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, GTF_IND_INITCLASS, &indirFlags);
+    // Pops the Nullable<T> from the stack and returns "hasValue != 0" (i.e. "box(nullable) != null"),
+    // or "hasValue == 0" for GT_EQ.
+    auto popNullableHasValue = [this](genTreeOps oper = GT_NE) -> GenTree* {
+        GenTreeFlags indirFlags = GTF_EMPTY;
+        GenTree* addr = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
         static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-        GenTree* hasValue = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj, indirFlags);
-        impPushOnStack(gtNewOperNode(oper, TYP_INT, hasValue, gtNewIconNode(0)), typeInfo(TYP_INT));
+        return gtNewOperNode(oper, TYP_INT, gtNewIndir(TYP_UBYTE, addr, indirFlags), gtNewIconNode(0));
     };
 
     switch (codeAddr[0])
@@ -3204,27 +3192,46 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     return 0;
                 }
 
-                if (isFoldableNullableBox())
+                if (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX_NULLABLE)
                 {
-                    JITDUMP("\n Importing BOX(Nullable); BR_TRUE/FALSE as hasValue check\n")
-
-                    pushNullableHasValueCheck(GT_NE);
+                    JITDUMP("\n Importing BOX; BR_TRUE/FALSE as nullableVT.hasValue\n")
+                    impPushOnStack(popNullableHasValue(), typeInfo(TYP_INT));
                     return 0;
                 }
             }
             break;
 
         case CEE_LDNULL:
-            // box(Nullable) + ldnull + ceq/cgt_un, e.g. "value == null" for a T that is a Nullable
-            if ((codeAddr + 3 <= codeEndp) && isFoldableNullableBox())
+            // box + ldnull + ceq/cgt.un
+            if ((opts != BoxPatterns::IsByRefLike) && (codeAddr + 3 <= codeEndp))
             {
                 const OPCODE cmpOpcode = impGetNonPrefixOpcode(codeAddr + 1, codeEndp);
-                if ((cmpOpcode == CEE_CEQ) || (cmpOpcode == CEE_CGT_UN))
+                if ((cmpOpcode != CEE_CEQ) && (cmpOpcode != CEE_CGT_UN))
                 {
-                    JITDUMP("\n Importing BOX(Nullable); LDNULL; %s as hasValue check\n",
-                            (cmpOpcode == CEE_CEQ) ? "CEQ" : "CGT_UN");
+                    break;
+                }
 
-                    pushNullableHasValueCheck((cmpOpcode == CEE_CEQ) ? GT_EQ : GT_NE);
+                if (opts == BoxPatterns::MakeInlineObservation)
+                {
+                    // Don't skip the IL: the scan doesn't know block boundaries here.
+                    compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_BOX);
+                    return 0;
+                }
+
+                const CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                if (boxHelper == CORINFO_HELP_BOX)
+                {
+                    JITDUMP("\n Importing BOX; LDNULL; CEQ/CGT_UN as constant\n")
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                    impPopStack();
+                    impPushOnStack(gtNewIconNode((cmpOpcode == CEE_CEQ) ? 0 : 1), typeInfo(TYP_INT));
+                    return 3;
+                }
+
+                if (boxHelper == CORINFO_HELP_BOX_NULLABLE)
+                {
+                    JITDUMP("\n Importing BOX; LDNULL; CEQ/CGT_UN as nullableVT.hasValue\n")
+                    impPushOnStack(popNullableHasValue((cmpOpcode == CEE_CEQ) ? GT_EQ : GT_NE), typeInfo(TYP_INT));
                     return 3;
                 }
             }
@@ -3341,16 +3348,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                             if (castResult == TypeCompareState::Must)
                             {
-                                GenTree* objToBox = impPopStack().val;
-
-                                // Spill struct to get its address (to access hasValue field)
-                                // Transfer any volatile/unaligned flags to the indirection
-                                GenTreeFlags indirFlags = GTF_EMPTY;
-                                objToBox =
-                                    impGetNodeAddr(objToBox, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
-
-                                static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox, indirFlags), typeInfo(TYP_INT));
+                                impPushOnStack(popNullableHasValue(), typeInfo(TYP_INT));
 
                                 JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                 return returnToken;
