@@ -4087,6 +4087,16 @@ inline bool Compiler::lvaIsFieldOfDependentlyPromotedStruct(const LclVarDsc* var
     return false;
 }
 
+// IsOnUnknownSizeFrame: Whether this local uses scalable frame indices rather than byte offsets.
+inline bool LclVarDsc::IsOnUnknownSizeFrame(Compiler* compiler) const
+{
+#ifdef TARGET_ARM64
+    return !lvValueSize().IsExact() && !lvIsOSRLocal && !compiler->lvaIsFieldOfDependentlyPromotedStruct(this);
+#else
+    return false;
+#endif
+}
+
 //------------------------------------------------------------------------
 // lvaIsGCTracked: Determine whether this var should be reported
 //    as tracked for GC purposes.

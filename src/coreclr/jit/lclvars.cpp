@@ -2952,7 +2952,8 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 #ifdef TARGET_ARM64
     if (lvaIsUnknownSizeLocal(varNum))
     {
-        assert(lvaIsOSRLocal(varNum));
+        // OSR locals and dependent fields use fixed storage sized for the runtime vector length.
+        assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
         unsigned size = 0;
         switch (varDsc->lvType)
         {
