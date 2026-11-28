@@ -795,6 +795,8 @@ namespace System.Diagnostics.Tests
             Assert.DoesNotContain("ResumeValueTaskSourceContinuation", exceptionText);
             Assert.DoesNotContain("ValueTaskSourceContinuation.GetResult", exceptionText);
             Assert.DoesNotContain("RuntimeAsyncTaskContinuation.GetResult", exceptionText);
+            Assert.DoesNotContain("GetAwaitedTaskResult", exceptionText);
+            Assert.DoesNotContain("GetTaskResult", exceptionText);
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

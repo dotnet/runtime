@@ -195,6 +195,12 @@ namespace System.Threading.Tasks.Tests
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task FuncThatWaitsOnceSuppressingThrowing(Task task)
+        {
+            await task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         static async Task FuncThatInspectsContinuationTimestamps(TaskCompletionSource tcs, Action callback)
         {
             await tcs.Task;
@@ -699,10 +705,10 @@ namespace System.Threading.Tasks.Tests
                 {
                     listener.RunWithCallback(events.Enqueue, () =>
                     {
-                        foreach (bool cancel in new[] { false, true })
+                        foreach ((bool cancel, bool suppressThrowing) in new[] { (false, false), (true, false), (false, true), (true, true) })
                         {
                             var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                            Task runtimeAsyncTask = FuncThatWaitsOnce(tcs.Task);
+                            Task runtimeAsyncTask = suppressThrowing ? FuncThatWaitsOnceSuppressingThrowing(tcs.Task) : FuncThatWaitsOnce(tcs.Task);
                             int runtimeAsyncTaskId = runtimeAsyncTask.Id;
                             int awaitedTaskId = tcs.Task.Id;
 
@@ -718,11 +724,22 @@ namespace System.Threading.Tasks.Tests
                             if (cancel)
                             {
                                 tcs.SetCanceled();
-                                Assert.ThrowsAny<OperationCanceledException>(() => runtimeAsyncTask.GetAwaiter().GetResult());
                             }
                             else
                             {
                                 tcs.SetException(new InvalidOperationException());
+                            }
+
+                            if (suppressThrowing)
+                            {
+                                runtimeAsyncTask.GetAwaiter().GetResult();
+                            }
+                            else if (cancel)
+                            {
+                                Assert.ThrowsAny<OperationCanceledException>(() => runtimeAsyncTask.GetAwaiter().GetResult());
+                            }
+                            else
+                            {
                                 Assert.Throws<InvalidOperationException>(() => runtimeAsyncTask.GetAwaiter().GetResult());
                             }
 
