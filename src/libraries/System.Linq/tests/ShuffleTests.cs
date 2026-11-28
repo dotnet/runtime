@@ -257,6 +257,36 @@ namespace System.Linq.Tests
             Assert.False(en is not null && en.MoveNext());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(5)]
+        public void Take_ListShrinksAfterQueryIsCreated_RemainingElementsReturned(int remaining)
+        {
+            List<int> list = Enumerable.Range(0, 10).ToList();
+            IEnumerable<int> query = list.Shuffle().Take(5);
+
+            list.RemoveRange(remaining, list.Count - remaining);
+            int[] expected = Enumerable.Range(0, remaining).ToArray();
+
+            Assert.Equal(remaining, query.Count());
+            Assert.Equal(remaining > 0, query.Any());
+            Assert.Equal(expected, query.ToArray().Order());
+            Assert.Equal(expected, query.ToList().Order());
+
+            List<int> enumerated = [];
+            foreach (int item in query)
+            {
+                enumerated.Add(item);
+            }
+
+            Assert.Equal(expected, enumerated.Order());
+
+            Assert.All(expected, item => Assert.True(query.Contains(item)));
+            Assert.False(query.Contains(remaining));
+        }
+
         [Fact]
         public void First_Last_GetElement_Invalid_ExpectedExceptions()
         {
