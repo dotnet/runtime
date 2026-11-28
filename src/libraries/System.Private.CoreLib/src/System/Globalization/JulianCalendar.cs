@@ -202,7 +202,7 @@ namespace System.Globalization
                 y += (i - 11) / 12;
             }
 
-            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int days = daysArray[m] - daysArray[m - 1];
             if (d > days)
             {

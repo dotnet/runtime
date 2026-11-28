@@ -190,6 +190,31 @@ namespace System.Globalization.Tests
             }
         }
 
+        public IEnumerable<int> DaysInYear_MatchesDaysBetweenYearStarts_TestData(Calendar calendar)
+        {
+            int minYear = calendar.GetDayOfYear(Calendar.MinSupportedDateTime) == 1
+                ? calendar.GetYear(calendar.MinSupportedDateTime)
+                : calendar.GetYear(calendar.MinSupportedDateTime) + 1;
+            int maxYear = calendar.GetYear(calendar.MaxSupportedDateTime);
+            for (int year = minYear; year < maxYear; year++)
+            {
+                yield return year;
+            }
+        }
+
+        [Fact]
+        public void DaysInYear_MatchesDaysBetweenYearStarts()
+        {
+            Calendar calendar = Calendar;
+            Assert.All(DaysInYear_MatchesDaysBetweenYearStarts_TestData(calendar), year =>
+            {
+                DateTime start = calendar.ToDateTime(year, 1, 1, 0, 0, 0, 0);
+                DateTime nextStart = calendar.ToDateTime(year + 1, 1, 1, 0, 0, 0, 0);
+                int expectedDays = (nextStart - start).Days;
+                Assert.Equal(expectedDays, calendar.GetDaysInYear(year));
+            });
+        }
+
         [Fact]
         public void GetDaysInYear_Invalid_ThrowsArgumentOutOfRangeException()
         {
