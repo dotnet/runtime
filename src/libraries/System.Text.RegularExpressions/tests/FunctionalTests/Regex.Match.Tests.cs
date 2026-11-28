@@ -1322,6 +1322,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
             yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
+            yield return (@".*(?:a|a.*a)", "a", RegexOptions.None, 0, 1, true, "a");
 
             // Tests for bugs in NonBacktracking, which didn't properly handle some combinations of loops and anchors
             yield return (@"(a|\b){2}", "ac", RegexOptions.None, 0, 2, true, "a");

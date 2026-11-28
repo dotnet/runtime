@@ -825,16 +825,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     return left.Subsumes(builder, right._left, depth);
                 }
 
-                // Rule: XY subsumes (X')??Y' if X equals X' and Y subsumes Y'
+                // Rule: XY subsumes (X')??Y' if X equals X', X is nullable, and Y subsumes Y'
                 // This structure arises from a folding rule in TryFold
                 if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
                 {
-                    Debug.Assert(!left._left.IsNull && !right._left.IsNull && !right._right.IsNull);
+                    Debug.Assert(!right._left.IsNull && !right._right.IsNull);
                     SymbolicRegexNodeContext<TSet> rl = right._left;
-                    if (left._left.IsNullable && rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
+                    if (rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
                     {
                         Debug.Assert(!rl._left.IsNull);
-                        if (TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet> tail))
+                        if (rl._left.IsNullable && TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet> tail))
                             return tail.Subsumes(builder, right._right, depth);
                     }
                 }
