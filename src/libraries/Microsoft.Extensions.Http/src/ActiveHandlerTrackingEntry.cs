@@ -13,7 +13,16 @@ namespace Microsoft.Extensions.Http
     // for the 'expiry' pool simplifies the threading requirements significantly.
     internal sealed class ActiveHandlerTrackingEntry
     {
-        private static readonly TimerCallback _timerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
+        // The timer only holds a weak reference to the entry. While the factory is alive, it keeps the entry
+        // alive through its collection of active handlers. Once the factory is unreachable, the timer must not
+        // keep the entry (and through it the handler pipeline, its scope, and the root service provider) alive.
+        private static readonly TimerCallback _timerCallback = (s) =>
+        {
+            if (((WeakReference<ActiveHandlerTrackingEntry>)s!).TryGetTarget(out ActiveHandlerTrackingEntry? entry))
+            {
+                entry.Timer_Tick();
+            }
+        };
         private readonly object _lock;
         private bool _timerInitialized;
         private Timer? _timer;
@@ -68,7 +77,7 @@ namespace Microsoft.Extensions.Http
                 }
 
                 _callback = callback;
-                _timer = NonCapturingTimer.Create(_timerCallback, this, Lifetime, Timeout.InfiniteTimeSpan);
+                _timer = NonCapturingTimer.Create(_timerCallback, new WeakReference<ActiveHandlerTrackingEntry>(this), Lifetime, Timeout.InfiniteTimeSpan);
                 _timerInitialized = true;
             }
         }
