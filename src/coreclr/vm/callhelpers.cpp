@@ -7,6 +7,10 @@
 
 #include "common.h"
 
+#ifdef DEBUGGING_SUPPORTED
+thread_local bool UnmanagedCallersOnlyCaller::t_fDebuggerTraceCallsHidden = false;
+#endif // DEBUGGING_SUPPORTED
+
 void CallDefaultConstructor(OBJECTREF ref)
 {
     CONTRACTL

@@ -9064,7 +9064,8 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
 
             EX_TRY
             {
-                UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
+                // First-chance handlers can run user code even inside a hidden runtime callback.
+                UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION, UnmanagedCallersOnlyCaller::VisibleEvenIfNested);
                 deliverNotification.InvokeThrowing(&oThrowable);
             }
             EX_CATCH

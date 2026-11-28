@@ -2094,7 +2094,9 @@ void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
 
     // Some stubs don't call back into user code.
     // In that case, we don't have an address to trace here.
-    if (addr != NULL)
+    // Hidden runtime-internal callbacks aren't treated as step-in or
+    // thread-start destinations.
+    if ((addr != NULL) && !UnmanagedCallersOnlyCaller::AreDebuggerTraceCallsHidden())
     {
         // If the debugger is attached, we use this opportunity to see if
         // we're disabling preemptive GC on the way into the runtime from
