@@ -33,6 +33,8 @@ struct _DiagnosticsIpc_Internal {
     // all sessions are closed.
 	HANDLE owningPipe;
 	bool is_listening;
+	// A client connected between CreateNamedPipe and ConnectNamedPipe, so there is no overlapped connect to complete
+	bool is_client_connected;
 	DiagnosticsIpcConnectionMode mode;
 };
 

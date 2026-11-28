@@ -126,6 +126,7 @@ ds_ipc_alloc (
 
 	instance->mode = mode;
 	instance->is_listening = false;
+	instance->is_client_connected = false;
 
 	// All memory zeroed on alloc.
 	//memset (&instance->overlap, 0, sizeof (instance->overlap));
@@ -190,6 +191,7 @@ ds_ipc_reset (DiagnosticsIpc *ipc)
 	}
 
 	ipc->is_listening = false;
+	ipc->is_client_connected = false;
 }
 
 int32_t
@@ -442,10 +444,20 @@ ds_ipc_listen (
 		switch (error_code) {
 		case ERROR_IO_PENDING:
 			// There was a pending connection that can be waited on (will happen in poll)
+			break;
 		case ERROR_PIPE_CONNECTED:
 			// Occurs when a client connects before the function is called.
 			// In this case, there is a connection between client and
 			// server, even though the function returned zero.
+			// No overlapped operation was started, so the event is not signaled
+			// for us: signal it, so poll sees the connection, and accept takes it
+			// without waiting for an overlapped result.
+			if (!SetEvent (ipc->overlap.hEvent)) {
+				if (callback)
+					callback ("Failed to signal the overlap event of an already connected client", GetLastError ());
+				ep_raise_error ();
+			}
+			ipc->is_client_connected = true;
 			break;
 
 		default:
@@ -477,9 +489,10 @@ ds_ipc_accept (
 
 	DiagnosticsIpcStream *stream = NULL;
 
-	// Start with quick none blocking completion check.
+	// A client that connected before ConnectNamedPipe has no overlapped connect to complete.
+	// Otherwise start with quick none blocking completion check.
 	DWORD dummy = 0;
-	BOOL success = GetOverlappedResult (
+	BOOL success = ipc->is_client_connected || GetOverlappedResult (
 		ipc->pipe,      // handle
 		&ipc->overlap,  // overlapped
 		&dummy,         // throw-away dword
@@ -511,6 +524,7 @@ ds_ipc_accept (
 	// reset the server
 	ipc->pipe = INVALID_HANDLE_VALUE;
 	ipc->is_listening = false;
+	ipc->is_client_connected = false;
 	CloseHandle (ipc->overlap.hEvent);
 	memset(&ipc->overlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
 	ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
