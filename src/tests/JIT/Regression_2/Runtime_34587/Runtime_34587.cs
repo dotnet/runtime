@@ -29,6 +29,7 @@ public class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  LZCNT:         {Lzcnt.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  PCLMULQDQ:     {Pclmulqdq.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  POPCNT:        {Popcnt.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SHA:           {Sha.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE:           {Sse.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE2:          {Sse2.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE3:          {Sse3.IsSupported}");
@@ -47,6 +48,7 @@ public class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  LZCNT.X64:     {Lzcnt.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  PCLMULQDQ.X64: {Pclmulqdq.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  POPCNT.X64:    {Popcnt.X64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SHA.X64:       {Sha.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE.X64:       {Sse.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE2.X64:      {Sse2.X64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE3.X64:      {Sse3.X64.IsSupported}");
@@ -404,6 +406,9 @@ public class Runtime_34587
         testSucceeded = ValidatePopcnt();
         Console.WriteLine($"ValidatePopcnt: {testSucceeded}");
         succeeded &= testSucceeded;
+        testSucceeded = ValidateSha();
+        Console.WriteLine($"ValidateSha: {testSucceeded}");
+        succeeded &= testSucceeded;
         testSucceeded = ValidateVectorT();
         Console.WriteLine($"ValidateVectorT: {testSucceeded}");
         succeeded &= testSucceeded;
@@ -707,6 +712,24 @@ public class Runtime_34587
             return succeeded;
         }
 
+        static bool ValidateSha()
+        {
+            bool succeeded = true;
+
+            if (ShaIsSupported)
+            {
+                succeeded &= Sse2IsSupported;
+            }
+
+            if (ShaX64IsSupported)
+            {
+                succeeded &= ShaIsSupported;
+                succeeded &= Sse2X64IsSupported;
+            }
+
+            return succeeded;
+        }
+
         static bool ValidateVectorT()
         {
             bool succeeded = true;
@@ -806,6 +829,7 @@ public class Runtime_34587
     static bool LzcntIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Lzcnt.IsSupported; } }
     static bool PclmulqdqIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Pclmulqdq.IsSupported; } }
     static bool PopcntIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Popcnt.IsSupported; } }
+    static bool ShaIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sha.IsSupported; } }
 
     static bool X86BaseX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return X86Base.X64.IsSupported; } }
     static bool SseX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sse.X64.IsSupported; } }
@@ -824,6 +848,7 @@ public class Runtime_34587
     static bool LzcntX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Lzcnt.X64.IsSupported; } }
     static bool PclmulqdqX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Pclmulqdq.X64.IsSupported; } }
     static bool PopcntX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Popcnt.X64.IsSupported; } }
+    static bool ShaX64IsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return Sha.X64.IsSupported; } }
 
     static bool ArmBaseIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return ArmBase.IsSupported; } }
     static bool AdvSimdIsSupported { [MethodImpl(MethodImplOptions.NoInlining)] get { return AdvSimd.IsSupported; } }

@@ -144,6 +144,7 @@ bool             IsShiftInstruction(instruction ins) const;
 static bool      IsBitTestInstruction(instruction ins);
 bool             IsLegacyMap1(code_t code) const;
 bool             IsSimdVexOrEvexEncodableInstruction(instruction ins) const;
+bool             IsLegacyOnlySimdInstruction(instruction ins) const;
 bool             DoJitUseApxNDD(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
@@ -179,6 +180,7 @@ bool AreUpperBitsSignExtended(regNumber reg, emitAttr size);
 #endif // TARGET_64BIT
 
 bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
+bool IsRedundantVzeroupper();
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
@@ -717,6 +719,16 @@ void SetContainsCallNeedingVzeroupper(bool value)
     containsCallNeedingVzeroupper = value;
 }
 
+bool containsLegacyOnlySimdInstruction = false;
+bool ContainsLegacyOnlySimd() const
+{
+    return containsLegacyOnlySimdInstruction;
+}
+void SetContainsLegacyOnlySimd(bool value)
+{
+    containsLegacyOnlySimdInstruction = value;
+}
+
 bool        IsDstDstSrcAVXInstruction(instruction ins) const;
 bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool        IsThreeOperandAVXInstruction(instruction ins) const;
@@ -749,7 +761,7 @@ bool isAvxBlendv(instruction ins)
 {
     return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
 }
-bool isSse41Blendv(instruction ins)
+static bool isSse41Blendv(instruction ins)
 {
     return ins == INS_blendvps || ins == INS_blendvpd || ins == INS_pblendvb;
 }

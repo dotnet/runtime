@@ -2757,6 +2757,18 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 #if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
+#ifdef TARGET_XARCH
+            // A vzeroupper may precede a node that only has the legacy encoding (see GTF_HW_VZEROUPPER_SAFE). It zeroes
+            // the upper bits of a register that still holds a dead constant wider than 16 bytes, so such constants
+            // aren't reused in methods with these nodes. Windows x64 never reuses them anyway, because of the
+            // FEATURE_PARTIAL_SIMD_CALLEE_SAVE check below.
+            if (m_compiler->GetEmitter()->ContainsLegacyOnlySimd() &&
+                (genTypeSize(physRegRecord->assignedInterval->registerType) > XMM_REGSIZE_BYTES))
+            {
+                return false;
+            }
+#endif // TARGET_XARCH
+
             return
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 !Compiler::varTypeNeedsPartialCalleeSave(physRegRecord->assignedInterval->registerType) &&

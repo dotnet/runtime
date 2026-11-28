@@ -468,8 +468,8 @@ unsafe class Program
         Check("Gfni.V512", ExpectedGfniV512, &GfniV512IsSupported, Gfni.V512.IsSupported, () => Gfni.V512.GaloisFieldMultiply(Vector512<byte>.Zero, Vector512<byte>.Zero).Equals(Vector512<byte>.Zero));
         Check("Gfni.X64", ExpectedGfni, &GfniX64IsSupported, Gfni.X64.IsSupported, null);
 
-        // Check("Sha", ExpectedSha, &ShaIsSupported, Sha.IsSupported, null);
-        // Check("Sha.X64", ExpectedSha, &ShaX64IsSupported, Sha.X64.IsSupported, null);
+        Check("Sha", ExpectedSha, &ShaIsSupported, Sha.IsSupported, () => Sha.Sha1NextE(Vector128.Create((byte)1), Vector128<byte>.Zero).Equals(Vector128.Create(0u, 0u, 0u, 0x40404040u).AsByte()));
+        Check("Sha.X64", ExpectedSha, &ShaX64IsSupported, Sha.X64.IsSupported, null);
 
         // Check("Aes.V256", ExpectedAesV256, &AesV256IsSupported, Aes.V256.IsSupported, null);
         // Check("Aes.V512", ExpectedAesV512, &AesV512IsSupported, Aes.V512.IsSupported, null);
@@ -605,8 +605,8 @@ unsafe class Program
     static bool GfniV512IsSupported() => Gfni.V512.IsSupported;
     static bool GfniX64IsSupported() => Gfni.X64.IsSupported;
 
-    // static bool ShaIsSupported() => Sha.IsSupported;
-    // static bool ShaX64IsSupported() => Sha.X64.IsSupported;
+    static bool ShaIsSupported() => Sha.IsSupported;
+    static bool ShaX64IsSupported() => Sha.X64.IsSupported;
 
     // static bool AesV256IsSupported() => Aes.V256.IsSupported;
     // static bool AesV512IsSupported() => Aes.V512.IsSupported;

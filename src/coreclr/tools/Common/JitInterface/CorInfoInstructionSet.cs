@@ -1278,7 +1278,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("gfni", "Gfni", InstructionSet.X64_GFNI, true);
                     yield return new InstructionSetInfo("gfni_v256", "Gfni_V256", InstructionSet.X64_GFNI_V256, true);
                     yield return new InstructionSetInfo("gfni_v512", "Gfni_V512", InstructionSet.X64_GFNI_V512, true);
-                    yield return new InstructionSetInfo("sha", "", InstructionSet.X64_SHA, true);
+                    yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X64_SHA, true);
                     yield return new InstructionSetInfo("waitpkg", "", InstructionSet.X64_WAITPKG, true);
                     yield return new InstructionSetInfo("x86serialize", "X86Serialize", InstructionSet.X64_X86Serialize, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
@@ -1352,7 +1352,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("gfni", "Gfni", InstructionSet.X86_GFNI, true);
                     yield return new InstructionSetInfo("gfni_v256", "Gfni_V256", InstructionSet.X86_GFNI_V256, true);
                     yield return new InstructionSetInfo("gfni_v512", "Gfni_V512", InstructionSet.X86_GFNI_V512, true);
-                    yield return new InstructionSetInfo("sha", "", InstructionSet.X86_SHA, true);
+                    yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X86_SHA, true);
                     yield return new InstructionSetInfo("waitpkg", "", InstructionSet.X86_WAITPKG, true);
                     yield return new InstructionSetInfo("x86serialize", "X86Serialize", InstructionSet.X86_X86Serialize, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
@@ -1929,6 +1929,12 @@ namespace Internal.JitInterface
                                     else
                                         return InstructionSet.X64_GFNI;
 
+                        case "Sha":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_SHA_X64;
+                            else
+                                return InstructionSet.X64_SHA;
+
                         case "X86Serialize":
                             if (nestedTypeName == "X64")
                                 return InstructionSet.X64_X86Serialize_X64;
@@ -2072,6 +2078,9 @@ namespace Internal.JitInterface
                                     return InstructionSet.X86_GFNI_V512;
                                 else
                                     return InstructionSet.X86_GFNI;
+
+                        case "Sha":
+                            return InstructionSet.X86_SHA;
 
                         case "X86Serialize":
                             return InstructionSet.X86_X86Serialize;
@@ -3117,6 +3126,25 @@ namespace Internal.JitInterface
                 }
                 break;
 
+                case (InstructionSet.X64_SHA, TargetArchitecture.X64):
+                case (InstructionSet.X64_SHA_X64, TargetArchitecture.X64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "Sha"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.X64_SHA_X64)
+                        {
+                            var nestedType = type.GetNestedType("X64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
                 case (InstructionSet.X64_X86Serialize, TargetArchitecture.X64):
                 case (InstructionSet.X64_X86Serialize_X64, TargetArchitecture.X64):
                 {
@@ -3569,6 +3597,16 @@ namespace Internal.JitInterface
                         {
                             yield return nestedType;
                         }
+                    }
+                }
+                break;
+
+                case (InstructionSet.X86_SHA, TargetArchitecture.X86):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "Sha"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
                     }
                 }
                 break;

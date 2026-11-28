@@ -2306,27 +2306,50 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             case NI_X86Base_BlendVariable:
+            case NI_SHA_Sha256TwoRounds:
             {
                 assert(numArgs == 3);
 
-                if (!m_compiler->canUseVexEncoding())
+                if (!m_compiler->canUseVexEncoding() || HWIntrinsicInfo::HasLegacyEncodingOnly(intrinsicId))
                 {
                     assert(isRMW);
+                    assert(!isEvexCompatible);
 
-                    // pre-VEX blendv* hardcodes the mask vector (op3) in XMM0
+                    // pre-VEX blendv* hardcodes the mask vector (op3) in XMM0 and sha256rnds2, which only has
+                    // the legacy encoding, likewise hardcodes the round constants (op3) in XMM0. The legacy
+                    // encoding also can't address the upper SIMD registers, so every use is restricted to the
+                    // lower ones, which is also the case for XMM0.
                     tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
 
                     srcCount += 1;
+
+                    // An operand that is the same local as op1 is normally in the same register, so it doesn't need
+                    // to be delay free at the local's last use. sha256rnds2 can't rely on that though: a local in an
+                    // upper SIMD register gets a separate copy in a lower one for each use, and a spilled local may be
+                    // reloaded into a different register for each use, such as under JitStressRegs=0x800. Its op2 and
+                    // op3 are therefore always delay free, even without EVEX, since codegen can't handle a target that
+                    // is op2's register or XMM0 while op1 is in another register.
+                    GenTree* rmwNode = HWIntrinsicInfo::HasLegacyEncodingOnly(intrinsicId) ? nullptr : op1;
 
                     SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
                     if (op2RegCandidates == RBM_NONE)
                     {
                         op2RegCandidates = BuildEvexIncompatibleMask(op2);
                     }
-                    srcCount += op2->isContained() ? BuildOperandUses(op2, op2RegCandidates)
-                                                   : BuildDelayFreeUses(op2, op1, op2RegCandidates);
 
-                    srcCount += BuildDelayFreeUses(op3, op1, SRBM_XMM0);
+                    if (op2->isContained() && op2->OperIsHWIntrinsic() && op2->AsHWIntrinsic()->OperIsMemoryLoad())
+                    {
+                        // BuildOperandUses doesn't apply the candidates to the address of a contained load, but
+                        // the legacy encoding can't use the APX extended GPRs as the base or index register.
+                        srcCount += BuildAddrUses(op2->AsHWIntrinsic()->Op(1), op2RegCandidates);
+                    }
+                    else
+                    {
+                        srcCount += op2->isContained() ? BuildOperandUses(op2, op2RegCandidates)
+                                                       : BuildDelayFreeUses(op2, rmwNode, op2RegCandidates);
+                    }
+
+                    srcCount += BuildDelayFreeUses(op3, rmwNode, SRBM_XMM0);
 
                     buildUses = false;
                 }
@@ -2899,7 +2922,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // When op2 is not contained or if we are producing a scalar value
                         // we need to mark it as delay free because the operand and target
                         // exist in the same register set.
-                        srcCount += BuildDelayFreeUses(op2, op1, op2RegCandidates);
+                        //
+                        // The legacy-only intrinsics do so even when op2 is the same local as op1, since the
+                        // two uses may still be in different registers: a local in an upper SIMD register gets
+                        // a separate copy in a lower one for each use, and a spilled local may be reloaded into
+                        // a different register for each use, such as under JitStressRegs=0x800.
+                        GenTree* rmwNode = HWIntrinsicInfo::HasLegacyEncodingOnly(intrinsicId) ? nullptr : op1;
+                        srcCount += BuildDelayFreeUses(op2, rmwNode, op2RegCandidates);
                     }
                     else
                     {
@@ -2958,6 +2987,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
 
         buildInternalRegisterUses();
+    }
+
+    if (HWIntrinsicInfo::HasLegacyEncodingOnly(intrinsicId) && m_compiler->canUseVexEncoding())
+    {
+        // Some processors, such as Intel ones since Golden Cove and AMD Zen 2 and Zen 3, run a legacy encoded
+        // instruction very slowly when it is mixed with VEX encoded ones while the upper bits of the YMM and ZMM
+        // registers are dirty. Codegen clears them with a vzeroupper, once in the prolog when the method doesn't use
+        // 256-bit or 512-bit instructions, or otherwise before this node. The latter zeroes the upper bits of every
+        // live value too, so it is only allowed when no such value is live across this node. Its own operands are
+        // only read in their lower 128 bits. Registers that still hold a dead constant wider than 16 bytes aren't
+        // reused in such methods either, see isMatchingConstant.
+        m_compiler->GetEmitter()->SetContainsLegacyOnlySimd(true);
+
+        if (!IsLargeVectorLiveAcrossNode())
+        {
+            intrinsicTree->gtFlags |= GTF_HW_VZEROUPPER_SAFE;
+        }
     }
 
     if (dstCount == 1)
@@ -3304,6 +3350,55 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
         assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && m_compiler->canUseEvexEncodingDebugOnly()));
         m_compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
+}
+
+//------------------------------------------------------------------------------
+// IsLargeVectorLiveAcrossNode: Checks whether a 256-bit or 512-bit value may be live in a
+// register across the node being built.
+//
+// Return Value:
+//    true if a TYP_SIMD32 or TYP_SIMD64 local or temp may be live in a register across the
+//    node; otherwise, false.
+//
+// Notes:
+//    This must be called after all the uses of the node were built, so that the defList only
+//    has the temps that are live across the node and none of its operands.
+//
+//    Like buildUpperVectorSaveRefPositions, this conservatively considers every local that is
+//    live-in or defined in the block, since the liveness information may not be accurate between
+//    the place where a local is loaded and the node that uses it. Locals can only be live in a
+//    register when they are enregistered.
+//
+bool LinearScan::IsLargeVectorLiveAcrossNode()
+{
+    if (enregisterLocalVars)
+    {
+        VARSET_TP blockVars(
+            VarSetOps::Union(m_compiler, m_compiler->compCurBB->bbLiveIn, m_compiler->compCurBB->bbVarDef));
+
+        VarSetOps::Iter iter(m_compiler, blockVars);
+        unsigned        varIndex = 0;
+
+        while (iter.NextElem(&varIndex))
+        {
+            if (m_compiler->lvaGetDescByTrackedIndex(varIndex)->TypeIs(TYP_SIMD32, TYP_SIMD64))
+            {
+                return true;
+            }
+        }
+    }
+
+    for (RefInfoListNode* listNode = defList.Begin(); listNode != defList.End(); listNode = listNode->Next())
+    {
+        RegisterType regType = listNode->ref->getInterval()->registerType;
+
+        if ((regType == TYP_SIMD32) || (regType == TYP_SIMD64))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------

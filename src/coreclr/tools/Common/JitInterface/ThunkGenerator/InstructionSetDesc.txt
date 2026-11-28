@@ -104,7 +104,7 @@ instructionset     ,X86   ,Gfni                 ,                   ,53 ,GFNI   
 instructionset     ,X86   ,Gfni_V256            ,                   ,54 ,GFNI_V256             ,gfni_v256
 instructionset     ,X86   ,Gfni_V512            ,                   ,55 ,GFNI_V512             ,gfni_v512
 
-instructionset     ,X86   ,                     ,Sha                ,68 ,SHA                   ,sha
+instructionset     ,X86   ,Sha                  ,                   ,68 ,SHA                   ,sha
 
 instructionset     ,X86   ,                     ,WaitPkg            ,69 ,WAITPKG               ,waitpkg
 instructionset     ,X86   ,X86Serialize         ,                   ,28 ,X86Serialize          ,x86serialize
