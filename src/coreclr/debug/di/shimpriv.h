@@ -587,6 +587,12 @@ protected:
     // Default handler for native events when managed-only debugging.
     void DefaultEventHandler(const DEBUG_EVENT * pEvent, DWORD * pdwContinueStatus);
 
+    // Advance past an unhandled breakpoint instruction that the debugger does not own.
+    bool SkipUnhandledBreakpointInstruction(DWORD dwThreadId, const EXCEPTION_RECORD * pRecord);
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    CORDB_ADDRESS GetNtRaiseExceptionContextRecord(DWORD dwThreadId, const EXCEPTION_RECORD * pRecord, const T_CONTEXT * pLiveContext);
+#endif
+
     // Given a debug event, track the file handles.
     void TrackFileHandleForDebugEvent(const DEBUG_EVENT * pEvent);
 

@@ -1326,6 +1326,30 @@ static inline BOOL HandleSingleStep(PCONTEXT pContext, PEXCEPTION_RECORD pExcept
 }
 #endif // FEATURE_EMULATE_SINGLESTEP
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
+static bool IsUnhandledBreakpointInstruction(PCONTEXT context, bool contextPointsAtBreakpoint)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PCODE ip = GetIP(context);
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const BYTE *address = reinterpret_cast<const BYTE *>(ip);
+    if (!contextPointsAtBreakpoint)
+    {
+        address--;
+    }
+
+    return (*address == 0xCC) ||
+           ((*address == 0x03) && (address[-1] == 0xCD));
+#elif defined(TARGET_ARM64)
+    _ASSERTE(contextPointsAtBreakpoint);
+    PRD_TYPE instruction = CORDbgGetInstruction(reinterpret_cast<CORDB_ADDRESS_TYPE *>(ip));
+    return PRDIsBreakInst(&instruction);
+#endif
+}
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+
 BOOL HandleHardwareException(PAL_SEHException* ex)
 {
     _ASSERTE(IsSafeToHandleHardwareException(ex->GetContextRecord(), ex->GetExceptionRecord()));
@@ -1466,6 +1490,27 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 return TRUE;
             }
         }
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        bool contextPointsAtBreakpoint = (pThread != NULL);
+#if defined(TARGET_ARM64)
+        contextPointsAtBreakpoint = true;
+#endif
+        if ((ex->GetExceptionRecord()->ExceptionCode == STATUS_BREAKPOINT) &&
+            ((ex->GetExceptionRecord()->ExceptionFlags & EXCEPTION_IS_SIGNAL_TRAP) != 0) &&
+            CORDebuggerAttached() &&
+            PAL_IsDefaultSIGTRAPHandler() &&
+            IsUnhandledBreakpointInstruction(ex->GetContextRecord(), contextPointsAtBreakpoint))
+        {
+            // The managed debugger did not claim the breakpoint and no application SIGTRAP
+            // handler can receive it. Continue instead of running the default terminating action.
+            if (contextPointsAtBreakpoint)
+            {
+                SetIP(ex->GetContextRecord(), GetIP(ex->GetContextRecord()) + CORDbg_BREAK_INSTRUCTION_SIZE);
+            }
+            return TRUE;
+        }
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
     }
 
     return FALSE;
