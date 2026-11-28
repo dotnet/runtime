@@ -2155,7 +2155,21 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_LCL_VAR:
-            return false; // Can't CSE a volatile LCL_VAR
+        {
+            const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVar());
+
+            // Address-exposed locals are memory reads. Reuse them through a CSE
+            // temp so later optimizations can rely on one captured value.
+            // TODO-CQ: Investigate enabling object-reference loads. For example,
+            // capturing a receiver can leave cached method-table VNs referring to
+            // an earlier identity, preventing exact-type assertions from matching.
+            if (tree->TypeIs(TYP_REF) || !varDsc->IsAddressExposed())
+            {
+                return false;
+            }
+
+            break;
+        }
 
         case GT_NEG:
         case GT_NOT:
@@ -5276,9 +5290,11 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             }
         }
 
-        // Create a store of the value to the temp
+        // Morph marks unnormalized local reads DONT_CSE, so capturing a candidate must preserve its type.
+        INDEBUG(const var_types valueType = val->TypeGet());
         GenTree* store     = m_compiler->gtNewTempStore(cseLclVarNum, val);
         GenTree* origStore = store;
+        assert(val->TypeIs(valueType));
 
         if (!store->OperIs(GT_STORE_LCL_VAR))
         {
