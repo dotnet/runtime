@@ -314,6 +314,13 @@ void SsaBuilder::InsertPhiFunctions()
         BasicBlock* block = postOrder[i];
         DBG_SSA_JITDUMP("Considering dominance frontier of block " FMT_BB ":\n", block->bbNum);
 
+        // Only blocks with definitions can require phis.
+        //
+        if ((block->bbMemoryDef == emptyMemoryKindSet) && VarSetOps::IsEmpty(m_compiler, block->bbVarDef))
+        {
+            continue;
+        }
+
         blockIDF.clear();
         m_compiler->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &blockIDF);
 
