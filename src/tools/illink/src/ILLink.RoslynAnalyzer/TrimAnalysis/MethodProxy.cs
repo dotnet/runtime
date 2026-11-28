@@ -1,13 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Immutable;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-    internal readonly partial struct MethodProxy
+    internal readonly partial struct MethodProxy : IEquatable<MethodProxy>
     {
         public MethodProxy(IMethodSymbol method) => Method = method;
 
@@ -62,6 +63,12 @@ namespace ILLink.Shared.TypeSystemProxy
 
             return namedType.HasName(fullTypeName);
         }
+
+        public bool Equals(MethodProxy other) => SymbolEqualityComparer.Default.Equals(Method, other.Method);
+
+        public override bool Equals(object? obj) => obj is MethodProxy other && Equals(other);
+
+        public override int GetHashCode() => SymbolEqualityComparer.Default.GetHashCode(Method);
 
         public override string ToString() => Method.ToString();
     }

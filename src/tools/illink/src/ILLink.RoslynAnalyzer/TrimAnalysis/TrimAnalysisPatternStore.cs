@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
@@ -48,8 +51,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             BackingFieldAccessPatterns[pattern.Operation] = pattern.Merge(FeatureContextLattice, existingPattern);
         }
 
-        public void Add(TrimAnalysisAssignmentPattern trimAnalysisPattern)
+        public void AddAssignment(ValueSet<SingleValue> source, ValueSet<SingleValue> target,
+            IOperation operation, ISymbol owningSymbol, FeatureContext featureContext)
         {
+            if (!HasAssignmentRequirements(target))
+            {
+                return;
+            }
+
             // Finally blocks will be analyzed multiple times, once for normal control flow and once
             // for exceptional control flow, and these separate analyses could produce different
             // trim analysis patterns.
@@ -58,13 +67,32 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // of the normal control-flow state.
             // We still add patterns to the operation, rather than replacing, to make this resilient to
             // changes in the analysis algorithm.
-            if (!AssignmentPatterns.TryGetValue(trimAnalysisPattern.Operation, out var existingPattern))
+            if (!AssignmentPatterns.TryGetValue(operation, out TrimAnalysisAssignmentPattern existingPattern))
             {
-                AssignmentPatterns.Add(trimAnalysisPattern.Operation, trimAnalysisPattern);
+                AssignmentPatterns.Add(operation, new TrimAnalysisAssignmentPattern(source, target, operation, owningSymbol, featureContext));
                 return;
             }
 
-            AssignmentPatterns[trimAnalysisPattern.Operation] = trimAnalysisPattern.Merge(Lattice, FeatureContextLattice, existingPattern);
+            Debug.Assert(SymbolEqualityComparer.Default.Equals(existingPattern.OwningSymbol, owningSymbol));
+            AssignmentPatterns[operation] = existingPattern.Merge(Lattice, FeatureContextLattice, source, target, featureContext);
+        }
+
+        private static bool HasAssignmentRequirements(ValueSet<SingleValue> target)
+        {
+            if (target.TryGetSingleValue(out SingleValue? single))
+            {
+                return single is not ValueWithDynamicallyAccessedMembers annotated || annotated.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None;
+            }
+
+            foreach (SingleValue value in target.AsEnumerable())
+            {
+                if (value is not ValueWithDynamicallyAccessedMembers annotated || annotated.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void Add(TrimAnalysisFieldAccessPattern pattern)
@@ -89,15 +117,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             GenericInstantiationPatterns[pattern.Operation] = pattern.Merge(FeatureContextLattice, existingPattern);
         }
 
-        public void Add(TrimAnalysisMethodCallPattern pattern)
+        public void AddMethodCall(IMethodSymbol calledMethod, ValueSet<SingleValue> instance, ImmutableArray<ValueSet<SingleValue>> arguments,
+            IOperation operation, ISymbol owningSymbol, FeatureContext featureContext)
         {
-            if (!MethodCallPatterns.TryGetValue(pattern.Operation, out var existingPattern))
+            if (!MethodCallPatterns.TryGetValue(operation, out TrimAnalysisMethodCallPattern existingPattern))
             {
-                MethodCallPatterns.Add(pattern.Operation, pattern);
+                MethodCallPatterns.Add(operation, new TrimAnalysisMethodCallPattern(calledMethod, instance, arguments, operation, owningSymbol, featureContext));
                 return;
             }
 
-            MethodCallPatterns[pattern.Operation] = pattern.Merge(Lattice, FeatureContextLattice, existingPattern);
+            Debug.Assert(SymbolEqualityComparer.Default.Equals(existingPattern.CalledMethod, calledMethod));
+            Debug.Assert(SymbolEqualityComparer.Default.Equals(existingPattern.OwningSymbol, owningSymbol));
+            MethodCallPatterns[operation] = existingPattern.Merge(Lattice, FeatureContextLattice, instance, arguments, featureContext);
         }
 
         public void Add(TrimAnalysisReflectionAccessPattern pattern)

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -57,12 +56,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             TrimAnalysisPatterns.ReportDiagnostics(_dataFlowAnalyzerContext, reportDiagnostic);
         }
 
+        protected override ControlFlowGraphProxy GetControlFlowGraph(ControlFlowGraph graph) =>
+            _dataFlowAnalyzerContext.CompilationState.GetControlFlowGraph(graph);
+
         protected override TrimAnalysisVisitor GetVisitor(
             ISymbol owningSymbol,
-            ControlFlowGraph methodCFG,
-            ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+            ControlFlowGraphProxy methodCFG,
             InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState)
-         => new(Context.Compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState, _dataFlowAnalyzerContext);
+         => new(Context.Compilation, lattice, owningSymbol, methodCFG, TrimAnalysisPatterns, interproceduralState, _dataFlowAnalyzerContext);
 
 #if DEBUG
 #pragma warning disable CA1805 // Do not initialize unnecessarily

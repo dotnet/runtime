@@ -188,15 +188,22 @@ namespace ILLink.Shared.DataFlow
             this.entryValue = entryValue;
         }
 
-        private void TransferOut(TTransfer transfer, TControlFlowGraph cfg, TBlock block, TState state,
+        private static void TransferOut(TTransfer transfer, TControlFlowGraph cfg, TBlock block, TState state,
             Action<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> updateState
         )
         {
             TConditionValue? conditionValue = transfer.Transfer(block, state);
-            foreach (var successor in cfg.GetSuccessors(block))
+            using IEnumerator<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch> successors = cfg.GetSuccessors(block).GetEnumerator();
+            if (!successors.MoveNext())
             {
-                // Duplicate the state so that it's not shared between branches.
-                TValue branchState = lattice.Meet(lattice.Top, state.Current);
+                return;
+            }
+
+            IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch successor = successors.Current;
+            while (true)
+            {
+                bool hasNext = successors.MoveNext();
+                TValue branchState = state.CreateBranchOutput(canTransferOwnership: !hasNext);
                 if (conditionValue != null)
                 {
                     Debug.Assert(successor.ConditionKind is ConditionKind.WhenTrue or ConditionKind.WhenFalse);
@@ -209,6 +216,11 @@ namespace ILLink.Shared.DataFlow
                 }
 
                 updateState(successor, branchState);
+                if (!hasNext)
+                {
+                    break;
+                }
+                successor = successors.Current;
             }
         }
 
@@ -221,12 +233,48 @@ namespace ILLink.Shared.DataFlow
             // Initialize output of each block to the Top value of the lattice
             var cfgState = new ControlFlowGraphState(cfg, lattice, entryValue);
 
-            // For now, the actual dataflow algorithm is the simplest possible version.
-            // It is written to be obviously correct, but has not been optimized for performance
-            // at all. As written it will almost always perform unnecessary passes over the entire
-            // control flow graph. The core abstractions shouldn't need to change even when we write
-            // an optimized version of this algorithm - ideally any optimizations will be generic,
-            // not specific to a particular analysis.
+            TBlock[] blocks = cfg.Blocks.ToArray();
+            var blockOrdinals = new Dictionary<TBlock, int>(blocks.Length);
+
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                blockOrdinals.Add(blocks[i], i);
+            }
+
+            // Propagate loop and finally updates in graph order before revisiting their continuations.
+            var pending = new SortedSet<int>();
+            var finallyDependents = new Dictionary<TBlock, HashSet<TBlock>>();
+            var exceptionDependents = new Dictionary<TRegion, HashSet<TBlock>>();
+
+            foreach (TBlock block in blocks)
+            {
+                Enqueue(block);
+
+                foreach (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor in cfg.GetPredecessors(block))
+                {
+                    // A branch leaving a protected region reads the normal exit of each intervening finally.
+                    foreach (TRegion finallyRegion in predecessor.FinallyRegions)
+                    {
+                        AddDependency(finallyDependents, cfg.LastBlock(finallyRegion), block);
+                    }
+                }
+
+                if (cfg.TryGetEnclosingTryOrCatchOrFilter(block, out TRegion? region) &&
+                    block.Equals(cfg.FirstBlock(region)) &&
+                    (region.Kind == RegionKind.Filter || (region.Kind == RegionKind.Catch && !cfg.HasFilter(region))))
+                {
+                    AddDependency(exceptionDependents, cfg.GetCorrespondingTry(region), block);
+
+                    foreach (TRegion previousFilter in cfg.GetPreviousFilters(region))
+                    {
+                        AddDependency(exceptionDependents, previousFilter, block);
+                    }
+                }
+                if (cfg.TryGetEnclosingFinally(block, out TRegion? enclosingFinally) && block.Equals(cfg.FirstBlock(enclosingFinally)))
+                {
+                    AddDependency(exceptionDependents, cfg.GetCorrespondingTry(enclosingFinally), block);
+                }
+            }
 
             // Allocate some objects which will be reused to hold the current dataflow state,
             // to avoid allocatons in the inner loop below.
@@ -243,202 +291,255 @@ namespace ILLink.Shared.DataFlow
                 Exception = null
             };
 
-            bool changed = true;
-            const int MaxIterations = 10_000;
-            int iterations = 0;
-            while (changed && iterations < MaxIterations)
+            Action<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> updateNormalState = (branch, newValue) =>
             {
-                changed = false;
-                foreach (var block in cfg.Blocks)
+                TState branchState = cfgState.Get(branch);
+                bool changed = !newValue.Equals(branchState.Current);
+                branchState.Current = newValue;
+                if (changed)
                 {
-                    if (++iterations >= MaxIterations)
-                        break;
+                    EnqueueBranchDependents(branch);
+                }
+            };
+            Action<IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch, TValue> updateExceptionFinallyState = (branch, newValue) =>
+            {
+                bool result = cfgState.TryGetExceptionFinallyState(branch, out TValue oldValue);
+                Debug.Assert(result);
+                cfgState.SetExceptionFinallyState(branch, newValue);
+                if (!newValue.Equals(oldValue))
+                {
+                    EnqueueBranchDependents(branch);
+                }
+            };
 
-                    TraceVisitBlock(block);
+            const int MaxBlockVisits = 10_000;
+            int blockVisits = 0;
+            while (pending.Count != 0 && blockVisits < MaxBlockVisits)
+            {
+                blockVisits++;
 
-                    if (block.Equals(cfg.Entry))
-                        continue;
+                int ordinal = pending.Min;
+                pending.Remove(ordinal);
+                TBlock block = blocks[ordinal];
 
-                    bool isTryOrCatchOrFilterBlock = cfg.TryGetEnclosingTryOrCatchOrFilter(block, out TRegion? tryOrCatchOrFilterRegion);
+                TraceVisitBlock(block);
 
-                    bool isTryBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Try;
-                    bool isTryStart = isTryBlock && block.Equals(cfg.FirstBlock(tryOrCatchOrFilterRegion!));
-                    bool isCatchBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Catch;
-                    bool isCatchStartWithoutFilter = isCatchBlock && block.Equals(cfg.FirstBlock(tryOrCatchOrFilterRegion!)) && !cfg.HasFilter(tryOrCatchOrFilterRegion!);
-                    bool isFilterBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Filter;
-                    bool isFilterStart = isFilterBlock && block.Equals(cfg.FirstBlock(tryOrCatchOrFilterRegion!));
+                if (block.Equals(cfg.Entry))
+                {
+                    continue;
+                }
 
-                    bool isCatchOrFilterStart = isCatchStartWithoutFilter || isFilterStart;
+                bool isTryOrCatchOrFilterBlock = cfg.TryGetEnclosingTryOrCatchOrFilter(block, out TRegion? tryOrCatchOrFilterRegion);
 
-                    bool isFinallyBlock = cfg.TryGetEnclosingFinally(block, out TRegion? finallyRegion);
-                    bool isFinallyStart = isFinallyBlock && block.Equals(cfg.FirstBlock(finallyRegion!));
+                bool isTryBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Try;
+                bool isTryStart = isTryBlock && block.Equals(cfg.FirstBlock(tryOrCatchOrFilterRegion!));
+                bool isCatchBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Catch;
+                bool isCatchStartWithoutFilter = isCatchBlock && block.Equals(cfg.FirstBlock(tryOrCatchOrFilterRegion!)) && !cfg.HasFilter(tryOrCatchOrFilterRegion!);
+                bool isFilterBlock = isTryOrCatchOrFilterBlock && tryOrCatchOrFilterRegion!.Kind == RegionKind.Filter;
+                bool isFilterStart = isFilterBlock && block.Equals(cfg.FirstBlock(tryOrCatchOrFilterRegion!));
+
+                bool isCatchOrFilterStart = isCatchStartWithoutFilter || isFilterStart;
+
+                bool isFinallyBlock = cfg.TryGetEnclosingFinally(block, out TRegion? finallyRegion);
+                bool isFinallyStart = isFinallyBlock && block.Equals(cfg.FirstBlock(finallyRegion!));
 
 
-                    //
-                    // Meet over predecessors to get the new value at the start of this block.
-                    //
+                //
+                // Meet over predecessors to get the new value at the start of this block.
+                //
 
-                    // Compute the dataflow state at the beginning of this block.
-                    TValue currentState = lattice.Top;
-                    foreach (var predecessor in cfg.GetPredecessors(block))
+                // Compute the dataflow state at the beginning of this block.
+                TValue currentState = lattice.Top;
+
+                foreach (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor in cfg.GetPredecessors(block))
+                {
+                    TValue predecessorState = cfgState.Get(predecessor).Current;
+
+                    FlowStateThroughExitedFinallys(predecessor, ref predecessorState);
+                    TraceEdgeInput(predecessor, predecessorState);
+                    currentState = lattice.Meet(currentState, predecessorState);
+                }
+
+                // State at start of a catch also includes the exceptional state from
+                // try -> catch exceptional control flow.
+                if (isCatchOrFilterStart)
+                {
+                    TRegion correspondingTry = cfg.GetCorrespondingTry(tryOrCatchOrFilterRegion!);
+                    Box<TValue> tryExceptionState = cfgState.GetExceptionState(correspondingTry);
+                    currentState = lattice.Meet(currentState, tryExceptionState.Value);
+
+                    // A catch or filter can also be reached from a previous filter.
+                    foreach (TRegion previousFilter in cfg.GetPreviousFilters(tryOrCatchOrFilterRegion!))
                     {
-                        TValue predecessorState = cfgState.Get(predecessor).Current;
+                        // Control may flow from the last block of a previous filter region to this catch or filter region.
+                        // Exceptions may also propagate from anywhere in a filter region to this catch or filter region.
+                        // This covers both cases since the exceptional state is a superset of the normal state.
+                        Box<TValue> previousFilterExceptionState = cfgState.GetExceptionState(previousFilter);
+                        currentState = lattice.Meet(currentState, previousFilterExceptionState.Value);
+                    }
+                }
+                if (isFinallyStart)
+                {
+                    TValue finallyInputState = cfgState.GetFinallyInputState(finallyRegion!);
+                    currentState = lattice.Meet(currentState, finallyInputState);
+                }
+
+                // Compute the independent exceptional finally state at beginning of a finally.
+                TValue? exceptionFinallyState = null;
+                if (isFinallyBlock)
+                {
+                    // Inside finally regions, must compute the parallel meet state for unhandled exceptions.
+                    // Using predecessors in the finally. But not from outside the finally.
+                    exceptionFinallyState = lattice.Top;
+
+                    foreach (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor in cfg.GetPredecessors(block))
+                    {
+                        bool isPredecessorInFinally = cfgState.TryGetExceptionFinallyState(predecessor, out TValue predecessorState);
+                        Debug.Assert(isPredecessorInFinally);
 
                         FlowStateThroughExitedFinallys(predecessor, ref predecessorState);
-                        TraceEdgeInput(predecessor, predecessorState);
-                        currentState = lattice.Meet(currentState, predecessorState);
-                    }
-                    // State at start of a catch also includes the exceptional state from
-                    // try -> catch exceptional control flow.
-                    if (isCatchOrFilterStart)
-                    {
-                        TRegion correspondingTry = cfg.GetCorrespondingTry(tryOrCatchOrFilterRegion!);
-                        Box<TValue> tryExceptionState = cfgState.GetExceptionState(correspondingTry);
-                        currentState = lattice.Meet(currentState, tryExceptionState.Value);
 
-                        // A catch or filter can also be reached from a previous filter.
-                        foreach (TRegion previousFilter in cfg.GetPreviousFilters(tryOrCatchOrFilterRegion!))
-                        {
-                            // Control may flow from the last block of a previous filter region to this catch or filter region.
-                            // Exceptions may also propagate from anywhere in a filter region to this catch or filter region.
-                            // This covers both cases since the exceptional state is a superset of the normal state.
-                            Box<TValue> previousFilterExceptionState = cfgState.GetExceptionState(previousFilter);
-                            currentState = lattice.Meet(currentState, previousFilterExceptionState.Value);
-                        }
+                        exceptionFinallyState = lattice.Meet(exceptionFinallyState.Value, predecessorState);
                     }
+
+                    // For first block, also initialize it from the try or catch blocks.
                     if (isFinallyStart)
                     {
-                        TValue finallyInputState = cfgState.GetFinallyInputState(finallyRegion!);
-                        currentState = lattice.Meet(currentState, finallyInputState);
+                        // Note that try+catch+finally is represented in the region hierarchy like a
+                        // try/finally where the try block contains a try/catch.
+                        // So including the corresponding try exception state will also take care of the
+                        // corresponding catch exception state.
+                        TRegion correspondingTry = cfg.GetCorrespondingTry(finallyRegion!);
+                        Box<TValue> tryExceptionState = cfgState.GetExceptionState(correspondingTry);
+                        exceptionFinallyState = lattice.Meet(exceptionFinallyState.Value, tryExceptionState.Value);
                     }
+                }
 
-                    // Compute the independent exceptional finally state at beginning of a finally.
-                    TValue? exceptionFinallyState = null;
-                    if (isFinallyBlock)
-                    {
-                        // Inside finally regions, must compute the parallel meet state for unhandled exceptions.
-                        // Using predecessors in the finally. But not from outside the finally.
-                        exceptionFinallyState = lattice.Top;
-                        foreach (var predecessor in cfg.GetPredecessors(block))
-                        {
-                            var isPredecessorInFinally = cfgState.TryGetExceptionFinallyState(predecessor, out TValue predecessorState);
-                            Debug.Assert(isPredecessorInFinally);
-
-                            FlowStateThroughExitedFinallys(predecessor, ref predecessorState);
-
-                            exceptionFinallyState = lattice.Meet(exceptionFinallyState.Value, predecessorState);
-                        }
-
-                        // For first block, also initialize it from the try or catch blocks.
-                        if (isFinallyStart)
-                        {
-                            // Note that try+catch+finally is represented in the region hierarchy like a
-                            // try/finally where the try block contains a try/catch.
-                            // So including the corresponding try exception state will also take care of the
-                            // corresponding catch exception state.
-                            TRegion correspondingTry = cfg.GetCorrespondingTry(finallyRegion!);
-                            Box<TValue> tryExceptionState = cfgState.GetExceptionState(correspondingTry);
-                            exceptionFinallyState = lattice.Meet(exceptionFinallyState.Value, tryExceptionState.Value);
-                        }
-                    }
-
-                    // Initialize the exception state at the start of try/catch regions. Control flow edges from predecessors
-                    // within the same try or catch region don't need to be handled here because the transfer functions update
-                    // the exception state to reflect every operation in the region.
-                    cfgState.TryGetExceptionState(block, out Box<TValue>? exceptionState);
-                    TValue? oldExceptionState = exceptionState?.Value;
-                    if (isTryStart || isCatchOrFilterStart)
-                    {
-                        // Catch/filter regions get the initial state from the exception state of the corresponding try region.
-                        // This is already accounted for in the non-exceptional control flow state of the catch block above,
-                        // so we can just use the state we already computed, for both try and catch regions.
-                        exceptionState!.Value = lattice.Meet(exceptionState.Value, currentState);
-
-                        if (isFinallyBlock)
-                        {
-                            // Exceptions could also be thrown from inside a finally that was entered due to a previous exception.
-                            // So the exception state must also include values from the exceptional finally state (computed above).
-                            exceptionState.Value = lattice.Meet(exceptionState.Value, exceptionFinallyState!.Value);
-                        }
-                    }
-
-                    TraceBlockInput(currentState, exceptionState?.Value, exceptionFinallyState);
-
-                    //
-                    // Apply transfer functions to the met input to get an output value for this block.
-                    //
-
-                    state.Current = currentState;
-                    state.Exception = exceptionState;
-                    TransferOut(transfer, cfg, block, state,
-                        updateState: (branch, newValue) =>
-                        {
-                            TState state = cfgState.Get(branch);
-                            if (!changed && !newValue.Equals(state.Current))
-                                changed = true;
-                            state.Current = newValue;
-                        }
-                    );
+                // Initialize the exception state at the start of try/catch regions. Control flow edges from predecessors
+                // within the same try or catch region don't need to be handled here because the transfer functions update
+                // the exception state to reflect every operation in the region.
+                cfgState.TryGetExceptionState(block, out Box<TValue>? exceptionState);
+                TValue? oldExceptionState = exceptionState?.Value;
+                if (isTryStart || isCatchOrFilterStart)
+                {
+                    // Catch/filter regions get the initial state from the exception state of the corresponding try region.
+                    // This is already accounted for in the non-exceptional control flow state of the catch block above,
+                    // so we can just use the state we already computed, for both try and catch regions.
+                    exceptionState!.Value = lattice.Meet(exceptionState.Value, currentState);
 
                     if (isFinallyBlock)
                     {
-                        // Independently apply transfer functions for the exception finally state in finally regions.
-                        finallyState.Current = exceptionFinallyState!.Value;
-                        finallyState.Exception = exceptionState;
-
-                        TransferOut(transfer, cfg, block, finallyState,
-                            updateState: (branch, newValue) =>
-                            {
-                                bool result = cfgState.TryGetExceptionFinallyState(branch, out TValue value);
-                                Debug.Assert(result);
-                                if (!changed && !newValue.Equals(value))
-                                    changed = true;
-                                cfgState.SetExceptionFinallyState(branch, newValue);
-                            }
-                        );
+                        // Exceptions could also be thrown from inside a finally that was entered due to a previous exception.
+                        // So the exception state must also include values from the exceptional finally state (computed above).
+                        exceptionState.Value = lattice.Meet(exceptionState.Value, exceptionFinallyState!.Value);
                     }
+                }
 
-                    // Either the normal transfer or the finally transfer might change
-                    // the try/catch state, so this check should happen after both transfers.
-                    if (exceptionState?.Value.Equals(oldExceptionState!.Value) == false)
+                TraceBlockInput(currentState, exceptionState?.Value, exceptionFinallyState);
+
+                //
+                // Apply transfer functions to the met input to get an output value for this block.
+                //
+
+                state.Current = currentState;
+                state.Exception = exceptionState;
+                TransferOut(transfer, cfg, block, state, updateNormalState);
+
+                if (isFinallyBlock)
+                {
+                    // Independently apply transfer functions for the exception finally state in finally regions.
+                    finallyState.Current = exceptionFinallyState!.Value;
+                    finallyState.Exception = exceptionState;
+
+                    TransferOut(transfer, cfg, block, finallyState, updateExceptionFinallyState);
+                }
+
+                // Either the normal transfer or the finally transfer might change
+                // the try/catch state, so this check should happen after both transfers.
+                if (exceptionState?.Value.Equals(oldExceptionState!.Value) == false)
+                {
+                    Debug.Assert(exceptionState != null);
+                    Debug.Assert(oldExceptionState != null);
+                    EnqueueExceptionDependents(tryOrCatchOrFilterRegion!);
+
+                    // Bubble up the changed exception state to the next enclosing try or catch exception state.
+                    while (cfg.TryGetEnclosingTryOrCatchOrFilter(tryOrCatchOrFilterRegion!, out TRegion? enclosingTryOrCatch))
                     {
-                        Debug.Assert(exceptionState != null);
-                        Debug.Assert(oldExceptionState != null);
-                        changed = true;
-
-                        // Bubble up the changed exception state to the next enclosing try or catch exception state.
-                        while (cfg.TryGetEnclosingTryOrCatchOrFilter(tryOrCatchOrFilterRegion!, out TRegion? enclosingTryOrCatch))
+                        // Filters can't contain try/catch/filters.
+                        Debug.Assert(enclosingTryOrCatch.Kind != RegionKind.Filter);
+                        Box<TValue> tryOrCatchExceptionState = cfgState.GetExceptionState(enclosingTryOrCatch);
+                        TValue oldEnclosingState = tryOrCatchExceptionState.Value;
+                        tryOrCatchExceptionState.Value = lattice.Meet(oldEnclosingState, exceptionState!.Value);
+                        if (!tryOrCatchExceptionState.Value.Equals(oldEnclosingState))
                         {
-                            // Filters can't contain try/catch/filters.
-                            Debug.Assert(enclosingTryOrCatch.Kind != RegionKind.Filter);
-                            Box<TValue> tryOrCatchExceptionState = cfgState.GetExceptionState(enclosingTryOrCatch);
-                            tryOrCatchExceptionState.Value = lattice.Meet(tryOrCatchExceptionState.Value, exceptionState!.Value);
-                            tryOrCatchOrFilterRegion = enclosingTryOrCatch;
+                            EnqueueExceptionDependents(enclosingTryOrCatch);
                         }
+                        tryOrCatchOrFilterRegion = enclosingTryOrCatch;
                     }
+                }
 
-                    TraceBlockOutput(state.Current, exceptionState?.Value, exceptionFinallyState);
+                TraceBlockOutput(state.Current, exceptionState?.Value, exceptionFinallyState);
+            }
+
+            return pending.Count == 0;
+
+            void Enqueue(TBlock block)
+            {
+                pending.Add(blockOrdinals[block]);
+            }
+
+            void AddDependency<TSource>(Dictionary<TSource, HashSet<TBlock>> dependencies, TSource source, TBlock destination)
+                where TSource : IEquatable<TSource>
+            {
+                if (!dependencies.TryGetValue(source, out HashSet<TBlock>? dependents))
+                {
+                    dependents = new HashSet<TBlock>();
+                    dependencies.Add(source, dependents);
+                }
+                dependents.Add(destination);
+            }
+
+            void EnqueueBranchDependents(IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch branch)
+            {
+                if (branch.Destination is TBlock destination)
+                {
+                    Enqueue(destination);
+                }
+                if (finallyDependents.TryGetValue(branch.Source, out HashSet<TBlock>? dependents))
+                {
+                    foreach (TBlock dependent in dependents)
+                    {
+                        Enqueue(dependent);
+                    }
                 }
             }
 
-            return !changed || iterations >= MaxIterations;
+            void EnqueueExceptionDependents(TRegion region)
+            {
+                if (exceptionDependents.TryGetValue(region, out HashSet<TBlock>? dependents))
+                {
+                    foreach (TBlock dependent in dependents)
+                    {
+                        Enqueue(dependent);
+                    }
+                }
+            }
 
             void FlowStateThroughExitedFinallys(
                 IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor,
                 ref TValue predecessorState)
             {
-                foreach (var exitedFinally in predecessor.FinallyRegions)
+                foreach (TRegion exitedFinally in predecessor.FinallyRegions)
                 {
                     TValue oldFinallyInputState = cfgState.GetFinallyInputState(exitedFinally);
                     TValue finallyInputState = lattice.Meet(oldFinallyInputState, predecessorState);
 
                     cfgState.SetFinallyInputState(exitedFinally, finallyInputState);
 
-                    // Note: the current approach here is inefficient for long chains of finally regions because
-                    // the states will not converge until we have visited each block along the chain
-                    // and propagated the new states along this path.
-                    if (!changed && !finallyInputState.Equals(oldFinallyInputState))
-                        changed = true;
+                    if (!finallyInputState.Equals(oldFinallyInputState))
+                    {
+                        Enqueue(cfg.FirstBlock(exitedFinally));
+                    }
 
                     TBlock lastFinallyBlock = cfg.LastBlock(exitedFinally);
                     IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetSuccessors(lastFinallyBlock).SingleOrDefault();

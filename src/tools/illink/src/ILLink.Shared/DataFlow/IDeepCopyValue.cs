@@ -6,6 +6,12 @@
 
 namespace ILLink.Shared.DataFlow
 {
+    public interface IValueWithMutableState
+    {
+        // True if values can change without replacing the containing lattice value.
+        bool HasMutableState { get; }
+    }
+
     // Adds ability to deep copy a value
     public interface IDeepCopyValue<TSingleValue>
     {

@@ -53,26 +53,34 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public TrimAnalysisMethodCallPattern Merge(
             ValueSetLattice<SingleValue> lattice,
             FeatureContextLattice featureContextLattice,
-            TrimAnalysisMethodCallPattern other)
+            MultiValue instance,
+            ImmutableArray<MultiValue> arguments,
+            FeatureContext featureContext)
         {
-            Debug.Assert(Operation == other.Operation);
-            Debug.Assert(SymbolEqualityComparer.Default.Equals(CalledMethod, other.CalledMethod));
-            Debug.Assert(SymbolEqualityComparer.Default.Equals(OwningSymbol, other.OwningSymbol));
-            Debug.Assert(Arguments.Length == other.Arguments.Length);
+            Debug.Assert(Arguments.Length == arguments.Length);
 
-            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
-            for (int i = 0; i < Arguments.Length; i++)
+            ImmutableArray<MultiValue> mergedArguments = ImmutableArray<MultiValue>.Empty;
+            if (!Arguments.IsEmpty)
             {
-                argumentsBuilder.Add(lattice.Meet(Arguments[i], other.Arguments[i]));
+                ImmutableArray<MultiValue>.Builder argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>(Arguments.Length);
+
+                for (int i = 0; i < Arguments.Length; i++)
+                {
+                    argumentsBuilder.Add(lattice.Meet(arguments[i], Arguments[i]));
+                }
+
+                mergedArguments = argumentsBuilder.MoveToImmutable();
             }
 
-            return new TrimAnalysisMethodCallPattern(
-                CalledMethod,
-                lattice.Meet(Instance, other.Instance),
-                argumentsBuilder.MoveToImmutable(),
-                Operation,
-                OwningSymbol,
-                featureContextLattice.Meet(FeatureContext, other.FeatureContext));
+            return new TrimAnalysisMethodCallPattern
+            {
+                CalledMethod = CalledMethod,
+                Instance = lattice.Meet(instance, Instance),
+                Arguments = mergedArguments,
+                Operation = Operation,
+                OwningSymbol = OwningSymbol,
+                FeatureContext = featureContextLattice.Meet(featureContext, FeatureContext)
+            };
         }
 
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
@@ -83,7 +91,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
             {
                 var typeNameResolver = new TypeNameResolver(context.Compilation);
-                TrimAnalysisVisitor.HandleCall(context.TrimAnalyzer, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
+                TrimAnalysisVisitor.HandleCall(context.TrimAnalyzer, FeatureContext, typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, context.CompilationState.FlowAnnotations, out MultiValue _);
             }
             // For Requires, make the location the reference to the method, not the entire invocation.
             // The parameters are not part of the issue, and including them in the location can be misleading.

@@ -11,13 +11,13 @@ namespace ILLink.Shared.TrimAnalysis
 {
     internal partial record FieldValue
     {
-        public FieldValue(IFieldSymbol fieldSymbol)
-            : this(fieldSymbol, fieldSymbol.Type, FlowAnnotations.GetFieldAnnotation(fieldSymbol))
+        public FieldValue(IFieldSymbol fieldSymbol, AnalyzerCompilationState? compilationState = null)
+            : this(fieldSymbol, fieldSymbol.Type, FlowAnnotations.GetFieldAnnotation(fieldSymbol, compilationState))
         {
         }
 
-        public FieldValue(IPropertySymbol propertySymbol)
-            : this(propertySymbol, propertySymbol.Type, FlowAnnotations.GetBackingFieldAnnotation(propertySymbol))
+        public FieldValue(IPropertySymbol propertySymbol, AnalyzerCompilationState? compilationState = null)
+            : this(propertySymbol, propertySymbol.Type, FlowAnnotations.GetBackingFieldAnnotation(propertySymbol, compilationState))
         {
         }
 
