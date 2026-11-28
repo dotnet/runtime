@@ -1181,6 +1181,7 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_METHODPARAM,
     CORINFO_LOOKUP_CLASSPARAM,
     CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
+    CORINFO_LOOKUP_DEFERRED,      // Completed by prepareCallLookups before materialization
 };
 
 struct CORINFO_LOOKUP_KIND
@@ -1567,7 +1568,9 @@ struct CORINFO_CALL_INFO
         CORINFO_LOOKUP      codePointerLookup;
     };
 
-    CORINFO_CONST_LOOKUP    instParamLookup;
+    // Lookup for the hidden instantiation argument when sig.hasTypeArg().
+    // Runtime-dependent lookups are populated by prepareCallLookups, after intrinsic expansion.
+    CORINFO_LOOKUP          instParamLookup;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -3420,6 +3423,8 @@ public:
             ) CORINFO_PURE;
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
+    // Resolves the target and its signature. Call prepareCallLookups during import if a
+    // deferred lookup is needed, while the resolved tokens are still available.
     CORINFO_VIRTUAL void getCallInfo(
             // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -3435,6 +3440,15 @@ public:
 
             // out params
             CORINFO_CALL_INFO       *pResult
+            ) CORINFO_PURE;
+
+    // Completes the deferred instantiation argument lookup using the same tokens and caller
+    // that were passed to getCallInfo.
+    CORINFO_VIRTUAL void prepareCallLookups(
+            CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+            CORINFO_RESOLVED_TOKEN*       pConstrainedResolvedToken,
+            CORINFO_METHOD_HANDLE        callerHandle,
+            CORINFO_CALL_INFO*            pCallInfo
             ) CORINFO_PURE;
 
     //------------------------------------------------------------------------------

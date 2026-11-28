@@ -2883,41 +2883,37 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(pResult->kind.ToString());
             }
 
-            if (pResult->sig.hasTypeArg())
+            pResult->instParamLookup = default;
+            if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
             {
-                if (pResult->exactContextNeedsRuntimeLookup)
+                pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+                pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            }
+            else if (pResult->sig.hasTypeArg())
+            {
+                MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (canonMethod.RequiresInstMethodDescArg())
                 {
-                    // Nothing to do... The generic handle lookup gets embedded in to the codegen
-                    // during the jitting of the call.
-                    // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
-                    // codegen emitted at crossgen time)
+                    pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
                 }
                 else
                 {
-                    MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (canonMethod.RequiresInstMethodDescArg())
+                    ISymbolNode instParamLookup;
+                    if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
+                        instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.DeclaringTypeHandle,
+                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
                     }
                     else
                     {
-                        ISymbolNode instParamLookup;
-                        if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
-                        {
-                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.DeclaringTypeHandle,
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
-                        }
-                        else
-                        {
-                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.TypeDictionary,
-                                exactType);
-                        }
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParamLookup);
+                        instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.TypeDictionary,
+                            exactType);
                     }
+                    pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(instParamLookup);
                 }
             }
         }

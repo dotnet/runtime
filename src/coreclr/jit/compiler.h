@@ -5420,11 +5420,8 @@ protected:
                             IL_OFFSET          rawILOffset);
 
     GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                CORINFO_CALL_INFO*      callInfo,
-                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
-                                bool                    exactContextNeedsRuntimeLookup,
-                                unsigned                clsFlags,
-                                bool                    isReadonlyCall);
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo, unsigned clsFlags, bool isReadonlyCall);
 
     void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
                                     CORINFO_RESOLVED_TOKEN*   pResolvedToken,

@@ -2729,9 +2729,21 @@ void CEEInfo::embedGenericHandle(
 {
     STANDARD_VM_CONTRACT;
 
-    INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
-
     JIT_TO_EE_TRANSITION();
+
+    embedGenericHandleInternal(pResolvedToken, fEmbedParent, callerHandle, pResult);
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEEInfo::embedGenericHandleInternal(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                         bool fEmbedParent,
+                                         CORINFO_METHOD_HANDLE callerHandle,
+                                         CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    STANDARD_VM_CONTRACT;
+
+    INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
     BOOL fRuntimeLookup;
     MethodDesc * pTemplateMD = NULL;
@@ -2835,8 +2847,6 @@ void CEEInfo::embedGenericHandle(
         pResult->lookup.constLookup.handle = pResult->compileTimeHandle;
         pResult->lookup.constLookup.accessType = IAT_VALUE;
     }
-
-    EE_TO_JIT_TRANSITION();
 }
 
 //
@@ -5520,6 +5530,48 @@ void CEEInfo::getCallInfo(
             pResult->callsiteCalloutHelper.args[2].argType = CORINFO_HELPER_ARG_TYPE_Class;
         }
     }
+
+    pResult->instParamLookup = {};
+    if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
+    {
+        pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+        pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+    }
+    else if (pResult->sig.hasTypeArg())
+    {
+        pResult->instParamLookup.constLookup.accessType = IAT_VALUE;
+        pResult->instParamLookup.constLookup.handle =
+            (CORINFO_GENERIC_HANDLE)((SIZE_T)pResult->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+    }
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                          CORINFO_METHOD_HANDLE callerHandle,
+                          CORINFO_CALL_INFO* pCallInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup);
+    _ASSERTE(pCallInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
+
+    bool embedParent = ((SIZE_T)pCallInfo->contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS;
+    CORINFO_RESOLVED_TOKEN* lookupToken = pResolvedToken;
+    if (embedParent && pConstrainedResolvedToken != nullptr &&
+        (CORINFO_CLASS_HANDLE)((SIZE_T)pCallInfo->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK) == pConstrainedResolvedToken->hClass)
+    {
+        // The implementation needs the constrained type, not the interface in the method token.
+        lookupToken = pConstrainedResolvedToken;
+        embedParent = false;
+    }
+
+    CORINFO_GENERICHANDLE_RESULT embedInfo;
+    embedGenericHandleInternal(lookupToken, embedParent, callerHandle, &embedInfo);
+    pCallInfo->instParamLookup = embedInfo.lookup;
 
     EE_TO_JIT_TRANSITION();
 }

@@ -205,6 +205,7 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
         CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
+        CORINFO_LOOKUP_DEFERRED,      // Completed by prepareCallLookups before materialization
     }
 
     public unsafe struct CORINFO_LOOKUP_KIND
@@ -1162,7 +1163,7 @@ namespace Internal.JitInterface
         public CORINFO_LOOKUP codePointerOrStubLookup;
 
         // Used by Ready-to-Run
-        public CORINFO_CONST_LOOKUP instParamLookup;
+        public CORINFO_LOOKUP instParamLookup;
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL

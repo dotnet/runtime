@@ -1193,6 +1193,7 @@ namespace Internal.JitInterface
             // properly.
             NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
+            pResult->instParamLookup = default;
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
@@ -1521,7 +1522,7 @@ namespace Internal.JitInterface
 
                     if (instParam != null)
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                        pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(instParam);
                     }
 
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
@@ -1698,6 +1699,11 @@ namespace Internal.JitInterface
             targetIsFatFunctionPointer |= (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !(pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL);
 
             Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, scope: null, targetIsFatFunctionPointer);
+            if ((pResult->sig.callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0 && pResult->exactContextNeedsRuntimeLookup)
+            {
+                pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+                pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            }
             if (useFatCallTransform)
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;

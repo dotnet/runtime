@@ -440,6 +440,12 @@ public:
                                CORINFO_METHOD_HANDLE         callerHandle,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
 
+    void recPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                        CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo);
+    void repPrepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                        CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo);
+    void dmpPrepareCallLookups(const Agnostic_PrepareCallLookups& key, const Agnostic_CORINFO_LOOKUP& value);
+
     void recGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
     void dmpGetEHinfo(DLD key, const Agnostic_CORINFO_EH_CLAUSE& value);
     void repGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
@@ -1250,6 +1256,7 @@ enum mcPackets
     Packet_GetAwaitAwaiterInContinuationCall = 242,
     Packet_IsByRefLike = 243,
     Packet_IsSharedInst = 244,
+    Packet_PrepareCallLookups = 245,
 };
 
 void SetDebugDumpVariables();

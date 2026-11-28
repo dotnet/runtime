@@ -623,6 +623,12 @@ void getCallInfo(
           CORINFO_CALLINFO_FLAGS flags,
           CORINFO_CALL_INFO* pResult) CORINFO_OVERRIDE;
 
+void prepareCallLookups(
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CALL_INFO* pCallInfo) CORINFO_OVERRIDE;
+
 bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,

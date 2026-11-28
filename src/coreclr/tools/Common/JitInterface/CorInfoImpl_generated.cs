@@ -169,6 +169,7 @@ namespace Internal.JitInterface
                 s_callbacks.getJustMyCodeHandle = &_getJustMyCodeHandle;
                 s_callbacks.GetProfilingHandle = &_GetProfilingHandle;
                 s_callbacks.getCallInfo = &_getCallInfo;
+                s_callbacks.prepareCallLookups = &_prepareCallLookups;
                 s_callbacks.getStaticFieldContent = &_getStaticFieldContent;
                 s_callbacks.getObjectContent = &_getObjectContent;
                 s_callbacks.getStaticFieldCurrentClass = &_getStaticFieldCurrentClass;
@@ -355,6 +356,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_JUST_MY_CODE_HANDLE_**, CORINFO_JUST_MY_CODE_HANDLE_*> getJustMyCodeHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, bool*, void**, bool*, void> GetProfilingHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_CALLINFO_FLAGS, CORINFO_CALL_INFO*, void> getCallInfo;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_CALL_INFO*, void> prepareCallLookups;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte> getStaticFieldContent;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, int, int, byte> getObjectContent;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, CORINFO_CLASS_STRUCT_*> getStaticFieldCurrentClass;
@@ -2586,6 +2588,20 @@ namespace Internal.JitInterface
             try
             {
                 _this.getCallInfo(ref *pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _prepareCallLookups(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALL_INFO* pCallInfo)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.prepareCallLookups(ref *pResolvedToken, pConstrainedResolvedToken, callerHandle, pCallInfo);
             }
             catch (Exception ex)
             {

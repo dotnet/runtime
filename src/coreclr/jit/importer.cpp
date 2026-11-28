@@ -1304,6 +1304,9 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
+    assert(!pLookup->lookupKind.needsRuntimeLookup ||
+           (pLookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_DEFERRED));
+
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
         // No runtime lookup is required.
