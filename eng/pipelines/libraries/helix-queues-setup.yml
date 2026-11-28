@@ -73,7 +73,7 @@ jobs:
         - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))}}:
             # inner and outer loop CoreCLR (general set)
             # Primary distro for all builds
-            - Ubuntu.2604.Amd64.Open
+            - Ubuntu.2604.Amd64.Open.rt
             # Additional distros on non-PR builds for broader coverage
             - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
               - (AzureLinux.4.0.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-helix-amd64@sha256:ad2717f231981d3218538ac74169b1354367e1ce2bd479bbf0ada3573b1db8c1
@@ -96,9 +96,9 @@ jobs:
     # Use the Ubuntu-based Android queue for x64/bionic_x64 on all projects,
     # and also for arm/arm64/bionic_arm64 on non-public projects (no internal Windows Android queue).
     - ${{ if in(parameters.platform, 'android_x64', 'linux_bionic_x64') }}:
-      - Ubuntu.2204.Amd64.Android.29.Open
+      - Ubuntu.2204.Amd64.Android.29.Open.rt
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm64')) }}:
-      - Ubuntu.2204.Amd64.Android.29.Open
+      - Ubuntu.2204.Amd64.Android.29.Open.rt
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.platform, 'android_arm')) }}:
       - Windows.11.Amd64.Android-armel.Open
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm64', 'linux_bionic_arm64')) }}:
@@ -137,40 +137,40 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'net481') }}:
         - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-          - Windows.Amd64.Server2022.Open
-          - Windows.Server2025.Amd64.Open
+          - Windows.Amd64.Server2022.Open.rt
+          - Windows.Server2025.Amd64.Open.rt
           - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
-            - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:6b77a5efd3e3cb62814655c483025e9b6ce5c2d5064cacaf866d50d188fb2a67
+            - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open.rt@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:6b77a5efd3e3cb62814655c483025e9b6ce5c2d5064cacaf866d50d188fb2a67
         - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
           # Primary Windows queues for all builds: latest + Nano (distinct environment)
           - ${{ if eq(variables['System.TeamProject'], 'public') }}:
             - $(helix_windows_x64_latest)
           - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             - $(helix_windows_x64_latest_internal)
-          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64@sha256:145624ea249486bf941c971e0fb7b70634f482c34a929d6197b73bd368c76286
+          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open.rt@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64@sha256:145624ea249486bf941c971e0fb7b70634f482c34a929d6197b73bd368c76286
           # Additional Windows versions on non-PR builds for broader coverage
           - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - Windows.Amd64.Server2022.Open
-            - Windows.11.Amd64.Client.Open
+            - Windows.Amd64.Server2022.Open.rt
+            - Windows.11.Amd64.Client.Open.rt
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
-              - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:6b77a5efd3e3cb62814655c483025e9b6ce5c2d5064cacaf866d50d188fb2a67
+              - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open.rt@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64@sha256:6b77a5efd3e3cb62814655c483025e9b6ce5c2d5064cacaf866d50d188fb2a67
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
-        - Windows.11.Amd64.Client.Open
+        - Windows.11.Amd64.Client.Open.rt
 
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'net481') }}:
-        - Windows.Server2025.Amd64.Open
+        - Windows.Server2025.Amd64.Open.rt
         - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-          - Windows.11.Amd64.Client.Open
+          - Windows.11.Amd64.Client.Open.rt
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
-        - Windows.10.Amd64.Client.Open
+        - Windows.10.Amd64.Client.Open.rt
 
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
@@ -191,10 +191,10 @@ jobs:
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
       # Primary Windows version for all builds
-      - (Windows.Server2025.Amd64.Open)windows.server2025.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2025-helix-webassembly-amd64@sha256:5f6cb27d2c7317bdf577204aec370ca65bb7877c3030c76addc4316fd38b178a
+      - (Windows.Server2025.Amd64.Open)windows.server2025.amd64.open.rt@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2025-helix-webassembly-amd64@sha256:5f6cb27d2c7317bdf577204aec370ca65bb7877c3030c76addc4316fd38b178a
       # Additional Windows version on non-PR builds or when all platforms are requested
       - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly@sha256:0b891b11f167bedc06c7620f0385249e4655d4ead1a48d58cc7175c8810d4057
+        - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open.rt@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly@sha256:0b891b11f167bedc06c7620f0385249e4655d4ead1a48d58cc7175c8810d4057
 
     # Browser WebAssembly macOS
     - ${{ if eq(parameters.platform, 'browser_wasm_mac') }}:

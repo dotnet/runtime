@@ -59,11 +59,11 @@ steps:
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
-      - Windows.11.Amd64.Client.Open
+      - Windows.11.Amd64.Client.Open.rt
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
-      - Windows.11.Amd64.Client.Open
+      - Windows.11.Amd64.Client.Open.rt
 
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:

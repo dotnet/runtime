@@ -66,7 +66,7 @@ jobs:
     # Android x64
     - ${{ if in(parameters.platform, 'android_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Ubuntu.2204.Amd64.Android.29.Open
+        - Ubuntu.2204.Amd64.Android.29.Open.rt
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Ubuntu.2204.Amd64.Android.29
 
@@ -159,7 +159,7 @@ jobs:
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Windows.10.Amd64.Open
+        - Windows.10.Amd64.Open.rt
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64.X86.Rt
 
