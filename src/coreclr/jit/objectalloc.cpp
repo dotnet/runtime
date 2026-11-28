@@ -4468,9 +4468,35 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     //
     // Walk back from each use block until we hit closure.
     //
+    // The clones are placed at the end of the allocation block's enclosing EH region,
+    // so every block we clone must lie within that region (possibly in a nested region).
+    // Uses outside the region (say, after the end of a try containing the allocation)
+    // would end up lexically inside the region but not belong to it.
+    //
+    bool           allocInTry    = false;
+    unsigned const allocEHRegion = m_compiler->ehGetMostNestedRegionIndex(allocBlock, &allocInTry);
+
     while (toVisit.Height() > 0)
     {
         BasicBlock* const block = toVisit.Pop();
+
+        if (allocEHRegion != 0)
+        {
+            // Region indices from ehGetMostNestedRegionIndex are 1-based.
+            //
+            unsigned const allocEHIndex  = allocEHRegion - 1;
+            const bool     inAllocRegion = allocInTry ? m_compiler->bbInTryRegions(allocEHIndex, block)
+                                                      : m_compiler->bbInHandlerRegions(allocEHIndex, block);
+
+            if (!inAllocRegion)
+            {
+                JITDUMP("Block " FMT_BB " to clone is not within EH#%02u %s region containing allocation block " FMT_BB
+                        "\n",
+                        block->bbNum, allocEHIndex, allocInTry ? "try" : "handler", allocBlock->bbNum);
+                return false;
+            }
+        }
+
         visited->push_back(block);
 
         // If we see try region entries here, we will handle them below.
