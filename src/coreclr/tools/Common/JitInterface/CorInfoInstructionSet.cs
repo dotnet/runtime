@@ -65,6 +65,7 @@ namespace Internal.JitInterface
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
         RiscV64_Zbs = InstructionSet_RiscV64.Zbs,
         RiscV64_Zicond = InstructionSet_RiscV64.Zicond,
+        RiscV64_Zacas = InstructionSet_RiscV64.Zacas,
         Wasm32_WasmBase = InstructionSet_Wasm32.WasmBase,
         Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
         Wasm32_Vector128 = InstructionSet_Wasm32.Vector128,
@@ -220,6 +221,7 @@ namespace Internal.JitInterface
         Zbb = 3,
         Zbs = 4,
         Zicond = 5,
+        Zacas = 6,
     }
 
     public enum InstructionSet_Wasm32
@@ -627,6 +629,8 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zicond))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zacas))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                         break;
 
                     case TargetArchitecture.Wasm32:
@@ -945,6 +949,8 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zicond);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_Zacas);
                         break;
 
                     case TargetArchitecture.Wasm32:
@@ -1210,6 +1216,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("zbb", "", InstructionSet.RiscV64_Zbb, true);
                     yield return new InstructionSetInfo("zbs", "", InstructionSet.RiscV64_Zbs, true);
                     yield return new InstructionSetInfo("zicond", "", InstructionSet.RiscV64_Zicond, true);
+                    yield return new InstructionSetInfo("zacas", "", InstructionSet.RiscV64_Zacas, true);
                     break;
 
                 case TargetArchitecture.Wasm32:
