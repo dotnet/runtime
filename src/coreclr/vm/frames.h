@@ -599,11 +599,12 @@ protected:
 #endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASMARCH
 #endif // DACCESS_COMPILE
 
-#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
+#if defined(TARGET_UNIX)
     ~Frame() noexcept { PopIfChained(); }
-
+#endif // TARGET_UNIX
     void PopIfChained() noexcept;
-#endif // TARGET_UNIX && !DACCESS_COMPILE
+#endif // !defined(DACCESS_COMPILE)
 
     friend struct ::cdac_data<Frame>;
 };
@@ -1417,6 +1418,13 @@ class PrestubMethodFrame : public FramedMethodFrame
 public:
     PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    ~PrestubMethodFrame() noexcept
+    {
+        PopIfChained();
+    }
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
+
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     void MarkPrestubComplete()
     {
@@ -1496,6 +1504,13 @@ class StubDispatchFrame : public FramedMethodFrame
 
 public:
     StubDispatchFrame(TransitionBlock * pTransitionBlock);
+
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    ~StubDispatchFrame() noexcept
+    {
+        PopIfChained();
+    }
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
     MethodDesc* GetFunction_Impl();
 
@@ -1631,6 +1646,13 @@ class ExternalMethodFrame : public FramedMethodFrame
 
 public:
     ExternalMethodFrame(TransitionBlock * pTransitionBlock);
+
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    ~ExternalMethodFrame() noexcept
+    {
+        PopIfChained();
+    }
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc);
 
@@ -1985,6 +2007,11 @@ public:
         m_pCalleeSavedFP = 0;
         m_pThread = NULL;
     }
+
+    ~InlinedCallFrame() noexcept
+    {
+        PopIfChained();
+    }
 #endif // FEATURE_INTERPRETER
 #endif // DACCESS_COMPILE
 
@@ -2303,6 +2330,10 @@ public:
         m_pTopInterpMethodContextFrame = pTopInterpMethodContextFrame;
     }
 
+    ~InterpreterFrame() noexcept
+    {
+        PopIfChained();
+    }
 #endif // DACCESS_COMPILE
 
     BOOL NeedsUpdateRegDisplay_Impl()

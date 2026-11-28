@@ -652,7 +652,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
+        TSNC_PropagatingUnhandledException = 0x02000000, // Unhandled managed exception is being propagated to the host or external native code
         // unused                       = 0x04000000,
         // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during

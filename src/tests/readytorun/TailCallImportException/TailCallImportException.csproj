@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestPriority>1</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <!-- Target platforms that are not supported due to missing support for spawning a process -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TailCallImportException.cs" />
+    <ProjectReference Include="TailCallHelper.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
