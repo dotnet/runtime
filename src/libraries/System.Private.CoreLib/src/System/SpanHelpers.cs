@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -85,263 +86,368 @@ namespace System
             ip = default;
         }
 
-        public static void Reverse(ref int buf, nuint length)
-        {
-            Debug.Assert(length > 1);
-
-            nint remainder = (nint)length;
-            nint offset = 0;
-
-            if (Vector512.IsHardwareAccelerated && remainder >= Vector512<int>.Count * 2)
-            {
-                nint lastOffset = remainder - Vector512<int>.Count;
-                do
-                {
-                    // Load in values from beginning and end of the array.
-                    Vector512<int> tempFirst = Vector512.LoadUnsafe(ref buf, (nuint)offset);
-                    Vector512<int> tempLast = Vector512.LoadUnsafe(ref buf, (nuint)lastOffset);
-
-                    // Shuffle to reverse each vector:
-                    //     +---------------+
-                    //     | A | B | C | D |
-                    //     +---------------+
-                    //          --->
-                    //     +---------------+
-                    //     | D | C | B | A |
-                    //     +---------------+
-                    tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector512.Shuffle(tempLast, Vector512.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
-                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
-
-                    offset += Vector512<int>.Count;
-                    lastOffset -= Vector512<int>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = lastOffset + Vector512<int>.Count - offset;
-            }
-            else if (Avx2.IsSupported && remainder >= Vector256<int>.Count * 2)
-            {
-                nint lastOffset = remainder - Vector256<int>.Count;
-                do
-                {
-                    // Load the values into vectors
-                    Vector256<int> tempFirst = Vector256.LoadUnsafe(ref buf, (nuint)offset);
-                    Vector256<int> tempLast = Vector256.LoadUnsafe(ref buf, (nuint)lastOffset);
-
-                    // Permute to reverse each vector:
-                    //     +-------------------------------+
-                    //     | A | B | C | D | E | F | G | H |
-                    //     +-------------------------------+
-                    //         --->
-                    //     +-------------------------------+
-                    //     | H | G | F | E | D | C | B | A |
-                    //     +-------------------------------+
-                    tempFirst = Avx2.PermuteVar8x32(tempFirst, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Avx2.PermuteVar8x32(tempLast, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
-                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
-
-                    offset += Vector256<int>.Count;
-                    lastOffset -= Vector256<int>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = lastOffset + Vector256<int>.Count - offset;
-            }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<int>.Count * 2)
-            {
-                nint lastOffset = remainder - Vector128<int>.Count;
-                do
-                {
-                    // Load in values from beginning and end of the array.
-                    Vector128<int> tempFirst = Vector128.LoadUnsafe(ref buf, (nuint)offset);
-                    Vector128<int> tempLast = Vector128.LoadUnsafe(ref buf, (nuint)lastOffset);
-
-                    // Shuffle to reverse each vector:
-                    //     +---------------+
-                    //     | A | B | C | D |
-                    //     +---------------+
-                    //          --->
-                    //     +---------------+
-                    //     | D | C | B | A |
-                    //     +---------------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(3, 2, 1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(3, 2, 1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
-                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
-
-                    offset += Vector128<int>.Count;
-                    lastOffset -= Vector128<int>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = lastOffset + Vector128<int>.Count - offset;
-            }
-
-            // Store any remaining values one-by-one
-            if (remainder > 1)
-            {
-                ReverseInner(ref Unsafe.Add(ref buf, offset), (nuint)remainder);
-            }
-        }
-
-        public static void Reverse(ref long buf, nuint length)
-        {
-            Debug.Assert(length > 1);
-
-            nint remainder = (nint)length;
-            nint offset = 0;
-
-            if (Vector512.IsHardwareAccelerated && remainder >= Vector512<long>.Count * 2)
-            {
-                nint lastOffset = remainder - Vector512<long>.Count;
-                do
-                {
-                    // Load in values from beginning and end of the array.
-                    Vector512<long> tempFirst = Vector512.LoadUnsafe(ref buf, (nuint)offset);
-                    Vector512<long> tempLast = Vector512.LoadUnsafe(ref buf, (nuint)lastOffset);
-
-                    // Shuffle to reverse each vector:
-                    //     +-------+
-                    //     | A | B |
-                    //     +-------+
-                    //          --->
-                    //     +-------+
-                    //     | B | A |
-                    //     +-------+
-                    tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create(7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector512.Shuffle(tempLast, Vector512.Create(7, 6, 5, 4, 3, 2, 1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
-                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
-
-                    offset += Vector512<long>.Count;
-                    lastOffset -= Vector512<long>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = lastOffset + Vector512<long>.Count - offset;
-            }
-            else if (Avx2.IsSupported && remainder >= Vector256<long>.Count * 2)
-            {
-                nint lastOffset = remainder - Vector256<long>.Count;
-                do
-                {
-                    // Load the values into vectors
-                    Vector256<long> tempFirst = Vector256.LoadUnsafe(ref buf, (nuint)offset);
-                    Vector256<long> tempLast = Vector256.LoadUnsafe(ref buf, (nuint)lastOffset);
-
-                    // Permute to reverse each vector:
-                    //     +---------------+
-                    //     | A | B | C | D |
-                    //     +---------------+
-                    //         --->
-                    //     +---------------+
-                    //     | D | C | B | A |
-                    //     +---------------+
-                    tempFirst = Avx2.Permute4x64(tempFirst, 0b00_01_10_11);
-                    tempLast = Avx2.Permute4x64(tempLast, 0b00_01_10_11);
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
-                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
-
-                    offset += Vector256<long>.Count;
-                    lastOffset -= Vector256<long>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = lastOffset + Vector256<long>.Count - offset;
-            }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<long>.Count * 2)
-            {
-                nint lastOffset = remainder - Vector128<long>.Count;
-                do
-                {
-                    // Load in values from beginning and end of the array.
-                    Vector128<long> tempFirst = Vector128.LoadUnsafe(ref buf, (nuint)offset);
-                    Vector128<long> tempLast = Vector128.LoadUnsafe(ref buf, (nuint)lastOffset);
-
-                    // Shuffle to reverse each vector:
-                    //     +-------+
-                    //     | A | B |
-                    //     +-------+
-                    //          --->
-                    //     +-------+
-                    //     | B | A |
-                    //     +-------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
-                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
-
-                    offset += Vector128<long>.Count;
-                    lastOffset -= Vector128<long>.Count;
-                } while (lastOffset >= offset);
-
-                remainder = lastOffset + Vector128<long>.Count - offset;
-            }
-
-            // Store any remaining values one-by-one
-            if (remainder > 1)
-            {
-                ReverseInner(ref Unsafe.Add(ref buf, offset), (nuint)remainder);
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Reverse<T>(ref T elements, nuint length)
+        public static void Reverse<T>(Span<T> span)
         {
-            Debug.Assert(length > 1);
+            Debug.Assert(span.Length > 1);
 
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
-                    Reverse(ref Unsafe.As<T, byte>(ref elements), length);
+                    ReverseValueType<T, byte>(span);
                     return;
                 }
-                else if (sizeof(T) == sizeof(char))
+                if (sizeof(T) == sizeof(ushort))
                 {
-                    Reverse(ref Unsafe.As<T, char>(ref elements), length);
+                    ReverseValueType<T, ushort>(span);
                     return;
                 }
-                else if (sizeof(T) == sizeof(int))
+                if (sizeof(T) == sizeof(uint))
                 {
-                    Reverse(ref Unsafe.As<T, int>(ref elements), length);
+                    ReverseValueType<T, uint>(span);
                     return;
                 }
-                else if (sizeof(T) == sizeof(long))
+                if (sizeof(T) == sizeof(ulong))
                 {
-                    Reverse(ref Unsafe.As<T, long>(ref elements), length);
+                    ReverseValueType<T, ulong>(span);
                     return;
                 }
             }
 
-            ReverseInner(ref elements, length);
+            while (span.Length > 1)
+            {
+                T first = span[0];
+                span[0] = span[span.Length - 1];
+                span[span.Length - 1] = first;
+                span = span.Slice(1);
+                span = span.Slice(0, span.Length - 1);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ReverseInner<T>(ref T elements, nuint length)
+        private static void ReverseValueType<T, TElem>(Span<T> span)
+            where TElem : struct
         {
-            Debug.Assert(length > 1);
+            Debug.Assert(span.Length > 1);
+            Debug.Assert(sizeof(T) == sizeof(TElem) && !RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-            ref T first = ref elements;
-            ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, length), 1);
-            do
+            if (Vector128.IsHardwareAccelerated || sizeof(TElem) < sizeof(ulong))
             {
-                T temp = first;
-                first = last;
-                last = temp;
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Subtract(ref last, 1);
-            } while (Unsafe.IsAddressLessThan(ref first, ref last));
+                if (span.Length < 4)
+                {
+                    // Length is 2 or 3: only a single swap is needed.
+                    // SAFETY: T and TElem have the same size and T has no GC references, so T's bits round-trip through TElem.
+                    unsafe
+                    {
+                        TElem firstElem = Unsafe.BitCast<T, TElem>(span[0]);
+                        int endIdx = span.Length - 1;
+                        span[0] = span[endIdx];
+                        span[endIdx] = Unsafe.BitCast<TElem, T>(firstElem);
+                    }
+                    return;
+                }
+
+                int remaining;
+                // SAFETY: T and TElem have the same size and T has no GC references, so the reinterpreted span covers exactly
+                // the same bytes. TElem may be more strictly aligned than T, so it's only accessed via IChunkReverser,
+                // which uses unaligned loads and stores.
+                unsafe
+                {
+                    remaining = ReverseChunks(Unsafe.BitCast<Span<T>, Span<TElem>>(span));
+                }
+                Debug.Assert(remaining is >= 0 and <= 3);
+                if (remaining > 1)
+                {
+                    int firstIdx = (span.Length - remaining) >> 1;
+                    int lastIdx = span.Length - 1 - firstIdx;
+                    // SAFETY: T and TElem have the same size and T has no GC references, so T's bits round-trip through TElem.
+                    unsafe
+                    {
+                        TElem temp = Unsafe.BitCast<T, TElem>(span[firstIdx]);
+                        span[firstIdx] = span[lastIdx];
+                        span[lastIdx] = Unsafe.BitCast<TElem, T>(temp);
+                    }
+                }
+                return;
+            }
+
+            while (span.Length > 1)
+            {
+                // Hold the temporary as TElem to avoid field-by-field copies of T; elements are still accessed as T.
+                // SAFETY: T and TElem have the same size and T has no GC references, so T's bits round-trip through TElem.
+                unsafe
+                {
+                    TElem first = Unsafe.BitCast<T, TElem>(span[0]);
+                    span[0] = span[span.Length - 1];
+                    span[span.Length - 1] = Unsafe.BitCast<TElem, T>(first);
+                }
+                span = span.Slice(1);
+                span = span.Slice(0, span.Length - 1);
+            }
+        }
+
+        // Reverses chunks from both ends, from the widest to the narrowest reverser, and returns
+        // the number of remaining middle elements (< 4).
+        private static int ReverseChunks<TElem>(Span<TElem> span)
+            where TElem : struct
+        {
+            if (Vector512.IsHardwareAccelerated)
+            {
+                span = ReverseChunksLoop<TElem, Vector512Reverser<TElem>>(span);
+            }
+            if (Vector256.IsHardwareAccelerated)
+            {
+                span = Vector512.IsHardwareAccelerated
+                    ? ReverseChunkOnce<TElem, Vector256Reverser<TElem>>(span)
+                    : ReverseChunksLoop<TElem, Vector256Reverser<TElem>>(span);
+            }
+            if (Vector128.IsHardwareAccelerated)
+            {
+                span = Vector256.IsHardwareAccelerated
+                    ? ReverseChunkOnce<TElem, Vector128Reverser<TElem>>(span)
+                    : ReverseChunksLoop<TElem, Vector128Reverser<TElem>>(span);
+            }
+            if (sizeof(TElem) < sizeof(ulong))
+            {
+                span = Vector128.IsHardwareAccelerated
+                    ? ReverseChunkOnce<TElem, UInt64Reverser<TElem>>(span)
+                    : ReverseChunksLoop<TElem, UInt64Reverser<TElem>>(span);
+            }
+            if (sizeof(TElem) < sizeof(uint))
+            {
+                span = ReverseChunkOnce<TElem, UInt32Reverser<TElem>>(span);
+            }
+            return span.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Span<TElem> ReverseChunksLoop<TElem, TReverser>(Span<TElem> span)
+            where TReverser : IChunkReverser<TElem>
+        {
+            if (span.Length >= 4 * TReverser.Count)
+            {
+                while (span.Length >= 4 * TReverser.Count)
+                {
+                    Span<TElem> lastTwo = span.Slice(span.Length - 2 * TReverser.Count);
+                    TReverser.ReverseAndSwap(span, lastTwo.Slice(TReverser.Count));
+                    TReverser.ReverseAndSwap(span.Slice(TReverser.Count), lastTwo);
+                    span = span.Slice(2 * TReverser.Count);
+                    span = span.Slice(0, span.Length - 2 * TReverser.Count);
+                }
+            }
+
+            return ReverseChunkOnce<TElem, TReverser>(span);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Span<TElem> ReverseChunkOnce<TElem, TReverser>(Span<TElem> span)
+            where TReverser : IChunkReverser<TElem>
+        {
+            if (span.Length >= 2 * TReverser.Count)
+            {
+                TReverser.ReverseAndSwap(span, span.Slice(span.Length - TReverser.Count));
+                span = span.Slice(TReverser.Count);
+                span = span.Slice(0, span.Length - TReverser.Count);
+            }
+
+            if (typeof(TElem) == typeof(byte) && TReverser.CanOverlap && span.Length >= TReverser.Count)
+            {
+                // Both overlapping chunks are read before either is written.
+                TReverser.ReverseAndSwap(span, span.Slice(span.Length - TReverser.Count));
+                return default;
+            }
+
+            return span;
+        }
+
+        private interface IChunkReverser<TElem>
+        {
+            static abstract int Count { get; }
+
+            // Whether the last two chunks may overlap. Worth it only for bytes: for wider elements, the scalar tail
+            // is short and partially overlapping stores can cause store-forwarding stalls.
+            static abstract bool CanOverlap { get; }
+
+            // Reverses the first Count elements of both spans and swaps them.
+            static abstract void ReverseAndSwap(Span<TElem> first, Span<TElem> last);
+        }
+
+        private readonly struct Vector512Reverser<TElem> : IChunkReverser<TElem>
+        {
+            public static int Count => Vector512<TElem>.Count;
+
+            public static bool CanOverlap => false;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
+            {
+                Vector512<TElem> a = Vector512.Create<TElem>(first);
+                Vector512<TElem> b = Vector512.Create<TElem>(last);
+                ReverseElements(b).CopyTo(first);
+                ReverseElements(a).CopyTo(last);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static Vector512<TElem> ReverseElements(Vector512<TElem> vector)
+            {
+                if (typeof(TElem) == typeof(byte))
+                {
+                    return Vector512.Shuffle(vector.AsByte(), Vector512.Create(
+                        (byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48,
+                        47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32,
+                        31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, TElem>();
+                }
+                if (typeof(TElem) == typeof(ushort))
+                {
+                    return Vector512.Shuffle(vector.AsUInt16(), Vector512.Create(
+                        (ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<ushort, TElem>();
+                }
+                if (typeof(TElem) == typeof(uint))
+                {
+                    return Vector512.Shuffle(vector.AsUInt32(), Vector512.Create(15u, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<uint, TElem>();
+                }
+                Debug.Assert(typeof(TElem) == typeof(ulong));
+                return Vector512.Shuffle(vector.AsUInt64(), Vector512.Create(7ul, 6, 5, 4, 3, 2, 1, 0)).As<ulong, TElem>();
+            }
+        }
+
+        private readonly struct Vector256Reverser<TElem> : IChunkReverser<TElem>
+        {
+            public static int Count => Vector256<TElem>.Count;
+
+            public static bool CanOverlap => false;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
+            {
+                Vector256<TElem> a = Vector256.Create<TElem>(first);
+                Vector256<TElem> b = Vector256.Create<TElem>(last);
+                ReverseElements(b).CopyTo(first);
+                ReverseElements(a).CopyTo(last);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static Vector256<TElem> ReverseElements(Vector256<TElem> vector)
+            {
+                if (typeof(TElem) == typeof(byte))
+                {
+                    return Vector256.Shuffle(vector.AsByte(), Vector256.Create(
+                        (byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, TElem>();
+                }
+                if (typeof(TElem) == typeof(ushort))
+                {
+                    return Vector256.Shuffle(vector.AsUInt16(), Vector256.Create((ushort)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<ushort, TElem>();
+                }
+                if (typeof(TElem) == typeof(uint))
+                {
+                    return Vector256.Shuffle(vector.AsUInt32(), Vector256.Create(7u, 6, 5, 4, 3, 2, 1, 0)).As<uint, TElem>();
+                }
+                Debug.Assert(typeof(TElem) == typeof(ulong));
+                return Vector256.Shuffle(vector.AsUInt64(), Vector256.Create(3ul, 2, 1, 0)).As<ulong, TElem>();
+            }
+        }
+
+        private readonly struct Vector128Reverser<TElem> : IChunkReverser<TElem>
+        {
+            public static int Count => Vector128<TElem>.Count;
+
+            public static bool CanOverlap => false;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
+            {
+                Vector128<TElem> a = Vector128.Create<TElem>(first);
+                Vector128<TElem> b = Vector128.Create<TElem>(last);
+                ReverseElements(b).CopyTo(first);
+                ReverseElements(a).CopyTo(last);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static Vector128<TElem> ReverseElements(Vector128<TElem> vector)
+            {
+                if (typeof(TElem) == typeof(byte))
+                {
+                    return Vector128.Shuffle(vector.AsByte(), Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, TElem>();
+                }
+                if (typeof(TElem) == typeof(ushort))
+                {
+                    return Vector128.Shuffle(vector.AsUInt16(), Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0)).As<ushort, TElem>();
+                }
+                if (typeof(TElem) == typeof(uint))
+                {
+                    return Vector128.Shuffle(vector.AsUInt32(), Vector128.Create(3u, 2, 1, 0)).As<uint, TElem>();
+                }
+                Debug.Assert(typeof(TElem) == typeof(ulong));
+                return Vector128.Shuffle(vector.AsUInt64(), Vector128.Create(1ul, 0)).As<ulong, TElem>();
+            }
+        }
+
+        private readonly struct UInt64Reverser<TElem> : IChunkReverser<TElem>
+            where TElem : struct
+        {
+            public static int Count => sizeof(ulong) / sizeof(TElem);
+
+            public static bool CanOverlap
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => typeof(TElem) == typeof(byte);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
+            {
+                Span<byte> a = MemoryMarshal.AsBytes(first.Slice(0, Count));
+                Span<byte> b = MemoryMarshal.AsBytes(last);
+                ulong x = BinaryPrimitives.ReadUInt64LittleEndian(a);
+                ulong y = BinaryPrimitives.ReadUInt64LittleEndian(b);
+                BinaryPrimitives.WriteUInt64LittleEndian(a, ReverseElements(y));
+                BinaryPrimitives.WriteUInt64LittleEndian(b, ReverseElements(x));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ulong ReverseElements(ulong value)
+            {
+                if (typeof(TElem) == typeof(byte))
+                {
+                    return BinaryPrimitives.ReverseEndianness(value);
+                }
+                if (typeof(TElem) == typeof(ushort))
+                {
+                    return ((ulong)uint.RotateLeft((uint)value, 16) << 32) | uint.RotateLeft((uint)(value >> 32), 16);
+                }
+                return ulong.RotateLeft(value, 32);
+            }
+        }
+
+        private readonly struct UInt32Reverser<TElem> : IChunkReverser<TElem>
+            where TElem : struct
+        {
+            public static int Count => sizeof(uint) / sizeof(TElem);
+
+            public static bool CanOverlap
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => typeof(TElem) == typeof(byte);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void ReverseAndSwap(Span<TElem> first, Span<TElem> last)
+            {
+                Span<byte> a = MemoryMarshal.AsBytes(first.Slice(0, Count));
+                Span<byte> b = MemoryMarshal.AsBytes(last);
+                uint x = BinaryPrimitives.ReadUInt32LittleEndian(a);
+                uint y = BinaryPrimitives.ReadUInt32LittleEndian(b);
+                BinaryPrimitives.WriteUInt32LittleEndian(a, ReverseElements(y));
+                BinaryPrimitives.WriteUInt32LittleEndian(b, ReverseElements(x));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint ReverseElements(uint value) =>
+                typeof(TElem) == typeof(byte) ? BinaryPrimitives.ReverseEndianness(value) : uint.RotateLeft(value, 16);
         }
     }
 }

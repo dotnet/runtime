@@ -3704,7 +3704,7 @@ namespace System
         {
             if (span.Length > 1)
             {
-                SpanHelpers.Reverse(ref MemoryMarshal.GetReference(span), (nuint)span.Length);
+                SpanHelpers.Reverse(span);
             }
         }
 

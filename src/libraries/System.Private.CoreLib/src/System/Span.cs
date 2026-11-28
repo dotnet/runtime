@@ -363,6 +363,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<T>(Span<T> span) =>
             new ReadOnlySpan<T>(ref span._reference, span._length);
 
