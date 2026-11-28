@@ -30,8 +30,10 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
 OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT);
 
 // The main Array allocation routine, can do multi-dimensional
-OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
-OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
+OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pLengths, INT32 *pLowerBounds, DWORD dwRank, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
+OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pLengths, INT32 *pLowerBounds, DWORD dwRank, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
+// The rountine accepts args in array ctor format (lower bounds and lengths interleaving)
+OBJECTREF AllocateArrayCtorArgs(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 
 // Create a SD array of primitive types given an element type
 OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements);
