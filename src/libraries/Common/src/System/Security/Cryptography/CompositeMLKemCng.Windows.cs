@@ -175,8 +175,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            // Windows NCrypt does not yet support PKCS#8 export for Composite ML-KEM, so build it from the private key.
-            return TryExportPkcs8FromExportedDecapsulationKey(destination, out bytesWritten);
+            return _key.TryExportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                destination,
+                out bytesWritten);
         }
 
         /// <inheritdoc/>
