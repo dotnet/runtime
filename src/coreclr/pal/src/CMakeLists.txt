@@ -193,16 +193,6 @@ add_library(coreclrpal STATIC
   $<TARGET_OBJECTS:coreclrpal_objects>
   ${LIBUNWIND_OBJECTS}
 )
-# There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
-# which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
-#
-# > warning: /Applications/Xcode-9.4.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib:
-# > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
-#
-if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
-endif(CLR_CMAKE_TARGET_LINUX)
-
 if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
@@ -251,11 +241,11 @@ if(CLR_CMAKE_TARGET_LINUX)
       pthread
       rt
     )
-  else(NOT CLR_CMAKE_TARGET_ANDROID)
+  else()
     target_link_libraries(coreclrpal
       PUBLIC
       ${ANDROID_GLOB})
-  endif(NOT CLR_CMAKE_TARGET_ANDROID)
+  endif()
 
   target_link_libraries(coreclrpal
     PUBLIC
@@ -298,11 +288,6 @@ endif(CLR_CMAKE_TARGET_SUNOS)
 
 target_link_libraries(coreclrpal
   PRIVATE minipal)
-
-if(FEATURE_EVENT_TRACE)
-  add_subdirectory(eventprovider)
-endif(FEATURE_EVENT_TRACE)
-
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
 

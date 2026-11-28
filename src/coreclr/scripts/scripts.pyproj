@@ -22,14 +22,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="check-definitions.py" />
-    <Compile Include="genDummyProvider.py" />
-    <Compile Include="genEtwProvider.py" />
-    <Compile Include="genEventing.py" />
-    <Compile Include="genEventPipe.py" />
-    <Compile Include="genLttngProvider.py" />
     <Compile Include="genRuntimeEventSources.py" />
     <Compile Include="pgocheck.py" />
-    <Compile Include="utilities.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|PythonCore|2.7" />

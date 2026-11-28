@@ -174,11 +174,11 @@ else()
         corguids
         dbgutil
     )
-    if (FEATURE_EVENT_TRACE)
+    if (FEATURE_EVENTSOURCE_XPLAT)
         LIST(APPEND NATIVE_LIBS
             eventprovider
         )
-    endif(FEATURE_EVENT_TRACE)
+    endif(FEATURE_EVENTSOURCE_XPLAT)
     LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
