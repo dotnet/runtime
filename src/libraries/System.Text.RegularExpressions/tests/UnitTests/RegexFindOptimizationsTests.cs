@@ -323,6 +323,15 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(distance, opts.FixedDistanceLiteral.Distance);
         }
 
+        [Theory]
+        [InlineData(@"(?I)A{1234567890}?a?")]
+        [InlineData(@"[Aa]{1234567890}")]
+        [InlineData(@"[Aa]{1000000}")]
+        public void LeadingPrefix_LargeFixedCountSet_DoesNotAllocateHugeString(string pattern)
+        {
+            Assert.DoesNotThrow(() => ComputeOptimizations(pattern, RegexOptions.IgnoreCase));
+        }
+
         private static RegexFindOptimizations ComputeOptimizations(string pattern, RegexOptions options)
         {
             RegexTree tree = RegexParser.Parse(pattern, options, CultureInfo.InvariantCulture);
