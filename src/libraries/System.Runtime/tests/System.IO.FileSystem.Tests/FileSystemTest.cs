@@ -142,7 +142,8 @@ namespace System.IO.Tests
                 // We launch a child process to get its value.
                 using Process px = Process.Start(new ProcessStartInfo
                 {
-                    FileName = "/bin/sh",
+                    // Android versions before 10 have no /bin; the shell is only available as /system/bin/sh.
+                    FileName = OperatingSystem.IsAndroid() ? "/system/bin/sh" : "/bin/sh",
                     ArgumentList = { "-c", "umask" },
                     RedirectStandardOutput = true
                 });
