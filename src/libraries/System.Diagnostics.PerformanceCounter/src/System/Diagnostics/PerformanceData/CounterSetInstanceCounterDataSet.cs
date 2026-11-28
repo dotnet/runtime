@@ -192,7 +192,7 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         /// <param name="counterId">CounterId that matches one CounterSet::AddCounter()call</param>
         /// <returns>CounterData object with matched counterId</returns>
-        public CounterData this[int counterId]
+        public CounterData? this[int counterId]
         {
             get
             {
@@ -221,7 +221,7 @@ namespace System.Diagnostics.PerformanceData
         /// </summary>
         /// <param name="counterName">CounterName that matches one CounterSet::AddCounter() call</param>
         /// <returns>CounterData object with matched counterName</returns>
-        public CounterData this[string counterName]
+        public CounterData? this[string counterName]
         {
             get
             {

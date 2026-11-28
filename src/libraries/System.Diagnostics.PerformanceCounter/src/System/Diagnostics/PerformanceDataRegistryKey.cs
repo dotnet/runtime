@@ -119,7 +119,7 @@ namespace System.Diagnostics
                 : new byte[size];
         }
 
-        private static void Win32Error(in int errorCode, string name)
+        private static void Win32Error(in int errorCode, string? name)
         {
             if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
             {
