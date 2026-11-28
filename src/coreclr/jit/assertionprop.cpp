@@ -4271,7 +4271,10 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    bool didZeroObjProp      = optZeroObjAssertionProp(store->Data(), assertions);
+    // The value is evaluated after the address, which may kill assertions about it. Local assertion prop
+    // visits the store before its operands are morphed, so it doesn't see such kills yet.
+    bool didZeroObjProp =
+        ((store->Addr()->gtFlags & GTF_ASG) == 0) && optZeroObjAssertionProp(store->Data(), assertions);
     bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
     bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
     if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
