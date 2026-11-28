@@ -240,9 +240,10 @@ namespace System.Text.RegularExpressions
 
                 i = parser._pos;
                 int lastpos = i;
-                while (i < input.Length && input[i] != '\\')
+                if (i < input.Length && input[i] != '\\')
                 {
-                    i++;
+                    i = input.IndexOf('\\', i + 1);
+                    i = i < 0 ? input.Length : i;
                 }
 
                 vsb.Append(input.AsSpan(lastpos, i - lastpos));

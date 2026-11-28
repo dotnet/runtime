@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -15,6 +16,8 @@ namespace System.Diagnostics
     public class XmlWriterTraceListener : TextWriterTraceListener
     {
         private const string FixedHeader = "<E2ETraceEvent xmlns=\"http://schemas.microsoft.com/2004/06/E2ETraceEvent\"><System xmlns=\"http://schemas.microsoft.com/2004/06/windows/eventlog/system\">";
+
+        private static readonly SearchValues<char> s_escapedChars = SearchValues.Create("&<>\"'\r\n");
 
         private static string? s_processName;
         private readonly string _machineName = Environment.MachineName;
@@ -330,49 +333,28 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(str))
                 return;
 
-            int lastIndex = 0;
-            for (int i = 0; i < str.Length; i++)
+            ReadOnlySpan<char> remaining = str;
+            int i = remaining.IndexOfAny(s_escapedChars);
+            while (i >= 0)
             {
-                switch (str[i])
+                InternalWrite(remaining.Slice(0, i));
+                InternalWrite(remaining[i] switch
                 {
-                    case '&':
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&amp;");
-                        lastIndex = i + 1;
-                        break;
-                    case '<':
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&lt;");
-                        lastIndex = i + 1;
-                        break;
-                    case '>':
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&gt;");
-                        lastIndex = i + 1;
-                        break;
-                    case '"':
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&quot;");
-                        lastIndex = i + 1;
-                        break;
-                    case '\'':
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&apos;");
-                        lastIndex = i + 1;
-                        break;
-                    case (char)0xD:
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&#xD;");
-                        lastIndex = i + 1;
-                        break;
-                    case (char)0xA:
-                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
-                        InternalWrite("&#xA;");
-                        lastIndex = i + 1;
-                        break;
-                }
+                    '&' => "&amp;",
+                    '<' => "&lt;",
+                    '>' => "&gt;",
+                    '"' => "&quot;",
+                    '\'' => "&apos;",
+                    '\r' => "&#xD;",
+                    _ => "&#xA;",
+                });
+                remaining = remaining.Slice(i + 1);
+
+                // Avoid repeated vectorized searches when escaped characters are adjacent.
+                i = !remaining.IsEmpty && s_escapedChars.Contains(remaining[0]) ? 0 : remaining.IndexOfAny(s_escapedChars);
             }
-            InternalWrite(str.AsSpan(lastIndex, str.Length - lastIndex));
+
+            InternalWrite(remaining);
         }
 
         private void InternalWrite(string? message)
