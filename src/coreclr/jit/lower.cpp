@@ -1020,7 +1020,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     afterDefaultCondBlock->inheritWeight(originalSwitchBB);
     afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
 
-    bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
+    // With at most four cases, prefer direct branches over a jump table. A switch with
+    // two in-range targets can still use a bit test.
+    const unsigned inRangeTargetCount = targetCnt - ((defaultEdge->getDupCount() == 0) ? 1 : 0);
+    bool useJumpSequence = (jumpCnt < minSwitchTabJumpCnt) || ((jumpCnt - 1 <= 4) && (inRangeTargetCount > 2));
 
     if (TargetOS::IsUnix && TargetArchitecture::IsArm32)
     {
@@ -1038,7 +1041,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
-    if ((targetCnt == 2) && (defaultEdge->getDupCount() == 0))
+    if (inRangeTargetCount == 1)
     {
         // The default case was peeled off, and we have only one other unique successor.
         // Jump directly to this remaining successor.
