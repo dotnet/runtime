@@ -1306,7 +1306,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             if (!size->isContained())
             {
-                BuildUse(size);
+                tgtPrefUse = BuildUse(size);
             }
             buildInternalRegisterUses();
             BuildDef(tree);
