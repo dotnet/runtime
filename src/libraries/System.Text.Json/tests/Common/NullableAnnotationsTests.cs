@@ -190,6 +190,10 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(DisallowNullStructConstructorParameter), nameof(DisallowNullStructConstructorParameter.Property));
             yield return Wrap(typeof(DisallowNullPropertyClass<string>), nameof(DisallowNullPropertyClass<string>.Property));
             yield return Wrap(typeof(NotNullablePropertyParameterizedCtorClass), nameof(NotNullablePropertyParameterizedCtorClass.CtorProperty));
+            yield return Wrap(typeof(NotNullableNonCtorMembersParameterizedCtorClass), nameof(NotNullableNonCtorMembersParameterizedCtorClass.Property));
+            yield return Wrap(typeof(NotNullableNonCtorMembersParameterizedCtorClass), nameof(NotNullableNonCtorMembersParameterizedCtorClass.Field));
+            yield return Wrap(typeof(NotNullableNonCtorMembersParameterizedCtorClass), nameof(NotNullableNonCtorMembersParameterizedCtorClass.ObjectProperty));
+            yield return Wrap(typeof(NotNullableNonCtorMembersParameterizedCtorClass), nameof(NotNullableNonCtorMembersParameterizedCtorClass.DisallowNullStructProperty));
             yield return Wrap(typeof(NotNullablePropertiesLargeParameterizedCtorClass), nameof(NotNullablePropertiesLargeParameterizedCtorClass.CtorProperty2));
             yield return Wrap(typeof(NotNullGenericPropertyClass<string>), nameof(NotNullGenericPropertyClass<string>.Property));
             yield return Wrap(typeof(DisallowNullConstructorParameter), nameof(DisallowNullConstructorParameter.Property));
@@ -354,6 +358,68 @@ namespace System.Text.Json.Serialization.Tests
             var value = new NotNullablePropertyWithIgnoreConditions { WhenWritingNull = null!, WhenWritingDefault = null! };
             string json = await Serializer.SerializeWrapper(value, s_optionsWithEnforcedNullability);
             Assert.Equal("{}", json);
+        }
+
+        [Fact]
+        public async Task ReadNullIntoNotNullableNonCtorMembers_ParameterizedCtor_MetadataAndConverters()
+        {
+            // Synchronous metadata path via ReferenceHandler.Preserve.
+            JsonSerializerOptions preserveOptions = new()
+            {
+                RespectNullableAnnotations = true,
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<NotNullableNonCtorMembersParameterizedCtorClass>(
+                    """{"CtorProperty":"a","Property":null}""",
+                    preserveOptions));
+            Assert.Contains(nameof(NotNullableNonCtorMembersParameterizedCtorClass.Property), ex.Message);
+            Assert.Equal("$.Property", ex.Path);
+
+            // Synchronous metadata path via polymorphic $type resolving to parameterized-constructor derived type.
+            ex = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<PolymorphicBaseWithParameterizedCtorDerived>(
+                    """{"$type":"derived","CtorProperty":"a","Property":null}""",
+                    s_optionsWithEnforcedNullability));
+            Assert.Contains(nameof(PolymorphicDerivedWithParameterizedCtor.Property), ex.Message);
+            Assert.Equal("$.Property", ex.Path);
+
+            // Required non-constructor property on parameterized-constructor type.
+            ex = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<RequiredNonCtorPropertyParameterizedCtorClass>(
+                    """{"CtorProperty":"a","Property":null}""",
+                    s_optionsWithEnforcedNullability));
+            Assert.Contains(nameof(RequiredNonCtorPropertyParameterizedCtorClass.Property), ex.Message);
+            Assert.Equal("$.Property", ex.Path);
+
+            // Custom HandleNull converter returning non-null succeeds; converter returning null throws.
+            var handleNullResult = await Serializer.DeserializeWrapper<NotNullableNonCtorMembersParameterizedCtorClass>(
+                """{"CtorProperty":"a","PropertyWithHandleNullConverter":null}""",
+                s_optionsWithEnforcedNullability);
+            Assert.NotNull(handleNullResult.PropertyWithHandleNullConverter);
+
+            ex = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<NotNullableNonCtorMembersParameterizedCtorClass>(
+                    """{"CtorProperty":"a","PropertyWithAlwaysNullConverter":"42"}""",
+                    s_optionsWithEnforcedNullability));
+            Assert.Contains(nameof(NotNullableNonCtorMembersParameterizedCtorClass.PropertyWithAlwaysNullConverter), ex.Message);
+            Assert.Equal("$.PropertyWithAlwaysNullConverter", ex.Path);
+
+            // IgnoreNullValues takes precedence over RespectNullableAnnotations for null tokens.
+            JsonSerializerOptions ignoreNullOptions = new()
+            {
+                RespectNullableAnnotations = true,
+                IgnoreNullValues = true
+            };
+            var ignoredClass = await Serializer.DeserializeWrapper<NotNullableNonCtorMembersParameterizedCtorClass>(
+                """{"CtorProperty":"a","Property":null}""",
+                ignoreNullOptions);
+            Assert.Equal("default", ignoredClass.Property);
+
+            var ignoredStruct = await Serializer.DeserializeWrapper<NotNullableNonCtorMembersParameterizedCtorStruct>(
+                """{"CtorProperty":"a","Property":null}""",
+                ignoreNullOptions);
+            Assert.Equal("default", ignoredStruct.Property);
         }
 
         public class NotNullablePropertyClass
@@ -792,6 +858,57 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithNonNullableRequiredProperty
         {
             public required string Property { get; set; }
+        }
+
+        public class NotNullableNonCtorMembersParameterizedCtorClass
+        {
+            public string CtorProperty { get; }
+            public string Property { get; set; } = "default";
+            [JsonInclude]
+            public string Field = "default";
+            public object ObjectProperty { get; set; } = new();
+            [DisallowNull]
+            public int? DisallowNullStructProperty { get; set; }
+            [JsonConverter(typeof(MyHandleNullConverter))]
+            public MyClass PropertyWithHandleNullConverter { get; set; } = new();
+            [JsonConverter(typeof(MyAlwaysNullConverter))]
+            public MyClass PropertyWithAlwaysNullConverter { get; set; } = new();
+
+            public NotNullableNonCtorMembersParameterizedCtorClass(string ctorProperty) => CtorProperty = ctorProperty;
+        }
+
+        public struct NotNullableNonCtorMembersParameterizedCtorStruct
+        {
+            public string CtorProperty { get; }
+            public string Property { get; set; }
+
+            [JsonConstructor]
+            public NotNullableNonCtorMembersParameterizedCtorStruct(string ctorProperty)
+            {
+                CtorProperty = ctorProperty;
+                Property = "default";
+            }
+        }
+
+        [JsonDerivedType(typeof(PolymorphicDerivedWithParameterizedCtor), "derived")]
+        public class PolymorphicBaseWithParameterizedCtorDerived
+        {
+        }
+
+        public class PolymorphicDerivedWithParameterizedCtor : PolymorphicBaseWithParameterizedCtorDerived
+        {
+            public string CtorProperty { get; }
+            public string Property { get; set; } = "default";
+
+            public PolymorphicDerivedWithParameterizedCtor(string ctorProperty) => CtorProperty = ctorProperty;
+        }
+
+        public class RequiredNonCtorPropertyParameterizedCtorClass
+        {
+            public string CtorProperty { get; }
+            public required string Property { get; set; }
+
+            public RequiredNonCtorPropertyParameterizedCtorClass(string ctorProperty) => CtorProperty = ctorProperty;
         }
     }
 }

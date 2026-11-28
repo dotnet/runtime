@@ -69,6 +69,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNonNullableInitProperty))]
         [JsonSerializable(typeof(ClassWithNullableRequiredProperty))]
         [JsonSerializable(typeof(ClassWithNonNullableRequiredProperty))]
+        [JsonSerializable(typeof(NotNullableNonCtorMembersParameterizedCtorClass))]
+        [JsonSerializable(typeof(NotNullableNonCtorMembersParameterizedCtorStruct))]
+        [JsonSerializable(typeof(PolymorphicBaseWithParameterizedCtorDerived))]
+        [JsonSerializable(typeof(RequiredNonCtorPropertyParameterizedCtorClass))]
         internal sealed partial class NullableAnnotationsTestsContext_Metadata
             : JsonSerializerContext { }
     }
@@ -136,6 +140,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNonNullableInitProperty))]
         [JsonSerializable(typeof(ClassWithNullableRequiredProperty))]
         [JsonSerializable(typeof(ClassWithNonNullableRequiredProperty))]
+        [JsonSerializable(typeof(NotNullableNonCtorMembersParameterizedCtorClass))]
+        [JsonSerializable(typeof(NotNullableNonCtorMembersParameterizedCtorStruct))]
+        [JsonSerializable(typeof(PolymorphicBaseWithParameterizedCtorDerived))]
+        [JsonSerializable(typeof(RequiredNonCtorPropertyParameterizedCtorClass))]
         internal sealed partial class NullableAnnotationsTestsContext_Default
             : JsonSerializerContext
         { }

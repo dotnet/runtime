@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             Debug.Assert(jsonPropertyInfo.Set is not null);
 
-                            if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead || default(T) is not null)
+                            if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead)
                             {
                                 jsonPropertyInfo.Set(obj, propValue);
                             }
