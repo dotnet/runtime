@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- AlwaysUseCrossGen2 forces the crossgen pass on the ordinary browser leg, so the image is always
+         compiled with auxiliary module metadata rather than running fully interpreted. -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --auxiliary-modules</CrossGen2TestExtraArguments>
+    <!-- The host R2RDump cannot yet inspect wasm R2R components; skip its validation so the test runs under R2R. -->
+    <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser' or '$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>
