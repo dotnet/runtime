@@ -13,74 +13,19 @@ public class ConditionalSelectConstants
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     [Fact]
-    public static int TestConditionalSelectConstants()
+    public static void TestConditionalSelectConstants()
     {
-        bool fail = false;
-
         if (Sve.IsSupported)
         {
-            var smoke = Smoke();
-            Console.WriteLine(smoke);
-            if (smoke != Vector.Create<int>(-1))
-            {
-                fail = true;
-            }
-
-            var r1 = Sve.AddAcross(ConditionalSelect1CC());
-            Console.WriteLine(r1[0]);
-            if (r1[0] != 15)
-            {
-                fail = true;
-            }
-
-            var r2 = Sve.AddAcross(ConditionalSelect1FT());
-            Console.WriteLine(r2[0]);
-            if (r2[0] != -3)
-            {
-                fail = true;
-            }
-
-            var r3 = Sve.AddAcross(ConditionalSelect16TF());
-            Console.WriteLine(r3[0]);
-            if (r3[0] != 4080)
-            {
-                fail = true;
-            }
-
-            var r4 = Sve.AddAcross(ConditionalSelect2CT());
-            Console.WriteLine(r4[0]);
-            if (r4[0] != 16)
-            {
-                fail = true;
-            }
-
-            var r5 = ConditionalSelectConsts();
-            Console.WriteLine(r5);
-            if (r5 != 5)
-            {
-                fail = true;
-            }
-
-            var r6 = ConditionalSelectConstsNoMaskPattern();
-            Console.WriteLine(r6);
-            if (r6 != false)
-            {
-                fail = true;
-            }
-
-            var r7 = ConditionalSelectConstsNoMaskPattern2();
-            Console.WriteLine(r7);
-            if (r7 != 0)
-            {
-                fail = true;
-            }
+            Assert.Equal(Vector.Create<int>(-1), Smoke());
+            Assert.Equal((Vector<int>.Count - 1) * 4 + 3, (int)Sve.AddAcross(ConditionalSelect1CC())[0]);
+            Assert.Equal((Vector<int>.Count - 1) * -1, (int)Sve.AddAcross(ConditionalSelect1FT())[0]);
+            Assert.Equal(4080, (int)Sve.AddAcross(ConditionalSelect16TF())[0]);
+            Assert.Equal((Vector<int>.Count - 2) * -1 + 2 * 9, (int)Sve.AddAcross(ConditionalSelect2CT())[0]);
+            Assert.Equal(5, ConditionalSelectConsts());
+            Assert.False(ConditionalSelectConstsNoMaskPattern());
+            Assert.Equal(0, ConditionalSelectConstsNoMaskPattern2());
         }
-
-        if (fail)
-        {
-            return 101;
-        }
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

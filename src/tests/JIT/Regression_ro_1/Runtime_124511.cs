@@ -21,20 +21,29 @@ public unsafe class Runtime_124511
     [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        Assert.True(MainTest() == -3);
+        Assert.True(MainTest() == (sbyte)(1 - Vector<uint>.Count));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static sbyte MainTest()
     {
+        // [1, 1, 1, 1, ...]
         var vr8 = Vector.Create<uint>(1);
+        // [K, K, 0, 0, ...]
         var vr9 = Vector128.CreateScalar(4701966028735610216UL).AsVector();
+        // [0, 0, 1, 1, ...]
         var vr10 = Sve.ShiftLeftLogical(vr8, vr9);
+        // [2, 0, 0, 0, ...]
         var vr11 = Vector128.CreateScalar(2U).AsVector();
+        // [-2, 0, 1, 1, ...]
         var vr12 = Sve.Subtract(vr10, vr11);
+        // [1, 1, 1, 1, ...]
         var vr13 = Vector.Create<uint>(1);
+        // [0, 0, 0, 0, ...]
         var vr14 = Vector128.CreateScalar(0U).AsVector();
+        // [-1, 0, -1, -1, ...] ;; BRKP(pred, AllTrue, AllFalse) == pred
         var vr15 = Sve.CreateBreakBeforePropagateMask(vr12, vr13, vr14);
+        // 0 - (1 - Vector<uint>.Count) == 1 - Vector<uint>.Count
         sbyte vr16 = (sbyte)Sve.SaturatingDecrementByActiveElementCount(0, vr15);
         return vr16;
     }

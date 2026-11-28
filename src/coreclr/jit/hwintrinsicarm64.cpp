@@ -397,10 +397,14 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve2_MultiplyDoublingWideningSaturateEvenBySelectedScalar:
             case NI_Sve2_MultiplyDoublingWideningSaturateOddBySelectedScalar:
                 // Index is on the half-width vector, hence double the maximum index.
-                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) * 2 - 1;
+                immUpperBound = ((16 / genTypeSize(baseType)) * 2) - 1;
                 break;
             default:
-                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+                // For most indexed operations in SVE, the index is relative to each 128-bit
+                // segment of the vector, not the entire vector. For example, selecting index 2
+                // of Vector<int> may cause v[2] and v[6] to be used in the operation, when
+                // VL == 256-bit.
+                immUpperBound = (16 / genTypeSize(baseType)) - 1;
                 break;
         }
     }
@@ -426,10 +430,13 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
-            case NI_Sve_FusedMultiplyAddBySelectedScalar:
-            case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+                immUpperBound = (simdSize / genTypeSize(baseType)) - 1;
+                break;
+
             case NI_Sve_ExtractVector:
-                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+                // Maximum index is 255 in terms of bytes, the node will
+                // hold the index in terms of T and scale it up to bytes.
+                immUpperBound = (256 / genTypeSize(baseType)) - 1;
                 break;
 
             case NI_Sve_CreateTrueMaskByte:
