@@ -168,6 +168,17 @@ namespace System.Net.Http
                     continue;
                 }
 
+                // The connection can be in the pool even though it is shutting down: if GOAWAY or an abort was processed just
+                // before ReturnHttp3Connection added it, InvalidateHttp3Connection did not find it in the pool.
+                // Remove it instead of sending the request to it (Http2Connection.TryReserveStream does the same check).
+                if (connection.IsShuttingDown)
+                {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Found HTTP/3 connection in pool that is shutting down.");
+
+                    InvalidateHttp3Connection(connection);
+                    continue;
+                }
+
                 streamAvailable = connection.TryReserveStream();
 
                 // Disable and remove the connection from the pool only if we can open another.
@@ -386,6 +397,34 @@ namespace System.Net.Http
                 // Loop in case we get a request that has already been canceled or handled by a different connection.
                 while (true)
                 {
+                    // While the connection is outside the pool (for example, while the request it was created for is using it),
+                    // it can receive GOAWAY or be aborted. InvalidateHttp3Connection does not find it in the pool then, so check
+                    // here: do not hand a connection that is shutting down to queued requests, and do not add it to the pool.
+                    // The initial request still gets the connection; if it is unusable, that request fails with a retryable error
+                    // and its retry is served by a new connection.
+                    if (initialRequestWaiter is null && connection.IsShuttingDown)
+                    {
+                        connection.ReleaseStream();
+
+                        lock (SyncObj)
+                        {
+                            Debug.Assert(_availableHttp3Connections is null || !_availableHttp3Connections.Contains(connection));
+                            Debug.Assert(_associatedHttp3ConnectionCount > 0);
+
+                            if (isNewConnection)
+                            {
+                                _pendingHttp3Connection = false;
+                            }
+
+                            _associatedHttp3ConnectionCount--;
+                            CheckForHttp3ConnectionInjection();
+                        }
+
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("HTTP3 connection is shutting down; not returning it to the pool.");
+                        connection.Dispose();
+                        return;
+                    }
+
                     HttpConnectionWaiter<Http3Connection?>? waiter = null;
                     bool added = false;
                     lock (SyncObj)
