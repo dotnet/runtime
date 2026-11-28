@@ -94,14 +94,17 @@ namespace System.IO.Compression.Tests
 
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
-                ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
-
-                foreach (string permission in testPermissions)
+                foreach (bool overwrite in _bools)
                 {
-                    string filename = Path.Combine(tempFolder.Path, permission + ".txt");
-                    Assert.True(File.Exists(filename));
+                    ZipFile.ExtractToDirectory(archivePath, tempFolder.Path, overwriteFiles: overwrite);
 
-                    EnsureFilePermissions(filename, permission);
+                    foreach (string permission in testPermissions)
+                    {
+                        string filename = Path.Combine(tempFolder.Path, permission + ".txt");
+                        Assert.True(File.Exists(filename));
+
+                        EnsureFilePermissions(filename, permission);
+                    }
                 }
             }
         }
@@ -222,24 +225,30 @@ namespace System.IO.Compression.Tests
         public static IEnumerable<object[]> Get_UnixExtractFilePermissionsCompat_Data()
         {
             foreach (bool async in _bools)
+            foreach (bool overwrite in _bools)
             {
-                yield return new object[] { "sharpziplib.zip", null, async }; // ExternalAttributes are not set in this .zip, use the system default
-                yield return new object[] { "Linux_RW_RW_R__.zip", "664", async };
-                yield return new object[] { "Linux_RWXRW_R__.zip", "764", async };
-                yield return new object[] { "OSX_RWXRW_R__.zip", "764", async };
+                yield return new object[] { "sharpziplib.zip", null, async, overwrite }; // ExternalAttributes are not set in this .zip, use the system default
+                yield return new object[] { "Linux_RW_RW_R__.zip", "664", async, overwrite };
+                yield return new object[] { "Linux_RWXRW_R__.zip", "764", async, overwrite };
+                yield return new object[] { "OSX_RWXRW_R__.zip", "764", async, overwrite };
             }
         }
 
         [Theory]
         [MemberData(nameof(Get_UnixExtractFilePermissionsCompat_Data))]
-        public async Task UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions, bool async)
+        public async Task UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions, bool async, bool overwrite)
         {
             expectedPermissions = GetExpectedPermissions(expectedPermissions);
 
             string zipFileName = compat(zipName);
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
-                await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
+                if (overwrite)
+                {
+                    await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
+                }
+
+                await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: overwrite);
 
                 ZipArchive archive = await CallZipFileOpen(async, zipFileName, ZipArchiveMode.Read);
                 foreach (ZipArchiveEntry entry in archive.Entries)
@@ -248,9 +257,75 @@ namespace System.IO.Compression.Tests
                     Assert.True(File.Exists(filename), $"File '{filename}' should exist");
 
                     EnsureFilePermissions(filename, expectedPermissions);
+
+                    byte[] expectedContents = File.ReadAllBytes(filename);
+                    File.WriteAllText(filename, "Original content");
+                    File.SetUnixFileMode(filename, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+                    await CallExtractToFile(async, entry, filename, overwrite: true);
+
+                    EnsureFilePermissions(filename, expectedPermissions);
+                    Assert.Equal(expectedContents, File.ReadAllBytes(filename));
                 }
                 await DisposeZipArchive(async, archive);
             }
+        }
+
+        [Theory]
+        [InlineData(false, UnixFileMode.UserWrite)]
+        [InlineData(true, UnixFileMode.UserWrite)]
+        [InlineData(false, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead)]
+        [InlineData(true, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead)]
+        public async Task UnixExtractOverwriteStagesInDestinationDirectory(bool async, UnixFileMode mode)
+        {
+            using var tempFolder = new TempDirectory(GetTestFilePath());
+            File.SetUnixFileMode(tempFolder.Path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            string destinationFile = Path.Combine(tempFolder.Path, "file.txt");
+            File.WriteAllText(destinationFile, "Original content");
+
+            using var archiveStream = new MemoryStream();
+            using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry("file.txt");
+                entry.ExternalAttributes = (int)mode << 16;
+                using Stream stream = entry.Open();
+                stream.Write("Replacement content"u8);
+            }
+            archiveStream.Position = 0;
+
+            UnixFileMode expectedMode = (UnixFileMode)Convert.ToInt32(GetExpectedPermissions(Convert.ToString((int)mode, 8)), 8);
+            bool extracting = false;
+            bool stagingObserved = false;
+            using var source = new DelegateStream(
+                canReadFunc: () => true,
+                canSeekFunc: () => true,
+                lengthFunc: () => archiveStream.Length,
+                positionGetFunc: () => archiveStream.Position,
+                positionSetFunc: value => archiveStream.Position = value,
+                seekFunc: archiveStream.Seek,
+                readFunc: (buffer, offset, count) =>
+                {
+                    if (extracting)
+                    {
+                        string stagingFile = Assert.Single(Directory.GetFiles(tempFolder.Path).Where(path => path != destinationFile));
+                        Assert.Equal(expectedMode, File.GetUnixFileMode(stagingFile));
+                        Assert.Equal("Original content", File.ReadAllText(destinationFile));
+                        stagingObserved = true;
+                    }
+
+                    return archiveStream.Read(buffer, offset, count);
+                });
+            using var readArchive = new ZipArchive(source, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = Assert.Single(readArchive.Entries);
+
+            extracting = true;
+            await CallExtractToFile(async, readEntry, destinationFile, overwrite: true);
+
+            Assert.True(stagingObserved);
+            Assert.Equal(destinationFile, Assert.Single(Directory.GetFiles(tempFolder.Path)));
+            Assert.Equal(expectedMode, File.GetUnixFileMode(destinationFile));
+            File.SetUnixFileMode(destinationFile, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            Assert.Equal("Replacement content", File.ReadAllText(destinationFile));
         }
 
         [Theory]

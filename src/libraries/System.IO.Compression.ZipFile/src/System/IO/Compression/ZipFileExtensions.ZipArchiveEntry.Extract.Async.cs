@@ -98,20 +98,10 @@ public static partial class ZipFileExtensions
     // corrupted if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
     private static async Task ExtractToFileCoreAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, FileStreamOptions fileStreamOptions, ReadOnlyMemory<char> password, bool usePassword, CancellationToken cancellationToken)
     {
-        string extractPath = destinationFileName;
-        string? tempPath = null;
-
-        if (overwrite && File.Exists(destinationFileName))
-        {
-            // Use GetTempFileName for a unique temp file in the system temp directory.
-            // This avoids conflicts; we attempt to delete the temp file if extraction fails.
-            tempPath = Path.GetTempFileName();
-            extractPath = tempPath;
-        }
+        FileStream fs = ExtractToFileCreateFileStream(destinationFileName, overwrite, fileStreamOptions, out string? tempPath);
 
         try
         {
-            FileStream fs = new FileStream(extractPath, fileStreamOptions);
             await using (fs.ConfigureAwait(false))
             {
                 Stream es = usePassword
