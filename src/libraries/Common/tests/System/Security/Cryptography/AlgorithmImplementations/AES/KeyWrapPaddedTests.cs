@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using Test.Cryptography;
 using Xunit;
@@ -536,6 +537,63 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 AssertExtensions.TrueExpression(key.TryDecryptKeyWrapPadded(buffer.AsSpan(0, 16), buffer.AsSpan(16, 8), out _));
                 Assert.Equal(2, key.DecryptKeyWrapPaddedCallCount);
+            }
+        }
+
+        [Fact]
+        public static void ArrayReturningDecryptLeavesNoPlaintextInPool()
+        {
+            // The array-returning overloads unwrap into a buffer rented from the shared pool
+            // and copy the answer out of it. The unwrapped key must not be left in that buffer
+            // once it goes back to the pool.
+            byte[] input = new byte[40];
+            int maxOutput = input.Length - 8;
+            const byte CallFill = 0xC5;
+
+            using (TestAes key = new TestAes())
+            {
+                key.DecryptOverride =
+                    (source, destination) =>
+                    {
+                        destination.Fill(CallFill);
+                        return destination.Length;
+                    };
+
+                AssertNoPlaintextInPool(() => key.DecryptKeyWrapPadded(input), maxOutput, CallFill);
+                Assert.Equal(1, key.DecryptKeyWrapPaddedCallCount);
+
+                AssertNoPlaintextInPool(() => key.DecryptKeyWrapPadded(new ReadOnlySpan<byte>(input)), maxOutput, CallFill);
+                Assert.Equal(2, key.DecryptKeyWrapPaddedCallCount);
+            }
+        }
+
+        private static void AssertNoPlaintextInPool(Func<byte[]> unwrap, int length, byte callFill)
+        {
+            byte[] answer = unwrap();
+            Assert.Equal(length, answer.Length);
+            AssertExtensions.TrueExpression(answer.AsSpan().IndexOfAnyExcept(callFill) == -1);
+
+            // On the same thread, the shared pool hands back the most recently returned
+            // array of a given size first, so the buffer the unwrap used is among these.
+            byte[][] rented = new byte[4][];
+
+            try
+            {
+                for (int i = 0; i < rented.Length; i++)
+                {
+                    rented[i] = ArrayPool<byte>.Shared.Rent(length);
+                    AssertExtensions.TrueExpression(rented[i].AsSpan(0, length).IndexOfAnyExcept(callFill) != -1);
+                }
+            }
+            finally
+            {
+                foreach (byte[] array in rented)
+                {
+                    if (array is not null)
+                    {
+                        ArrayPool<byte>.Shared.Return(array, clearArray: true);
+                    }
+                }
             }
         }
 
