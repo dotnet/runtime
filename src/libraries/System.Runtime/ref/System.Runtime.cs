@@ -4453,9 +4453,11 @@ namespace System
         public Lazy(System.Func<T> valueFactory) { }
         public Lazy(System.Func<T> valueFactory, bool isThreadSafe) { }
         public Lazy(System.Func<T> valueFactory, System.Threading.LazyThreadSafetyMode mode) { }
+        public Lazy(System.Func<T> valueFactory, System.Threading.LazyThreadSafetyMode mode, bool cacheExceptions) { }
         public Lazy(System.Threading.LazyThreadSafetyMode mode) { }
         public Lazy(T value) { }
         public bool IsValueCreated { get { throw null; } }
+        public bool IsValueFaulted { get { throw null; } }
         public T Value { get { throw null; } }
         public override string? ToString() { throw null; }
     }
@@ -4464,6 +4466,7 @@ namespace System
         public Lazy(System.Func<T> valueFactory, TMetadata metadata) { }
         public Lazy(System.Func<T> valueFactory, TMetadata metadata, bool isThreadSafe) { }
         public Lazy(System.Func<T> valueFactory, TMetadata metadata, System.Threading.LazyThreadSafetyMode mode) { }
+        public Lazy(System.Func<T> valueFactory, TMetadata metadata, System.Threading.LazyThreadSafetyMode mode, bool cacheExceptions) { }
         public Lazy(TMetadata metadata) { }
         public Lazy(TMetadata metadata, bool isThreadSafe) { }
         public Lazy(TMetadata metadata, System.Threading.LazyThreadSafetyMode mode) { }

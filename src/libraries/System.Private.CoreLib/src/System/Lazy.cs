@@ -30,6 +30,14 @@ namespace System
         ExecutionAndPublicationViaConstructor = 7,
         ExecutionAndPublicationViaFactory     = 8,
         ExecutionAndPublicationException      = 9,
+
+        // States used when exceptions thrown by the value factory are not cached, so
+        // that a subsequent access to Value invokes the value factory again.
+        NoneViaFactoryNoExceptionCaching                    = 10,
+        ExecutionAndPublicationViaFactoryNoExceptionCaching = 11,
+
+        // State used when PublicationOnly is explicitly asked to cache exceptions thrown by the value factory.
+        PublicationOnlyViaFactoryWithExceptionCaching = 12,
     }
 
     /// <summary>
@@ -44,6 +52,8 @@ namespace System
     {
         internal static readonly LazyHelper NoneViaConstructor            = new LazyHelper(LazyState.NoneViaConstructor);
         internal static readonly LazyHelper NoneViaFactory                = new LazyHelper(LazyState.NoneViaFactory);
+        internal static readonly LazyHelper NoneViaFactoryNoExceptionCaching = new LazyHelper(LazyState.NoneViaFactoryNoExceptionCaching);
+        internal static readonly LazyHelper PublicationOnlyViaFactoryWithExceptionCaching = new LazyHelper(LazyState.PublicationOnlyViaFactoryWithExceptionCaching);
         internal static readonly LazyHelper PublicationOnlyViaConstructor = new LazyHelper(LazyState.PublicationOnlyViaConstructor);
         internal static readonly LazyHelper PublicationOnlyViaFactory     = new LazyHelper(LazyState.PublicationOnlyViaFactory);
         internal static readonly LazyHelper PublicationOnlyWaitForOtherThreadToPublish       = new LazyHelper(LazyState.PublicationOnlyWait);
@@ -102,17 +112,20 @@ namespace System
                 case LazyState.NoneViaConstructor:
                 case LazyState.NoneViaFactory:
                 case LazyState.NoneException:
+                case LazyState.NoneViaFactoryNoExceptionCaching:
                     return LazyThreadSafetyMode.None;
 
                 case LazyState.PublicationOnlyViaConstructor:
                 case LazyState.PublicationOnlyViaFactory:
                 case LazyState.PublicationOnlyWait:
                 case LazyState.PublicationOnlyException:
+                case LazyState.PublicationOnlyViaFactoryWithExceptionCaching:
                     return LazyThreadSafetyMode.PublicationOnly;
 
                 case LazyState.ExecutionAndPublicationViaConstructor:
                 case LazyState.ExecutionAndPublicationViaFactory:
                 case LazyState.ExecutionAndPublicationException:
+                case LazyState.ExecutionAndPublicationViaFactoryNoExceptionCaching:
                     return LazyThreadSafetyMode.ExecutionAndPublication;
 
                 default:
@@ -151,6 +164,30 @@ namespace System
                     throw new ArgumentOutOfRangeException(nameof(mode), SR.Lazy_ctor_ModeInvalid);
             }
         }
+
+        internal static LazyHelper CreateViaFactory(LazyThreadSafetyMode mode, bool cacheExceptions)
+        {
+            switch (mode)
+            {
+                case LazyThreadSafetyMode.None:
+                    return cacheExceptions ? NoneViaFactory : NoneViaFactoryNoExceptionCaching;
+
+                case LazyThreadSafetyMode.PublicationOnly:
+                    return cacheExceptions ? PublicationOnlyViaFactoryWithExceptionCaching : PublicationOnlyViaFactory;
+
+                case LazyThreadSafetyMode.ExecutionAndPublication:
+                    // we need to create an object for ExecutionAndPublication because we use Monitor-based locking
+                    return new LazyHelper(cacheExceptions ?
+                        LazyState.ExecutionAndPublicationViaFactory :
+                        LazyState.ExecutionAndPublicationViaFactoryNoExceptionCaching);
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode), SR.Lazy_ctor_ModeInvalid);
+            }
+        }
+
+        /// <summary>Gets whether exceptions are cached by default for the specified mode when a value factory is used.</summary>
+        internal static bool CachesExceptionsByDefault(LazyThreadSafetyMode mode) => mode != LazyThreadSafetyMode.PublicationOnly;
 
         internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
@@ -205,7 +242,7 @@ namespace System
         /// An instance created with this constructor may be used concurrently from multiple threads.
         /// </remarks>
         public Lazy()
-            : this(null, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor: true)
+            : this(null, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor: true, cacheExceptions: true)
         {
         }
 
@@ -236,7 +273,7 @@ namespace System
         /// An instance created with this constructor may be used concurrently from multiple threads.
         /// </remarks>
         public Lazy(Func<T> valueFactory)
-            : this(valueFactory, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor: false)
+            : this(valueFactory, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor: false, cacheExceptions: true)
         {
         }
 
@@ -247,7 +284,7 @@ namespace System
         /// <param name="isThreadSafe">true if this instance should be usable by multiple threads concurrently; false if the instance will only be used by one thread at a time.
         /// </param>
         public Lazy(bool isThreadSafe) :
-            this(null, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: true)
+            this(null, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: true, cacheExceptions: true)
         {
         }
 
@@ -258,7 +295,7 @@ namespace System
         /// <param name="mode">The lazy thread-safety mode</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value</exception>
         public Lazy(LazyThreadSafetyMode mode) :
-            this(null, mode, useDefaultConstructor: true)
+            this(null, mode, useDefaultConstructor: true, cacheExceptions: true)
         {
         }
 
@@ -274,7 +311,7 @@ namespace System
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
         /// a null reference (<see langword="Nothing" /> in Visual Basic).</exception>
         public Lazy(Func<T> valueFactory, bool isThreadSafe) :
-            this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: false)
+            this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: false, cacheExceptions: true)
         {
         }
 
@@ -290,11 +327,43 @@ namespace System
         /// a null reference (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value.</exception>
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
-            : this(valueFactory, mode, useDefaultConstructor: false)
+            : this(valueFactory, mode, useDefaultConstructor: false, cacheExceptions: LazyHelper.CachesExceptionsByDefault(mode))
         {
         }
 
-        private Lazy(Func<T>? valueFactory, LazyThreadSafetyMode mode, bool useDefaultConstructor)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lazy{T}"/> class
+        /// that uses a specified initialization function and thread-safety mode, and that specifies whether
+        /// exceptions thrown by the initialization function are cached.
+        /// </summary>
+        /// <param name="valueFactory">
+        /// The <see cref="Func{T}"/> invoked to produce the lazily-initialized value when it is needed.
+        /// </param>
+        /// <param name="mode">The lazy thread-safety mode.</param>
+        /// <param name="cacheExceptions">
+        /// <see langword="true"/> to cache an exception thrown by <paramref name="valueFactory"/> and rethrow it on every subsequent access to <see cref="Value"/>;
+        /// <see langword="false"/> to not cache it, so that a subsequent access to <see cref="Value"/> invokes <paramref name="valueFactory"/> again.
+        /// </param>
+        /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> contains an invalid value.</exception>
+        /// <remarks>
+        /// <para>
+        /// <paramref name="cacheExceptions"/> controls exception caching for every <paramref name="mode"/>. In comparison,
+        /// <see cref="Lazy{T}(Func{T}, LazyThreadSafetyMode)"/> caches exceptions for <see cref="LazyThreadSafetyMode.None"/> and
+        /// <see cref="LazyThreadSafetyMode.ExecutionAndPublication"/>, but not for <see cref="LazyThreadSafetyMode.PublicationOnly"/>.
+        /// </para>
+        /// <para>
+        /// With <see cref="LazyThreadSafetyMode.PublicationOnly"/> and <paramref name="cacheExceptions"/> set to <see langword="true"/>,
+        /// the first thread to complete <paramref name="valueFactory"/> publishes its result, whether a value or an exception, and
+        /// all accesses to <see cref="Value"/> then observe that result.
+        /// </para>
+        /// </remarks>
+        public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode, bool cacheExceptions)
+            : this(valueFactory, mode, useDefaultConstructor: false, cacheExceptions)
+        {
+        }
+
+        private Lazy(Func<T>? valueFactory, LazyThreadSafetyMode mode, bool useDefaultConstructor, bool cacheExceptions)
         {
             if (!useDefaultConstructor)
             {
@@ -302,7 +371,9 @@ namespace System
             }
 
             _factory = valueFactory;
-            _state = LazyHelper.Create(mode, useDefaultConstructor);
+            _state = useDefaultConstructor ?
+                LazyHelper.Create(mode, useDefaultConstructor: true) :
+                LazyHelper.CreateViaFactory(mode, cacheExceptions);
         }
 
         private void ViaConstructor()
@@ -328,6 +399,27 @@ namespace System
             }
         }
 
+        private void ViaFactoryNoExceptionCaching()
+        {
+            // A null _factory means that the factory is currently running and accessed Value recursively.
+            // That is reported without restoring anything, as the outer invocation still owns the factory.
+            Func<T> factory = _factory ?? throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
+            _factory = null;
+
+            try
+            {
+                _value = factory();
+            }
+            catch
+            {
+                // Don't cache the exception: restore the factory so that the next access to Value invokes it again.
+                _factory = factory;
+                throw;
+            }
+
+            _state = null; // volatile write, must occur after setting _value
+        }
+
         private void ExecutionAndPublication(LazyHelper executionAndPublication, bool useDefaultConstructor)
         {
             lock (executionAndPublication)
@@ -344,6 +436,20 @@ namespace System
                     {
                         ViaFactory(LazyThreadSafetyMode.ExecutionAndPublication);
                     }
+                }
+            }
+        }
+
+        private void ExecutionAndPublicationNoExceptionCaching(LazyHelper executionAndPublication)
+        {
+            lock (executionAndPublication)
+            {
+                // it's possible for multiple calls to have piled up behind the lock, so we need to check
+                // to see if the ExecutionAndPublication object is still the current implementation.
+                // If a previous invocation of the factory threw, the state is unchanged and the factory is invoked again.
+                if (ReferenceEquals(_state, executionAndPublication))
+                {
+                    ViaFactoryNoExceptionCaching();
                 }
             }
         }
@@ -375,6 +481,33 @@ namespace System
             {
                 PublicationOnly(initializer, factory());
             }
+        }
+
+        private void PublicationOnlyViaFactoryWithExceptionCaching(LazyHelper initializer)
+        {
+            Func<T>? factory = _factory;
+            if (factory == null)
+            {
+                // Another thread published a value and is completing the publication.
+                PublicationOnlyWaitForOtherThreadToPublish();
+                return;
+            }
+
+            T possibleValue;
+            try
+            {
+                possibleValue = factory();
+            }
+            catch (Exception exception)
+            {
+                // The first thread to complete publishes its result, whether a value or an exception. If another thread
+                // already published, this exception is discarded, and the caller observes the published result instead.
+                // _factory isn't cleared here, as a thread that observes a null factory waits for a value to be published.
+                Interlocked.CompareExchange(ref _state, new LazyHelper(LazyThreadSafetyMode.PublicationOnly, exception), initializer);
+                return;
+            }
+
+            PublicationOnly(initializer, possibleValue);
         }
 
         private void PublicationOnlyWaitForOtherThreadToPublish()
@@ -425,6 +558,18 @@ namespace System
                         ExecutionAndPublication(state, useDefaultConstructor: false);
                         break;
 
+                    case LazyState.NoneViaFactoryNoExceptionCaching:
+                        ViaFactoryNoExceptionCaching();
+                        break;
+
+                    case LazyState.ExecutionAndPublicationViaFactoryNoExceptionCaching:
+                        ExecutionAndPublicationNoExceptionCaching(state);
+                        break;
+
+                    case LazyState.PublicationOnlyViaFactoryWithExceptionCaching:
+                        PublicationOnlyViaFactoryWithExceptionCaching(state);
+                        break;
+
                     default:
                         state.ThrowException();
                         break;
@@ -464,10 +609,17 @@ namespace System
         /// </summary>
         internal LazyThreadSafetyMode? Mode => LazyHelper.GetMode(_state);
 
-        /// <summary>
-        /// Gets whether the value creation is faulted or not
-        /// </summary>
-        internal bool IsValueFaulted => LazyHelper.GetIsValueFaulted(_state);
+        /// <summary>Gets a value indicating whether initialization of this instance threw an exception that is cached.</summary>
+        /// <value>
+        /// <see langword="true"/> if initialization threw an exception that is rethrown on every access to <see cref="Value"/>;
+        /// otherwise, <see langword="false"/>.
+        /// </value>
+        /// <remarks>
+        /// When exceptions aren't cached, for example with <see cref="LazyThreadSafetyMode.PublicationOnly"/> by default or when the instance
+        /// was created with <c>cacheExceptions: false</c>, a failed initialization isn't faulted, because the next access to <see cref="Value"/>
+        /// retries it.
+        /// </remarks>
+        public bool IsValueFaulted => LazyHelper.GetIsValueFaulted(_state);
 
         /// <summary>Gets a value indicating whether the <see cref="Lazy{T}"/> has been initialized.
         /// </summary>

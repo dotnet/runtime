@@ -599,6 +599,225 @@ namespace System.Tests
             public NoDefaultCtor(int x) { }
         }
 
+        [Theory]
+        [InlineData(LazyThreadSafetyMode.None, true)]
+        [InlineData(LazyThreadSafetyMode.None, false)]
+        [InlineData(LazyThreadSafetyMode.PublicationOnly, true)]
+        [InlineData(LazyThreadSafetyMode.PublicationOnly, false)]
+        [InlineData(LazyThreadSafetyMode.ExecutionAndPublication, true)]
+        [InlineData(LazyThreadSafetyMode.ExecutionAndPublication, false)]
+        public static void Ctor_ValueFactory_LazyThreadSafetyMode_CacheExceptions(LazyThreadSafetyMode mode, bool cacheExceptions)
+        {
+            var lazy = new Lazy<string>(() => "foo", mode, cacheExceptions);
+            Assert.False(lazy.IsValueCreated);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.Equal("foo", lazy.Value);
+            Assert.True(lazy.IsValueCreated);
+            Assert.False(lazy.IsValueFaulted);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Ctor_ValueFactory_LazyThreadSafetyMode_CacheExceptions_Invalid(bool cacheExceptions)
+        {
+            AssertExtensions.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int>(null, LazyThreadSafetyMode.None, cacheExceptions));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int>(() => 42, LazyThreadSafetyMode.None - 1, cacheExceptions));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int>(() => 42, LazyThreadSafetyMode.ExecutionAndPublication + 1, cacheExceptions));
+        }
+
+        [Theory]
+        [InlineData(LazyThreadSafetyMode.None)]
+        [InlineData(LazyThreadSafetyMode.PublicationOnly)]
+        [InlineData(LazyThreadSafetyMode.ExecutionAndPublication)]
+        public static void Value_CacheExceptionsTrue_RethrowsCachedException(LazyThreadSafetyMode mode)
+        {
+            int calls = 0;
+            var lazy = new Lazy<int>(() => { calls++; throw new InvalidOperationException(); }, mode, cacheExceptions: true);
+
+            InvalidOperationException first = Assert.Throws<InvalidOperationException>(() => lazy.Value);
+            Assert.True(lazy.IsValueFaulted);
+            Assert.False(lazy.IsValueCreated);
+
+            InvalidOperationException second = Assert.Throws<InvalidOperationException>(() => lazy.Value);
+            Assert.Same(first, second);
+            Assert.Equal(1, calls);
+        }
+
+        [Fact]
+        public static void Value_PublicationOnly_CacheExceptionsTrue_ConcurrentFailures_PublishOneException()
+        {
+            int calls = 0;
+            using var barrier = new Barrier(4);
+            var lazy = new Lazy<int>(() =>
+            {
+                Interlocked.Increment(ref calls);
+                barrier.SignalAndWait(); // make all threads run the factory concurrently
+                throw new InvalidOperationException();
+            }, LazyThreadSafetyMode.PublicationOnly, cacheExceptions: true);
+
+            var observed = new Exception[barrier.ParticipantCount];
+            var threads = new Thread[barrier.ParticipantCount];
+            for (int i = 0; i < threads.Length; i++)
+            {
+                int index = i;
+                threads[i] = new Thread(() => observed[index] = Assert.Throws<InvalidOperationException>(() => lazy.Value));
+                threads[i].Start();
+            }
+
+            foreach (Thread thread in threads)
+            {
+                thread.Join();
+            }
+
+            // Every thread ran the factory, but only one exception was published, and all threads observed it.
+            Assert.Equal(threads.Length, calls);
+            Assert.True(lazy.IsValueFaulted);
+            Assert.All(observed, exception => Assert.Same(observed[0], exception));
+
+            // The published exception is cached, and the factory isn't invoked again.
+            Assert.Same(observed[0], Assert.Throws<InvalidOperationException>(() => lazy.Value));
+            Assert.Equal(threads.Length, calls);
+        }
+
+        [Fact]
+        public static void Value_PublicationOnly_ExistingConstructor_DoesNotCacheExceptions()
+        {
+            int calls = 0;
+            var lazy = new Lazy<int>(() => ++calls == 1 ? throw new InvalidOperationException() : 42, LazyThreadSafetyMode.PublicationOnly);
+
+            Assert.Throws<InvalidOperationException>(() => lazy.Value);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.Equal(42, lazy.Value);
+        }
+
+        [Theory]
+        [InlineData(LazyThreadSafetyMode.None)]
+        [InlineData(LazyThreadSafetyMode.PublicationOnly)]
+        [InlineData(LazyThreadSafetyMode.ExecutionAndPublication)]
+        public static void Value_CacheExceptionsFalse_RetriesFactory(LazyThreadSafetyMode mode)
+        {
+            int calls = 0;
+            var lazy = new Lazy<int>(() =>
+            {
+                calls++;
+                if (calls < 3)
+                {
+                    throw new InvalidOperationException(calls.ToString());
+                }
+                return 42;
+            }, mode, cacheExceptions: false);
+
+            // Each failure comes from a new invocation of the factory and isn't cached.
+            Assert.Equal("1", Assert.Throws<InvalidOperationException>(() => lazy.Value).Message);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.False(lazy.IsValueCreated);
+            Assert.Equal("2", Assert.Throws<InvalidOperationException>(() => lazy.Value).Message);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.False(lazy.IsValueCreated);
+
+            // Once the factory succeeds, the value is cached.
+            Assert.Equal(42, lazy.Value);
+            Assert.True(lazy.IsValueCreated);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.Equal(42, lazy.Value);
+            Assert.Equal(3, calls);
+        }
+
+        [Theory]
+        [InlineData(LazyThreadSafetyMode.None)]
+        [InlineData(LazyThreadSafetyMode.ExecutionAndPublication)]
+        public static void Value_CacheExceptionsFalse_RecursiveAccess_ThrowsAndCanRetry(LazyThreadSafetyMode mode)
+        {
+            bool recurse = true;
+            Lazy<int> lazy = null;
+            lazy = new Lazy<int>(() => recurse ? lazy.Value : 42, mode, cacheExceptions: false);
+
+            Assert.Throws<InvalidOperationException>(() => lazy.Value);
+            Assert.False(lazy.IsValueFaulted);
+            Assert.False(lazy.IsValueCreated);
+
+            recurse = false;
+            Assert.Equal(42, lazy.Value);
+        }
+
+        [Fact]
+        public static void Value_ExecutionAndPublication_CacheExceptionsFalse_FactoryRunsSerially()
+        {
+            int calls = 0;
+            int running = 0;
+            int maxRunning = 0;
+
+            var lazy = new Lazy<int>(() =>
+            {
+                int nowRunning = Interlocked.Increment(ref running);
+                int observedMax;
+                while (nowRunning > (observedMax = Volatile.Read(ref maxRunning)) &&
+                       Interlocked.CompareExchange(ref maxRunning, nowRunning, observedMax) != observedMax)
+                {
+                }
+
+                try
+                {
+                    Thread.Sleep(10);
+                    if (Interlocked.Increment(ref calls) < 3)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                    return 42;
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref running);
+                }
+            }, LazyThreadSafetyMode.ExecutionAndPublication, cacheExceptions: false);
+
+            var threads = new Thread[8];
+            var results = new int[threads.Length];
+            for (int i = 0; i < threads.Length; i++)
+            {
+                int index = i;
+                threads[i] = new Thread(() =>
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            results[index] = lazy.Value;
+                            return;
+                        }
+                        catch (InvalidOperationException)
+                        {
+                        }
+                    }
+                });
+                threads[i].Start();
+            }
+
+            foreach (Thread thread in threads)
+            {
+                thread.Join();
+            }
+
+            Assert.All(results, result => Assert.Equal(42, result));
+            Assert.Equal(1, maxRunning);
+            Assert.Equal(3, calls);
+        }
+
+        [Theory]
+        [InlineData(LazyThreadSafetyMode.None, true)]
+        [InlineData(LazyThreadSafetyMode.PublicationOnly, false)]
+        [InlineData(LazyThreadSafetyMode.ExecutionAndPublication, true)]
+        public static void IsValueFaulted_ExistingConstructor(LazyThreadSafetyMode mode, bool expectedFaulted)
+        {
+            var lazy = new Lazy<int>(() => throw new InvalidOperationException(), mode);
+            Assert.False(lazy.IsValueFaulted);
+
+            Assert.Throws<InvalidOperationException>(() => lazy.Value);
+            Assert.Equal(expectedFaulted, lazy.IsValueFaulted);
+            Assert.False(lazy.IsValueCreated);
+        }
+
         private struct LIX
         {
             public int f;
