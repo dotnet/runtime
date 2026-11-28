@@ -106,8 +106,8 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.MemOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenFileMapping.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.OpenFileMapping.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenProcess.cs"

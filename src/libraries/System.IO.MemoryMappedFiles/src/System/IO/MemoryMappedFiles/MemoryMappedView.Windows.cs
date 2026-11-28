@@ -14,7 +14,7 @@ namespace System.IO.MemoryMappedFiles
         private const int MaxFlushWaits = 15;  // must be <=30
         private const int MaxFlushRetriesPerWait = 20;
 
-        public static MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
+        public static unsafe MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
                                             MemoryMappedFileAccess access, long offset, long size)
         {
             // MapViewOfFile can only create views that start at a multiple of the system memory allocation
@@ -44,7 +44,7 @@ namespace System.IO.MemoryMappedFiles
 
             // Query the view for its size and allocation type
             Interop.Kernel32.MEMORY_BASIC_INFORMATION viewInfo = default;
-            Interop.Kernel32.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)Marshal.SizeOf(viewInfo));
+            Interop.Kernel32.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)sizeof(Interop.Kernel32.MEMORY_BASIC_INFORMATION));
             ulong viewSize = (ulong)viewInfo.RegionSize;
 
             // Allocate the pages if we were using the MemoryMappedFileOptions.DelayAllocatePages option
@@ -59,18 +59,18 @@ namespace System.IO.MemoryMappedFiles
             // VirtualQueryEx: https://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
             if (((viewInfo.State & Interop.Kernel32.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
-                Interop.VirtualAlloc(
+                IntPtr committedAddress = Interop.VirtualAlloc(
                     viewHandle, (nuint)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize),
                     Interop.Kernel32.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
                 int lastError = Marshal.GetLastPInvokeError();
-                if (viewHandle.IsInvalid)
+                if (committedAddress == IntPtr.Zero)
                 {
                     viewHandle.Dispose();
                     throw Win32Marshal.GetExceptionForWin32Error(lastError);
                 }
                 // again query the view for its new size
                 viewInfo = default;
-                Interop.Kernel32.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)Marshal.SizeOf(viewInfo));
+                Interop.Kernel32.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)sizeof(Interop.Kernel32.MEMORY_BASIC_INFORMATION));
                 viewSize = (ulong)viewInfo.RegionSize;
             }
 
