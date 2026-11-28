@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
+using SL = Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -186,6 +187,69 @@ namespace Wasm.Build.Tests
 
             Assert.NotNull(line);
             Assert.Contains("** WasmBuildNative: 'true'", line);
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug, null, true, true)]
+        [InlineData(Configuration.Release, null, true, false)]
+        [InlineData(Configuration.Debug, null, false, false)]
+        [InlineData(Configuration.Release, null, false, false)]
+        [InlineData(Configuration.Debug, "false", true, false)]
+        [InlineData(Configuration.Release, "false", true, false)]
+        [InlineData(Configuration.Release, "true", true, true)]
+        [TestCategory("no-workload")]
+        public void ReadyToRunDefaultsPreserveBuildSelection(Configuration config, string? readyToRun, bool webcil, bool expectPrebuilt)
+        {
+            string readyToRunProperty = readyToRun is null ? "" : $"<PublishReadyToRun>{readyToRun}</PublishReadyToRun>";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_defaults",
+                extraProperties: $"{readyToRunProperty}<WasmEnableWebcil>{webcil.ToString().ToLowerInvariant()}</WasmEnableWebcil>");
+
+            (_, string binlogPath) = BuildProjectWithoutAssert(
+                config,
+                info.ProjectName,
+                _defaultBuildOptions with
+                {
+                    ExtraMSBuildArgs = $"{_defaultBuildOptions.ExtraMSBuildArgs} -t:_WasmCoreClrSelectR2RDirectories"
+                });
+
+            SL.Build build = SL.BinaryLog.ReadBuild(binlogPath);
+            SL.Project appBuild = GetAppProject("_WasmCoreClrSelectR2RDirectories");
+            Dictionary<string, string> properties = GetEvaluatedProperties(appBuild);
+            Assert.Equal(readyToRun ?? "true", properties["PublishReadyToRun"]);
+            Assert.Equal(expectPrebuilt.ToString().ToLowerInvariant(), properties["_WasmUsePrebuiltReadyToRun"]);
+
+            SL.Project appRestore = GetAppProject("_GenerateRestoreGraphProjectEntry");
+            Dictionary<string, string> restoreProperties = GetEvaluatedProperties(appRestore);
+            Assert.Equal("true", restoreProperties["ExcludeRestorePackageImports"], ignoreCase: true);
+            SL.Target frameworkReferences = Assert.Single(appRestore.Children.OfType<SL.Target>(),
+                target => target.Name == "ProcessFrameworkReferences");
+            bool restoresCrossgen2 = frameworkReferences.FindChildrenRecursive<SL.AddItem>(item => item.Name == "PackageDownload")
+                .SelectMany(item => item.Children.OfType<SL.Item>())
+                .Any(item => item.Text.StartsWith("Microsoft.NETCore.App.Crossgen2.", StringComparison.Ordinal));
+            Assert.Equal(readyToRun is not "false", restoresCrossgen2);
+
+            SL.Project GetAppProject(string entryTarget) =>
+                Assert.Single(build.FindChildrenRecursive<SL.Project>(project =>
+                    string.Equals(project.ProjectFile, Path.Combine(_projectDir, $"{info.ProjectName}.csproj"),
+                        s_isWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) &&
+                    project.EntryTargets.Contains(entryTarget)));
+
+            Dictionary<string, string> GetEvaluatedProperties(SL.Project project)
+            {
+                SL.ProjectEvaluation evaluation = Assert.Single(build.FindChildrenRecursive<SL.ProjectEvaluation>(
+                    candidate => candidate.Id == project.EvaluationId));
+                SL.Folder propertyFolder = evaluation.FindChild<SL.Folder>("Properties");
+                Assert.NotNull(propertyFolder);
+                Dictionary<string, string> values = new(project.GlobalProperties, StringComparer.OrdinalIgnoreCase);
+                foreach (SL.Property property in propertyFolder.Children.OfType<SL.Property>())
+                    values[property.Name] = property.Value;
+                Assert.Equal(DefaultTargetFramework, values["TargetFramework"]);
+                return values;
+            }
         }
 
         [Fact]
