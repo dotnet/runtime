@@ -48,7 +48,13 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(utf8Json, nameof(utf8Json));
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
+            return DeserializeAsyncCore(jsonTypeInfo, utf8Json, cancellationToken);
+        }
+
+        private static ValueTask<TValue?> DeserializeAsyncCore<TValue>(JsonTypeInfo<TValue> jsonTypeInfo, PipeReader utf8Json, CancellationToken cancellationToken)
+        {
+            PipeReadBufferState bufferState = new(utf8Json);
+            return DeserializeAsyncCore<TValue, PipeReadBufferState, PipeReader>(jsonTypeInfo, utf8Json, bufferState, cancellationToken);
         }
 
         /// <summary>
@@ -79,7 +85,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(jsonTypeInfo, nameof(jsonTypeInfo));
 
             jsonTypeInfo.EnsureConfigured();
-            return jsonTypeInfo.DeserializeAsync(utf8Json, cancellationToken);
+            return DeserializeAsyncCore(jsonTypeInfo, utf8Json, cancellationToken);
         }
 
         /// <summary>
