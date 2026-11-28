@@ -104,7 +104,12 @@ namespace System.Reflection
             CultureInfo? culture)
         {
             if ((InvocationFlags & InvocationFlags.NoInvoke) != 0)
+            {
+                if (ContainsGenericParameters)
+                    throw new MemberAccessException(SR.Format(SR.Acc_CreateGenericEx, DeclaringType));
+
                 ThrowNoInvokeException();
+            }
 
             if (!IsStatic)
             {

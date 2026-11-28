@@ -157,8 +157,8 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                if (_common.DefiningTypeInfo.IsAbstract)
-                    throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, _common.DefiningTypeInfo.FullName));
+                if (this.ContainsGenericParameters)
+                    throw new MemberAccessException(SR.Format(_common.DefiningTypeInfo.IsAbstract ? SR.Acc_CreateAbstEx : SR.Acc_CreateGenericEx, DeclaringType));
 
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
