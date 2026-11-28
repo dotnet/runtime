@@ -168,6 +168,50 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(bytes.Value[5], b2Span[5]);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Read_DestinationOffsetBeyondSourceLength(bool useStream)
+        {
+            byte[] input = { 11, 22 };
+            using var stream = new MemoryStream(input);
+            SqlBytes bytes = useStream ? new SqlBytes(stream) : new SqlBytes(input);
+            foreach ((long offset, int offsetInBuffer, int count, int expectedRead) in new[]
+            {
+                (0L, 6, 2, 2),
+                (1L, 6, 2, 1),
+                (2L, 6, 2, 0),
+                (0L, 6, 0, 0),
+                (0L, 8, 0, 0),
+                (2L, 8, 0, 0),
+            })
+            {
+                byte[] target = new byte[8];
+                byte[] expected = new byte[8];
+                Array.Fill(target, (byte)99);
+                Array.Fill(expected, (byte)99);
+                Array.Copy(input, offset, expected, offsetInBuffer, expectedRead);
+
+                Assert.Equal(expectedRead, bytes.Read(offset, target, offsetInBuffer, count));
+                Assert.Equal(expected, target);
+            }
+
+            bytes.SetLength(0);
+            Assert.Equal(0, bytes.Read(0, new byte[8], 8, 0));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Read_DestinationOffsetBeyondBufferLength(bool useStream)
+        {
+            byte[] input = new byte[8];
+            using var stream = new MemoryStream(input);
+            SqlBytes bytes = useStream ? new SqlBytes(stream) : new SqlBytes(input);
+
+            Assert.Throws<ArgumentOutOfRangeException>("offsetInBuffer", () => bytes.Read(0, new byte[2], 3, 0));
+        }
+
         [Fact]
         public void Read_NullBufferTest()
         {
