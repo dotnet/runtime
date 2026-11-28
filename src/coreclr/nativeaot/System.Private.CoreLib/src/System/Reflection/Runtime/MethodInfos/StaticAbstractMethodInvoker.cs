@@ -1,0 +1,80 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Reflection;
+
+using Internal.Reflection.Core.Execution;
+
+namespace System.Reflection.Runtime.MethodInfos
+{
+    // A static abstract interface method has no implementation to call: invoking it or binding a delegate to it throws
+    // MemberAccessException, as on CoreCLR. Taking its address throws PlatformNotSupportedException, as for other
+    // abstract methods.
+    internal sealed class StaticAbstractMethodInvoker : MethodBaseInvoker
+    {
+        private readonly MethodInfo _method;
+
+        public StaticAbstractMethodInvoker(MethodInfo method)
+        {
+            _method = method;
+        }
+
+        private MemberAccessException CreateException()
+        {
+            return new MemberAccessException(SR.Format(SR.Acc_CallStaticAbstract, _method.DeclaringType, _method.Name));
+        }
+
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw CreateException();
+        }
+
+        protected sealed override object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw CreateException();
+        }
+
+        protected internal sealed override object CreateInstance(Span<object?> arguments)
+        {
+            throw CreateException();
+        }
+
+        protected internal sealed override object CreateInstanceWithFewArgs(Span<object?> arguments)
+        {
+            throw CreateException();
+        }
+
+        protected internal sealed override object? Invoke(object? thisObject, Span<object?> arguments)
+        {
+            ValidateArgumentCount(arguments.Length);
+            throw CreateException();
+        }
+
+        protected internal sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments)
+        {
+            ValidateArgumentCount(arguments.Length);
+            throw CreateException();
+        }
+
+        // MethodInvoker leaves the argument count check to the invoker.
+        private void ValidateArgumentCount(int argumentCount)
+        {
+            if (argumentCount != _method.GetParametersAsSpan().Length)
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+        }
+
+        public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
+        {
+            throw new MemberAccessException(SR.Acc_BindStaticAbstract);
+        }
+
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+    }
+}
