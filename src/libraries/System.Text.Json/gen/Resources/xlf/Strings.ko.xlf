@@ -12,6 +12,16 @@
         <target state="translated">파생된 'JsonSerializerContext' 형식과 포함하는 모든 형식은 부분이어야 합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesMessageFormat">
+        <source>JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</source>
+        <target state="new">JsonSerializerContext type '{0}' has no JsonSerializableAttribute annotations. Add at least one type to generate serialization metadata.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContextHasNoSerializableTypesTitle">
+        <source>JsonSerializerContext has no serializable types.</source>
+        <target state="new">JsonSerializerContext has no serializable types.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataExtensionPropertyInvalidFormat">
         <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
         <target state="translated">데이터 확장 속성 '{0}.{1}'이 잘못되었습니다. 'IDictionary&lt;string, JsonElement&gt;'나 'IDictionary&lt;string, object&gt;' 를 구현하거나 'JsonObject'여야 합니다.</target>

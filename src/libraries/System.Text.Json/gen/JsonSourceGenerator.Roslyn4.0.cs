@@ -31,6 +31,24 @@ namespace System.Text.Json.SourceGeneration
             IncrementalValueProvider<KnownTypeSymbols> knownTypeSymbols = context.CompilationProvider
                 .Select((compilation, _) => new KnownTypeSymbols(compilation));
 
+            // Contexts without JsonSerializable attributes never enter the attribute-based pipeline.
+            // Keep the syntax filter cheap so unrelated classes require no semantic analysis.
+            IncrementalValuesProvider<Diagnostic?> contextsWithoutTypes = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    static (node, _) => IsContextWithoutTypesCandidate(node),
+                    static (syntaxContext, _) => (ContextClass: (ClassDeclarationSyntax)syntaxContext.Node, syntaxContext.SemanticModel))
+                .Combine(knownTypeSymbols)
+                .Select(static (tuple, cancellationToken) => GetContextWithoutTypesDiagnostic(
+                    tuple.Left.ContextClass, tuple.Left.SemanticModel, tuple.Right, cancellationToken));
+
+            context.RegisterSourceOutput(contextsWithoutTypes, static (sourceContext, diagnostic) =>
+            {
+                if (diagnostic is not null)
+                {
+                    sourceContext.ReportDiagnostic(diagnostic);
+                }
+            });
+
             IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableArray<Diagnostic>)> contextGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
