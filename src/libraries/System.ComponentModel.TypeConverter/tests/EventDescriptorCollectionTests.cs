@@ -93,6 +93,30 @@ namespace System.ComponentModel.Tests
             Assert.Equal(2, ((ICollection)descriptors).Count);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void GetEnumerator_SortedCollection_ReturnsSortedEvents(bool spareCapacity, bool namedSort)
+        {
+            var zeta = new MockEventDescriptor("Zeta");
+            var alpha = new MockEventDescriptor("Alpha");
+            var extra = new MockEventDescriptor("Extra");
+            EventDescriptor[] descriptors = spareCapacity ? new EventDescriptor[] { zeta, alpha, extra } : new EventDescriptor[] { zeta, alpha };
+            var collection = new EventDescriptorCollection(descriptors);
+            if (spareCapacity)
+            {
+                collection.Remove(extra);
+            }
+
+            EventDescriptorCollection sorted = namedSort ? collection.Sort(new[] { "Zeta" }) : collection.Sort();
+
+            Assert.Equal(namedSort ? new[] { zeta, alpha } : new[] { alpha, zeta }, sorted.Cast<EventDescriptor>());
+            Assert.Equal(new[] { zeta, alpha }, collection.Cast<EventDescriptor>());
+            Assert.Same(zeta, descriptors[0]);
+        }
+
         private class MockEventDescriptor : EventDescriptor
         {
             public MockEventDescriptor(string name)
