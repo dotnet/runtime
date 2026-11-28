@@ -82,7 +82,7 @@ namespace System.Dynamic
     {
         public static readonly System.Dynamic.DynamicMetaObject[] EmptyMetaObjects;
         public DynamicMetaObject(System.Linq.Expressions.Expression expression, System.Dynamic.BindingRestrictions restrictions) { }
-        public DynamicMetaObject(System.Linq.Expressions.Expression expression, System.Dynamic.BindingRestrictions restrictions, object value) { }
+        public DynamicMetaObject(System.Linq.Expressions.Expression expression, System.Dynamic.BindingRestrictions restrictions, object? value) { }
         public System.Linq.Expressions.Expression Expression { get { throw null; } }
         public bool HasValue { get { throw null; } }
         public System.Type LimitType { get { throw null; } }
@@ -101,7 +101,7 @@ namespace System.Dynamic
         public virtual System.Dynamic.DynamicMetaObject BindSetIndex(System.Dynamic.SetIndexBinder binder, System.Dynamic.DynamicMetaObject[] indexes, System.Dynamic.DynamicMetaObject value) { throw null; }
         public virtual System.Dynamic.DynamicMetaObject BindSetMember(System.Dynamic.SetMemberBinder binder, System.Dynamic.DynamicMetaObject value) { throw null; }
         public virtual System.Dynamic.DynamicMetaObject BindUnaryOperation(System.Dynamic.UnaryOperationBinder binder) { throw null; }
-        public static System.Dynamic.DynamicMetaObject Create(object value, System.Linq.Expressions.Expression expression) { throw null; }
+        public static System.Dynamic.DynamicMetaObject Create(object? value, System.Linq.Expressions.Expression expression) { throw null; }
         public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Creating a call site may require dynamic code generation.")]
