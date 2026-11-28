@@ -1,7 +1,7 @@
 # Reviewing WebAssembly changes
 
-The browser and WASI build infrastructure under `src/mono` serves both CoreCLR
-and Mono. Follow the active import and call paths rather than inferring the
+The browser and WASI build infrastructure under `src/mono` is not limited to
+Mono. Follow the active import and call paths rather than inferring the
 runtime or shipped behavior from a directory name.
 
 For build, test and debugging commands, use the
@@ -41,6 +41,10 @@ runtime-specific optimization, debug or stripping policies.
 - Check defaults at the relevant import/evaluation or target-execution point,
   including nested publish when affected. Preserve explicit overrides; do not
   pass the property under test as a global property when testing its default.
+  For template/runtime-selection defaults, also check a generated project
+  without WBT's runtime/pack overrides masking that default; retain helper-based
+  tests for behavior against the locally built runtime. Verify effective SDK/task
+  selection before treating a stale template declaration as a failing default.
 - Gate new formats and behavior on the consuming target framework, not the
   runtime repository's current version. Reuse the grouped framework predicates
   where applicable and cover the affected compatibility boundary.
@@ -50,6 +54,19 @@ runtime-specific optimization, debug or stripping policies.
 
 Choose coverage for the changed contract and affected configurations, not an
 unconditional Cartesian product.
+
+When retiring a runtime path, also audit generated template options and affected
+docs/examples. Remove obsolete choices rather than restoring retired paths;
+check the supported target-framework boundary before deleting compatibility.
+
+## Review browser-test observations
+
+For asynchronous browser tests, check whether the event relevant to the
+assertion has actually been processed. A fixed delay, server acknowledgment or
+unchanged receive buffer alone does not establish client message-handler
+completion. Identify a bounded completion signal at the relevant layer, or
+consider complementary queue/state coverage. State any test access required
+rather than assuming the public API exposes that signal.
 
 ## Review incremental and deployment contracts
 
