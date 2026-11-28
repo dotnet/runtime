@@ -481,7 +481,46 @@ void Compiler::optValnumCSE_Init()
     optCSEhashCount                = 0;
 
     optCSECandidateCount = 0;
+    optCSEOccWeightsLive = false;
     optDoCSE             = false; // Stays false until we find duplicate CSE tree
+}
+
+//------------------------------------------------------------------------
+// optValnumCSE_BackfillOccWeights: compute the occurrence weight sums for
+//    every existing hash entry.
+//
+// Notes:
+//    Occurrence weights only matter once every candidate index is taken,
+//    since re-ranking only runs in that regime. They are not tracked before
+//    the last index is assigned, so the common path pays nothing; this walk
+//    brings every entry current, and from here on optValnumCSE_Index
+//    accumulates incrementally in the same head-to-tail order.
+//
+void Compiler::optValnumCSE_BackfillOccWeights()
+{
+    assert(!optCSEOccWeightsLive);
+
+    for (size_t hv = 0; hv < optCSEhashSize; hv++)
+    {
+        for (CSEdsc* dsc = optCSEhash[hv]; dsc != nullptr; dsc = dsc->csdNextInBucket)
+        {
+            weight_t sumWeight = 0;
+            weight_t maxWeight = 0;
+            for (treeStmtLst* lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+            {
+                const weight_t occWeight = lst->tslBlock->getBBWeight(this);
+                sumWeight += occWeight;
+                if (occWeight > maxWeight)
+                {
+                    maxWeight = occWeight;
+                }
+            }
+            dsc->csdSumOccWeight = sumWeight;
+            dsc->csdMaxOccWeight = maxWeight;
+        }
+    }
+
+    optCSEOccWeightsLive = true;
 }
 
 unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
@@ -711,6 +750,16 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         hashDsc->csdTreeLast->tslNext = newElem;
         hashDsc->csdTreeLast          = newElem;
 
+        if (optCSEOccWeightsLive)
+        {
+            const weight_t occWeight = compCurBB->getBBWeight(this);
+            hashDsc->csdSumOccWeight += occWeight;
+            if (occWeight > hashDsc->csdMaxOccWeight)
+            {
+                hashDsc->csdMaxOccWeight = occWeight;
+            }
+        }
+
         optDoCSE = true; // Found a duplicate CSE tree
 
         /* Have we assigned a CSE index? */
@@ -729,7 +778,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     {
         /* Not found, create a new entry (unless we have too many already) */
 
-        if (optCSECandidateCount < MAX_CSE_CNT)
+        const bool deferCollect = (optCSEhashCount < 1024);
+        if ((optCSECandidateCount < MAX_CSE_CNT) || deferCollect)
         {
             if (optCSEhashCount == optCSEhashMaxCountBeforeResize)
             {
@@ -776,6 +826,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdUseCount       = 0;
             hashDsc->csdDefWtCnt       = 0;
             hashDsc->csdUseWtCnt       = 0;
+            hashDsc->csdSumOccWeight   = optCSEOccWeightsLive ? compCurBB->getBBWeight(this) : 0;
+            hashDsc->csdMaxOccWeight   = hashDsc->csdSumOccWeight;
             hashDsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
             hashDsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
 
@@ -814,6 +866,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         static_assert((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
         unsigned CSEindex = ++optCSECandidateCount;
+
+        // Once the last index is taken, re-ranking becomes possible, so the
+        // occurrence weights it needs start being tracked.
+        if ((CSEindex == MAX_CSE_CNT) && (optCSEhashCount < 1024))
+        {
+            optValnumCSE_BackfillOccWeights();
+        }
 
         /* Record the new CSE index in the hashDsc */
         hashDsc->csdIndex = CSEindex;
@@ -905,6 +964,189 @@ bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
     if (!optDoCSE)
     {
         return false;
+    }
+
+    if ((optCSECandidateCount == MAX_CSE_CNT) && (optCSEhashCount < 1024))
+    {
+        assert(optCSEOccWeightsLive);
+        // Estimate savings as cost * (total weight - maximum occurrence weight).
+        // Keep indexes for selected groups and recycle the rest. If tracking
+        // reaches the resource limit, keep the original selection instead.
+        CSEdsc** ranked        = new (this, CMK_CSE) CSEdsc*[optCSEhashCount];
+        double*  rval          = new (this, CMK_CSE) double[optCSEhashCount];
+        unsigned n             = 0;
+        double   minSelected   = FloatingPointUtils::infinite_double();
+        double   maxUnselected = -FloatingPointUtils::infinite_double();
+        for (size_t hv = 0; hv < optCSEhashSize; hv++)
+        {
+            for (CSEdsc* dsc = optCSEhash[hv]; dsc != nullptr; dsc = dsc->csdNextInBucket)
+            {
+                if (dsc->csdTreeList.tslNext == nullptr)
+                {
+                    continue;
+                }
+                const double score =
+                    (double)dsc->csdTreeList.tslTree->GetCostEx() * (dsc->csdSumOccWeight - dsc->csdMaxOccWeight);
+                ranked[n] = dsc;
+                rval[n]   = score;
+                n++;
+                if (dsc->csdIndex != 0)
+                {
+                    minSelected = min(minSelected, score);
+                }
+                else
+                {
+                    maxUnselected = max(maxUnselected, score);
+                }
+            }
+        }
+
+        // Every indexed group has at least two occurrences, so all of them are ranked here.
+        // A score tie is broken by scan position, so only a strictly better unselected
+        // group can change the selection.
+        if (maxUnselected < minSelected)
+        {
+            JITDUMP("CSE deferred selection: %u multi-occurrence groups discovered, first-come selection already "
+                    "ranks best (%.2f over %.2f)\n",
+                    n, minSelected, maxUnselected);
+        }
+        else
+        {
+            const unsigned take = (n < MAX_CSE_CNT) ? n : MAX_CSE_CNT;
+            for (unsigned i = 0; i < take; i++)
+            {
+                unsigned best = i;
+                for (unsigned j = i + 1; j < n; j++)
+                {
+                    if (rval[j] > rval[best])
+                    {
+                        best = j;
+                    }
+                }
+                CSEdsc* tmpd = ranked[i];
+                ranked[i]    = ranked[best];
+                ranked[best] = tmpd;
+                double tmpv  = rval[i];
+                rval[i]      = rval[best];
+                rval[best]   = tmpv;
+            }
+
+            unsigned freed[MAX_CSE_CNT];
+            unsigned numFreed = 0;
+            for (unsigned i = take; i < n; i++)
+            {
+                CSEdsc* dsc = ranked[i];
+                if (dsc->csdIndex != 0)
+                {
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        unsigned occ = 0;
+                        for (treeStmtLst* lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+                        {
+                            occ++;
+                        }
+                        printf("CSE deferred selection: dropping " FMT_CSE " [%06u] key ", dsc->csdIndex,
+                               dsc->csdTreeList.tslTree->gtTreeID);
+                        if (Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
+                        {
+                            printf("K_%zx", Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey));
+                        }
+                        else
+                        {
+                            printf("$%zx", dsc->csdHashKey);
+                        }
+                        printf(" %s score %.2f occurrences %u%s\n",
+                               GenTree::OpName(dsc->csdTreeList.tslTree->OperGet()), rval[i], occ,
+                               dsc->csdLiveAcrossCall ? " call" : "");
+                    }
+#endif // DEBUG
+                    freed[numFreed++] = dsc->csdIndex;
+                    for (treeStmtLst* lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+                    {
+                        lst->tslTree->gtCSEnum = 0;
+                    }
+                    dsc->csdIndex = 0;
+                }
+            }
+
+            unsigned nextFree = 0;
+            for (unsigned i = 0; (i < take) && (nextFree < numFreed); i++)
+            {
+                CSEdsc* dsc = ranked[i];
+                if (dsc->csdIndex != 0)
+                {
+                    continue;
+                }
+                const unsigned indx = freed[nextFree++];
+                dsc->csdIndex       = indx;
+#ifdef DEBUG
+                if (verbose)
+                {
+                    unsigned occ = 0;
+                    for (treeStmtLst* lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+                    {
+                        occ++;
+                    }
+                    printf("CSE deferred selection: rescuing [%06u] key ", dsc->csdTreeList.tslTree->gtTreeID);
+                    if (Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
+                    {
+                        printf("K_%zx", Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey));
+                    }
+                    else
+                    {
+                        printf("$%zx", dsc->csdHashKey);
+                    }
+                    printf(" %s score %.2f occurrences %u%s as " FMT_CSE "\n",
+                           GenTree::OpName(dsc->csdTreeList.tslTree->OperGet()), rval[i], occ,
+                           dsc->csdLiveAcrossCall ? " call" : "", indx);
+                }
+#endif // DEBUG
+                for (treeStmtLst* lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+                {
+                    lst->tslTree->gtCSEnum = (signed char)indx;
+                }
+                dsc->ComputeNumLocals(this);
+            }
+
+            JITDUMP("CSE deferred selection: %u multi-occurrence groups discovered, %u slots selected, %u replaced, "
+                    "cut-line score %.2f\n",
+                    n, take, numFreed, (take > 0) ? rval[take - 1] : 0.0);
+#ifdef DEBUG
+            if (verbose)
+            {
+                for (unsigned i = take; i < n; i++)
+                {
+                    CSEdsc* dsc = ranked[i];
+                    if (dsc->csdIndex != 0)
+                    {
+                        continue;
+                    }
+                    unsigned occ = 0;
+                    for (treeStmtLst* lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+                    {
+                        occ++;
+                    }
+                    printf("CSE deferred selection: excluded [%06u] key ", dsc->csdTreeList.tslTree->gtTreeID);
+                    if (Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
+                    {
+                        printf("K_%zx", Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey));
+                    }
+                    else
+                    {
+                        printf("$%zx", dsc->csdHashKey);
+                    }
+                    printf(" %s score %.2f occurrences %u%s\n", GenTree::OpName(dsc->csdTreeList.tslTree->OperGet()),
+                           rval[i], occ, dsc->csdLiveAcrossCall ? " call" : "");
+                }
+            }
+#endif // DEBUG
+        }
+    }
+    else if (optCSECandidateCount == MAX_CSE_CNT)
+    {
+        JITDUMP("CSE deferred selection: tracking limit reached at %u groups, keeping the first-come selection\n",
+                (unsigned)optCSEhashCount);
     }
 
     /* We're finished building the expression lookup table */
