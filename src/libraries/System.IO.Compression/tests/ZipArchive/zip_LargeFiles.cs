@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
@@ -11,6 +12,119 @@ namespace System.IO.Compression.Tests;
 [Collection(nameof(DisableParallelization))]
 public class zip_LargeFiles : ZipFileTestBase
 {
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))]
+    [OuterLoop("Compresses and reads an entry larger than 4 GiB.")]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, true)]
+    public async Task Update_MetadataOnlyChange_PreservesLargeEntry(bool async, bool changeTimestamp, bool relocate)
+    {
+        byte[] buffer = new byte[64 * 1024];
+        long contentLength = (long)uint.MaxValue + 1 + buffer.Length;
+        using MemoryStream ms = new MemoryStream();
+        ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+        if (relocate)
+        {
+            Stream prefixWriter = await OpenEntryStream(async, archive.CreateEntry("prefix.bin"));
+            await DisposeStream(async, prefixWriter);
+        }
+        long originalLocalHeaderOffset = ms.Position;
+        ZipArchiveEntry entry = archive.CreateEntry("large.bin", CompressionLevel.Fastest);
+        Stream writer = await OpenEntryStream(async, entry);
+        for (long written = 0; written < contentLength; written += buffer.Length)
+        {
+            if (async)
+            {
+                await writer.WriteAsync(buffer);
+            }
+            else
+            {
+                writer.Write(buffer);
+            }
+        }
+        await DisposeStream(async, writer);
+        await DisposeZipArchive(async, archive);
+        long originalLength = ms.Length;
+        if (relocate)
+        {
+            Assert.Equal(8, BinaryPrimitives.ReadUInt16LittleEndian(ms.GetBuffer().AsSpan(checked((int)originalLocalHeaderOffset) + 6)) & 8);
+        }
+
+        ms.Position = 0;
+        archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+        if (relocate)
+        {
+            archive.GetEntry("prefix.bin").Delete();
+        }
+        entry = archive.GetEntry("large.bin");
+        Assert.NotNull(entry);
+        DateTimeOffset timestamp = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+        if (changeTimestamp)
+        {
+            entry.LastWriteTime = timestamp;
+        }
+        else
+        {
+            entry.ExternalAttributes = 0x20;
+        }
+        await DisposeZipArchive(async, archive);
+        if (!relocate)
+        {
+            Assert.Equal(originalLength, ms.Length);
+        }
+
+        ms.Position = 0;
+        archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+        entry = Assert.Single(archive.Entries);
+        Assert.Equal(contentLength, entry.Length);
+        if (changeTimestamp)
+        {
+            Assert.Equal(timestamp.DateTime, entry.LastWriteTime.DateTime);
+        }
+        else
+        {
+            Assert.Equal(0x20, entry.ExternalAttributes);
+        }
+        if (relocate)
+        {
+            byte[] bytes = ms.ToArray();
+            const uint DataDescriptorSignature = 0x08074B50;
+            Assert.Equal(45, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(4)));
+            Assert.Equal(8, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(6)) & 8);
+            Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(18)));
+            Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(22)));
+
+            int extraOffset = 30 + BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(26));
+            Assert.Equal(1, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(extraOffset)));
+            Assert.Equal(16, BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(extraOffset + 2)));
+            Assert.Equal(0L, BinaryPrimitives.ReadInt64LittleEndian(bytes.AsSpan(extraOffset + 4)));
+            Assert.Equal(0L, BinaryPrimitives.ReadInt64LittleEndian(bytes.AsSpan(extraOffset + 12)));
+
+            int dataOffset = extraOffset + BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(28));
+            int descriptorOffset = checked(dataOffset + (int)entry.CompressedLength);
+            Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(descriptorOffset)));
+            Assert.Equal(entry.CompressedLength, BinaryPrimitives.ReadInt64LittleEndian(bytes.AsSpan(descriptorOffset + 8)));
+            Assert.Equal(contentLength, BinaryPrimitives.ReadInt64LittleEndian(bytes.AsSpan(descriptorOffset + 16)));
+            int centralOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(bytes.Length - 6)));
+            Assert.Equal(
+                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(centralOffset + 16)),
+                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(descriptorOffset + 4)));
+        }
+        Stream reader = await OpenEntryStream(async, entry);
+        long total = 0;
+        int read;
+        while ((read = async ? await reader.ReadAsync(buffer) : reader.Read(buffer)) != 0)
+        {
+            total += read;
+        }
+        Assert.Equal(contentLength, total);
+        await DisposeStream(async, reader);
+        await DisposeZipArchive(async, archive);
+    }
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires almost 12 GB of free disk space")]
     public static void UnzipOver4GBZipFile()
