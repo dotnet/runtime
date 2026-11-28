@@ -109,9 +109,9 @@ namespace System.Reflection.Emit
 
         public override FieldAttributes Attributes => _attributes;
 
-        public override Type[] GetRequiredCustomModifiers() => _requiredCustomModifiers ?? Type.EmptyTypes;
+        public override Type[] GetRequiredCustomModifiers() => _requiredCustomModifiers ?? _fieldType.GetRequiredCustomModifiers();
 
-        public override Type[] GetOptionalCustomModifiers() => _optionalCustomModifiers ?? Type.EmptyTypes;
+        public override Type[] GetOptionalCustomModifiers() => _optionalCustomModifiers ?? _fieldType.GetOptionalCustomModifiers();
 
         public override Type GetModifiedFieldType() => FieldType;
 
