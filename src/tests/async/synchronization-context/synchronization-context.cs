@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -214,5 +214,74 @@ public class Async2SynchronizationContext
     {
         SynchronizationContext.SetSynchronizationContext(context);
         return Task.CompletedTask;
+    }
+
+    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void TaskContinuationsPostDirectlyToCapturedContext(bool runAsynchronously)
+    {
+        SynchronizationContext previousContext = SynchronizationContext.Current;
+        var context = new QueuedSyncContext();
+        var source = new TaskCompletionSource<int>(
+            runAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+        var awaiters = new Task[2];
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            for (int i = 0; i < awaiters.Length; i++)
+            {
+                awaiters[i] = AwaitTask();
+            }
+
+            SynchronizationContext.SetSynchronizationContext(null);
+            source.SetResult(42);
+            Assert.Equal(awaiters.Length, context.Count);
+            SynchronizationContext.SetSynchronizationContext(context);
+            context.Drain();
+            Assert.True(Task.WaitAll(awaiters, TimeSpan.FromSeconds(30)));
+            Assert.Equal(0, context.Count);
+            Assert.Equal(awaiters.Length, context.PostCount);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        async Task AwaitTask()
+        {
+            await GetTask(source);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<int> GetTask(TaskCompletionSource<int> source) => source.Task;
+
+    private sealed class QueuedSyncContext : SynchronizationContext
+    {
+        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object State, int ThreadId)> _queue = new();
+        private readonly int _threadId;
+        private int _postCount;
+
+        public QueuedSyncContext() => _threadId = Environment.CurrentManagedThreadId;
+
+        public int Count => _queue.Count;
+        public int PostCount => Volatile.Read(ref _postCount);
+
+        public override void Post(SendOrPostCallback d, object state)
+        {
+            Interlocked.Increment(ref _postCount);
+            _queue.Enqueue((d, state, Environment.CurrentManagedThreadId));
+        }
+
+        public void Drain()
+        {
+            while (_queue.TryDequeue(out var item))
+            {
+                Assert.Equal(_threadId, item.ThreadId);
+                item.Callback(item.State);
+            }
+        }
     }
 }
