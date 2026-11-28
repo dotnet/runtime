@@ -8993,8 +8993,9 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 // Update FirstInstanceFieldOfSize[i] to point to the next such field
                 for (j = j+1; j < bmtEnumFields.dwNumInstanceFields; j++)
                 {
-                    // The log of the field size is stored in the method table
-                    if ((DWORD_PTR&)pFieldDescList[j].m_pMTOfEnclosingClass == (size_t)i)
+                    // Only non-by-value fields store the log of the field size in the method table.
+                    if (!pFieldDescList[j].IsByValue() &&
+                        ((DWORD_PTR&)pFieldDescList[j].m_pMTOfEnclosingClass == (size_t)i))
                     {
                         bmtFP.FirstInstanceFieldOfSize[i] = j;
                         break;
