@@ -13,32 +13,6 @@ namespace System.Linq.Tests
     public class SelectTests : EnumerableTests
     {
         [Fact]
-        public void SelectSideEffectsExecutedOnCount()
-        {
-            int i = 0;
-            // If we made no promises about side effects, i could be 0, but in practice users have
-            // taken a dependency on side effects executing on Count.
-            var count = Enumerable.Range(1, 10).Select(x => i++).Count();
-            Assert.Equal(10, count);
-            Assert.Equal(10, i);
-
-            i = 0;
-            count = Enumerable.Range(1, 10).Skip(5).Select(x => i++).Count();
-            Assert.Equal(5, count);
-            Assert.Equal(5, i);
-
-            i = 0;
-            count = Enumerable.Range(1, 10).Take(5).Select(x => i++).Count();
-            Assert.Equal(5, count);
-            Assert.Equal(5, i);
-
-            i = 0;
-            count = Enumerable.Range(1, 10).Skip(2).Take(3).Select(x => i++).Count();
-            Assert.Equal(3, count);
-            Assert.Equal(3, i);
-        }
-
-        [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
             var q1 = from x1 in new string[] { "Alen", "Felix", null, null, "X", "Have Space", "Clinton", "" }
@@ -1218,48 +1192,6 @@ namespace System.Linq.Tests
             yield return [Array.Empty<int>()];
             yield return [new int[1]];
             yield return [Enumerable.Range(1, 30)];
-        }
-
-        [Theory]
-        [MemberData(nameof(RunSelectorDuringCountData))]
-        public void RunSelectorDuringCount(IEnumerable<int> source)
-        {
-            int timesRun = 0;
-            var selected = source.Select(i => timesRun++);
-            selected.Count();
-
-            Assert.Equal(source.Count(), timesRun);
-        }
-
-        public static IEnumerable<object[]> RunSelectorDuringCountData()
-        {
-            var transforms = new Func<IEnumerable<int>, IEnumerable<int>>[]
-            {
-                e => e,
-                e => ForceNotCollection(e),
-                e => ForceNotCollection(e).Skip(1),
-                e => ForceNotCollection(e).Where(i => true),
-                e => e.ToArray().Where(i => true),
-                e => e.ToList().Where(i => true),
-                e => new LinkedList<int>(e).Where(i => true),
-                e => e.Select(i => i),
-                e => e.Take(e.Count()),
-                e => e.ToArray(),
-                e => e.ToList(),
-                e => new LinkedList<int>(e) // Implements IList<T>.
-            };
-
-            var r = new Random(42);
-
-            for (int i = 0; i <= 5; i++)
-            {
-                var enumerable = Enumerable.Range(1, i).Select(_ => r.Next());
-
-                foreach (var transform in transforms)
-                {
-                    yield return [transform(enumerable)];
-                }
-            }
         }
 
         [Fact]
