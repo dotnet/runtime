@@ -315,7 +315,7 @@ namespace System.Net.Http
 
                 if (quicStream == null)
                 {
-                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, exception, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 requestStream!.StreamId = quicStream.Id;
