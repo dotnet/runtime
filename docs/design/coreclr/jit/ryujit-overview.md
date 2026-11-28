@@ -105,7 +105,8 @@ nodes in the IR.)
 
 Each operation is represented as a GenTree node, with an opcode (`GT_xxx`), zero or more child/operand `GenTree`
 nodes, and additional fields as needed to represent the semantics of that node. Every node includes its type, value
-number, assertions, register assignments, etc. when available.
+number, assertions, register assignments, etc. when available. For a short summary of legal node shapes by phase,
+see [RyuJIT IR shapes](ir-shapes.md).
 
 `GenTree` nodes are doubly-linked in execution order, but the links are not necessarily valid during all phases of
 the JIT. In HIR, since the execution order is defined by tree order (see above for details), these links are
