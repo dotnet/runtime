@@ -1684,6 +1684,12 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
 
     if (intrin.category == HW_Category_SIMDByIndexedElement)
     {
+        // A constant index needs no jump table, and lowering may have replaced its SIMD operand with a scalar.
+        if (intrinsicTree->Op(intrin.numOperands)->isContainedIntOrIImmed())
+        {
+            return;
+        }
+
         var_types indexedElementOpType;
 
         if (intrin.numOperands == 2)
