@@ -554,6 +554,7 @@ public:
 
     unsigned char lvInSsa       : 1; // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE       : 1; // Indicates if this LclVar is a CSE variable.
+    unsigned char lvIsCSEReuse  : 1; // Existing local reused by CSE, retaining normal constant propagation.
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
 
     unsigned char lvHasILStoreOp         : 1; // there is at least one STLOC or STARG on this local
@@ -8120,7 +8121,8 @@ protected:
     //
     bool lclNumIsCSE(unsigned lclNum) const
     {
-        return lvaGetDesc(lclNum)->lvIsCSE;
+        const LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        return varDsc->lvIsCSE && !varDsc->lvIsCSEReuse;
     }
 
 #ifdef DEBUG
