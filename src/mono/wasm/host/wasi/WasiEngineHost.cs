@@ -47,37 +47,21 @@ internal sealed class WasiEngineHost
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
 
-        // var runArgsJson = new RunArgumentsJson(applicationArguments: Array.Empty<string>(),
-        //                                        runtimeArguments: _args.CommonConfig.RuntimeArguments);
-        // runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
-
-        List<string> args = new() { "run" };
-
-        if (!_args.IsSingleFileBundle)
-        {
-            args.AddRange(["--dir", "."]);
-        };
+        List<string> args = new() { "run", "-W", "exceptions=y", "-S", "http", "--env", "CORE_ROOT=/managed", "--dir", "." };
 
         args.AddRange(_args.CommonConfig.HostArguments);
 
         args.Add("--");
 
-        if (_args.IsSingleFileBundle)
-        {
-            args.Add($"{Path.GetFileNameWithoutExtension(_args.CommonConfig.HostProperties.MainAssembly)}.wasm");
-        }
-        else
-        {
-            // FIXME: maybe move the assembly name to a config file
-            args.Add("dotnet.wasm");
-            args.Add(Path.GetFileNameWithoutExtension(_args.CommonConfig.HostProperties.MainAssembly));
-        }
+        args.Add(Path.Combine("managed", "corerun"));
+        // The entry assembly is a WASI guest path, not a Windows host path.
+        args.Add($"managed/{Path.GetFileName(_args.CommonConfig.HostProperties.MainAssembly)}");
 
         args.AddRange(_args.AppArgs);
 
         ProcessStartInfo psi = new()
         {
-            FileName = engineBinary,
+            FileName = engineBinaryPath,
             WorkingDirectory = _args.CommonConfig.AppPath
         };
 

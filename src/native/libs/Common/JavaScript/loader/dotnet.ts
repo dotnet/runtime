@@ -14,6 +14,7 @@ import { HostBuilder } from "./host-builder";
 import { initPolyfillsEarly } from "./polyfills";
 import { exit } from "./exit";
 import { dotnetInitializeModule } from ".";
+import { selfHostNodeJS } from "./run";
 
 dotnetInitializeModule();
 await initPolyfillsEarly();
@@ -22,3 +23,5 @@ export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as Dotnet
 export { exit };
 
 dotnet.withConfig(/*! dotnetBootConfig */{});
+
+void selfHostNodeJS(dotnet);

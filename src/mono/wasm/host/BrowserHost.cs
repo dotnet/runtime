@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
@@ -25,6 +27,7 @@ internal sealed class BrowserHost
 {
     private readonly ILogger _logger;
     private readonly BrowserArguments _args;
+    private readonly string _launchConfigPath = $"/_framework/dotnet-launch/{Guid.NewGuid():N}";
 
     public BrowserHost(BrowserArguments args, ILogger logger)
     {
@@ -61,14 +64,10 @@ internal sealed class BrowserHost
                 envVars[kvp.Key] = kvp.Value;
         }
 
-        var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
-                                               runtimeArguments: _args.CommonConfig.RuntimeArguments,
-                                               environmentVariables: envVars,
-                                               debugging: _args.CommonConfig.Debugging);
-        runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
+        foreach ((string name, string value) in envVars)
+            _args.CommonConfig.LaunchOptions.EnvironmentVariables.TryAdd(name, value);
 
-        // Read system environment variables after runArgs.json is saved, so they won't be passed to browser.
-        // But we need them to correctly read ASPNETCORE_URLS
+        // Server environment is not the browser application's environment.
         foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
         {
             if (de.Key is not null && de.Value is not null)
@@ -113,15 +112,29 @@ internal sealed class BrowserHost
         return await WebServer.StartAsync(webServerOptions, _logger, token);
     }
 
-    private static WebServerOptions CreateWebServerOptions(BrowserArguments args, string[] urls) => new
+    internal static void ConfigureLaunchEndpoint(IApplicationBuilder app, LaunchArguments? arguments, string? path)
+    {
+        if (arguments is null || path is null)
+            return;
+
+        app.Map(path, endpoint => endpoint.Run(context =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            return context.Response.WriteAsJsonAsync(arguments, CommonConfiguration.JsonOptions);
+        }));
+    }
+
+    private WebServerOptions CreateWebServerOptions(BrowserArguments args, string[] urls) => new
     (
         ContentRootPath: Path.GetFullPath(args.CommonConfig.AppPath),
         WebServerUseCors: true,
         WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
-        Urls: urls
+        Urls: urls,
+        LaunchArguments: args.CommonConfig.LaunchOptions,
+        LaunchConfigPath: _launchConfigPath
     );
 
-    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls)
+    private DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls)
     {
         const string staticWebAssetsV1Extension = ".StaticWebAssets.xml";
         const string staticWebAssetsV2Extension = ".staticwebassets.runtime.json";
@@ -169,13 +182,15 @@ internal sealed class BrowserHost
         return devServerOptions;
     }
 
-    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, string staticWebAssetsPath, string? endpointsManifest) => new
+    private DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, string staticWebAssetsPath, string? endpointsManifest) => new
     (
         StaticWebAssetsPath: staticWebAssetsPath,
         StaticWebAssetsEndpointsPath: endpointsManifest,
         WebServerUseCors: true,
         WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
-        Urls: urls
+        Urls: urls,
+        LaunchArguments: args.CommonConfig.LaunchOptions,
+        LaunchConfigPath: _launchConfigPath
     );
 
     private static string? FindFirstFileWithExtension(string directory, string extension)
@@ -183,7 +198,7 @@ internal sealed class BrowserHost
 
     private string[] BuildUrls(ServerURLs serverURLs, IEnumerable<string> passThroughArguments)
     {
-        var sb = new StringBuilder();
+        var sb = new StringBuilder($"dotnet-launch={HttpUtility.UrlEncode(_launchConfigPath)}");
         foreach (string arg in passThroughArguments)
         {
             if (sb.Length > 0)

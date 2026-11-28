@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using System.Text.Json;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -13,10 +12,6 @@ internal sealed class WasiEngineArguments
     public CommonConfiguration CommonConfig { get; init; }
 
     public string[] AppArgs { get; init; }
-
-    public bool IsSingleFileBundle =>
-        CommonConfig.HostProperties.Extra?.TryGetValue("singleFileBundle", out JsonElement singleFileValue) == true&&
-        singleFileValue.GetBoolean();
 
     public WasiEngineArguments(CommonConfiguration commonConfig)
     {

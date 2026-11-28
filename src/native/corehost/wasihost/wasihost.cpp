@@ -6,14 +6,21 @@
 // real wasi:cli/run main() instead of a JS driver.
 // See https://github.com/dotnet/runtime/issues/130129.
 
+#include <algorithm>
+#include <cerrno>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 // Shared pal (path handling, CORE_ROOT/TPA helpers); header-only, so no corerun object is linked.
 #include "corerun.hpp"
@@ -171,6 +178,9 @@ static void add_runtimeconfig_properties()
 {
     for (size_t i = 0; i < g_runtimeconfig_property_count; ++i)
     {
+        if (std::find(s_property_keys.begin(), s_property_keys.end(), g_runtimeconfig_keys[i]) != s_property_keys.end())
+            continue;
+
         s_property_keys.emplace_back(g_runtimeconfig_keys[i]);
         s_property_values.emplace_back(g_runtimeconfig_values[i]);
     }
@@ -203,6 +213,82 @@ static size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     return (size_t)-1;
 }
 
+static const char* const launch_usage =
+    "Usage: [--dotnet-env=NAME=VALUE] [--dotnet-runtime-property=NAME=JSON_SCALAR] [--dotnet-help] [--] [application arguments]";
+
+static bool invalid_launch_option(const char* option)
+{
+    std::fprintf(stderr, "Invalid .NET launch option '%s'. Use --dotnet-help for usage.\n", option);
+    return false;
+}
+
+static bool parse_launch_arguments(
+    int argc,
+    char* argv[],
+    std::vector<const char*>& application_arguments,
+    std::map<std::string, std::string>& environment,
+    std::map<std::string, std::string>& properties,
+    bool& help)
+{
+    for (int i = 2; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (arg == "--" || arg.compare(0, 9, "--dotnet-") != 0)
+        {
+            for (int j = arg == "--" ? i + 1 : i; j < argc; ++j)
+                application_arguments.push_back(argv[j]);
+            return true;
+        }
+        if (arg == "--dotnet-help")
+        {
+            help = true;
+            continue;
+        }
+        const std::string env_prefix = "--dotnet-env=";
+        const std::string property_prefix = "--dotnet-runtime-property=";
+        bool is_environment = arg.compare(0, env_prefix.size(), env_prefix) == 0;
+        if (!is_environment && arg.compare(0, property_prefix.size(), property_prefix) != 0)
+            return invalid_launch_option(argv[i]);
+
+        std::string assignment = arg.substr(is_environment ? env_prefix.size() : property_prefix.size());
+        size_t separator = assignment.find('=');
+        if (separator == 0 || separator == std::string::npos)
+            return invalid_launch_option(argv[i]);
+
+        std::string name = assignment.substr(0, separator);
+        std::string text = assignment.substr(separator + 1);
+        if (is_environment)
+        {
+            environment[name] = text;
+            continue;
+        }
+        if (name == "HOST_RUNTIME_CONTRACT" || name == "TRUSTED_PLATFORM_ASSEMBLIES" || name == "ENTRY_ASSEMBLY_NAME" ||
+            name == "NATIVE_DLL_SEARCH_DIRECTORIES" || name == "APP_PATHS" || name == "APP_CONTEXT_BASE_DIRECTORY" ||
+            name == "RUNTIME_IDENTIFIER")
+            return invalid_launch_option(argv[i]);
+
+        rapidjson::Document json;
+        json.Parse<rapidjson::kParseValidateEncodingFlag>(text.c_str());
+        if (json.HasParseError() || !(json.IsString() || json.IsBool() || (json.IsNumber() && std::isfinite(json.GetDouble()))))
+            return invalid_launch_option(argv[i]);
+
+        if (json.IsString())
+        {
+            if (std::memchr(json.GetString(), '\0', json.GetStringLength()) != nullptr)
+                return invalid_launch_option(argv[i]);
+            properties[name] = std::string(json.GetString(), json.GetStringLength());
+        }
+        else
+        {
+            rapidjson::StringBuffer buffer;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            json.Accept(writer);
+            properties[name] = std::string(buffer.GetString(), buffer.GetSize());
+        }
+    }
+    return true;
+}
+
 int main(int argc, char* argv[])
 {
     if (argc < 2)
@@ -211,12 +297,26 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // argv[1] is the managed entry assembly; argv[2..] are passed to it. Copy the slice into a
-    // const char* vector rather than casting char** to const char**.
-    string_t entry_assembly = pal::get_absolute_path(argv[1]);
     std::vector<const char*> entry_argv;
-    for (int i = 2; i < argc; ++i)
-        entry_argv.push_back(argv[i]);
+    std::map<std::string, std::string> launch_environment;
+    std::map<std::string, std::string> launch_properties;
+    bool help = false;
+    if (!parse_launch_arguments(argc, argv, entry_argv, launch_environment, launch_properties, help))
+        return -1;
+    if (help)
+    {
+        std::puts(launch_usage);
+        return 0;
+    }
+    for (const std::pair<const std::string, std::string>& variable : launch_environment)
+    {
+        if (setenv(variable.first.c_str(), variable.second.c_str(), 1) != 0)
+        {
+            std::fprintf(stderr, "Failed to set environment variable '%s': %s\n", variable.first.c_str(), std::strerror(errno));
+            return -1;
+        }
+    }
+    string_t entry_assembly = pal::get_absolute_path(argv[1]);
 
     string_t app_path;
     {
@@ -277,6 +377,11 @@ int main(int argc, char* argv[])
         s_property_values.push_back(ss.str());
     }
 
+    for (const std::pair<const std::string, std::string>& property : launch_properties)
+    {
+        s_property_keys.push_back(property.first);
+        s_property_values.push_back(property.second);
+    }
     add_runtimeconfig_properties();
 
     std::vector<const char*> property_keys;
