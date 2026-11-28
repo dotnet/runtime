@@ -839,6 +839,10 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
     CorInfoTokenKind tokenType = pResolvedToken->tokenType;
 
+    bool expressionDefinition = tokenType == CORINFO_TOKENKIND_TypeExpressionDefinition;
+    _ASSERTE(!expressionDefinition || TypeFromToken(pResolvedToken->token) == mdtTypeDef ||
+             TypeFromToken(pResolvedToken->token) == mdtTypeRef);
+
     if (IsDynamicScope(pResolvedToken->tokenScope))
     {
         ResolvedToken resolved{};
@@ -920,7 +924,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         _ASSERTE(!th.IsNull());
 
         // "PermitUninstDefOrRef" check
-        if ((tokenType != CORINFO_TOKENKIND_Ldtoken) && th.ContainsGenericVariables())
+        if (!expressionDefinition && (tokenType != CORINFO_TOKENKIND_Ldtoken) && th.ContainsGenericVariables())
         {
             COMPlusThrow(kInvalidProgramException);
         }
@@ -953,7 +957,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
             th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, metaTOK,
                                          ClassLoader::ThrowIfNotFound,
-                                         (tokenType == CORINFO_TOKENKIND_Ldtoken) ?
+                                         (expressionDefinition || tokenType == CORINFO_TOKENKIND_Ldtoken) ?
                                             ClassLoader::PermitUninstDefOrRef : ClassLoader::FailIfUninstDefOrRef);
             break;
 
@@ -1102,6 +1106,18 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     pResolvedToken->hClass = CORINFO_CLASS_HANDLE(th.AsPtr());
     pResolvedToken->hMethod = CORINFO_METHOD_HANDLE(pMD);
     pResolvedToken->hField = CORINFO_FIELD_HANDLE(pFD);
+
+    if (expressionDefinition)
+    {
+        // This definition can become part of the root method's dictionary layout. A foreign
+        // collectible allocator may unload independently. Leave that lookup in its original context.
+        if (IsDynamicScope(pResolvedToken->tokenScope) || (th.HasInstantiation() && !th.IsGenericTypeDefinition()) ||
+            (th.GetLoaderAllocator()->IsCollectible() &&
+             th.GetLoaderAllocator() != m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator()))
+        {
+            pResolvedToken->hClass = nullptr;
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 }
@@ -2729,9 +2745,64 @@ void CEEInfo::embedGenericHandle(
 {
     STANDARD_VM_CONTRACT;
 
-    INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
-
     JIT_TO_EE_TRANSITION();
+
+    CORINFO_RESOLVED_TOKEN expression;
+    if (pResolvedToken->tokenType == CORINFO_TOKENKIND_TypeExpression)
+    {
+        _ASSERTE(!fEmbedParent && pResolvedToken->token == mdTokenNil &&
+                 pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+                 GetMethod(callerHandle) == m_pMethodBeingCompiled &&
+                 pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled) &&
+                 pResolvedToken->pTypeSpec != nullptr && pResolvedToken->cbTypeSpec > 0);
+        expression = *pResolvedToken;
+        Module* module = GetModule(expression.tokenScope);
+        SigTypeContext context;
+        GetTypeContext(expression.tokenContext, &context);
+        SigPointer sig(expression.pTypeSpec, expression.cbTypeSpec);
+        TypeHandle type = sig.GetTypeHandleThrowing(module, &context);
+        if (!module->IsSystem())
+        {
+            EnsureActive(type);
+        }
+        expression.hClass = CORINFO_CLASS_HANDLE(type.AsPtr());
+        pResolvedToken = &expression;
+    }
+
+    bool dispatchStub = pResolvedToken->tokenType == CORINFO_TOKENKIND_DispatchStubExpression;
+    if (dispatchStub || pResolvedToken->tokenType == CORINFO_TOKENKIND_MethodEntryExpression)
+    {
+        _ASSERTE(dispatchStub ? (pResolvedToken->pTypeSpec != nullptr && pResolvedToken->pMethodSpec == nullptr &&
+                                 GetMethod(pResolvedToken->hMethod)->IsInterface())
+                              : pResolvedToken->pMethodSpec != nullptr);
+        _ASSERTE(!fEmbedParent && pResolvedToken->token == mdTokenNil &&
+                 pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+                 GetMethod(callerHandle) == m_pMethodBeingCompiled &&
+                 pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled));
+        // Use the same slot kind and method template as the lookup in the IL caller.
+        *pResult = {};
+        pResult->handleType = CORINFO_HANDLETYPE_UNKNOWN;
+        pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hMethod;
+        ComputeRuntimeLookupForSharedGenericToken(dispatchStub ? DispatchStubAddrSlot : MethodEntrySlot, pResolvedToken, nullptr,
+                                                  GetMethod(pResolvedToken->hMethod), m_pMethodBeingCompiled,
+                                                  &pResult->lookup);
+    }
+    else
+    {
+        embedGenericHandleInternal(pResolvedToken, fEmbedParent, callerHandle, pResult);
+    }
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEEInfo::embedGenericHandleInternal(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                         bool fEmbedParent,
+                                         CORINFO_METHOD_HANDLE callerHandle,
+                                         CORINFO_GENERICHANDLE_RESULT* pResult)
+{
+    STANDARD_VM_CONTRACT;
+
+    INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
     BOOL fRuntimeLookup;
     MethodDesc * pTemplateMD = NULL;
@@ -2755,8 +2826,16 @@ void CEEInfo::embedGenericHandle(
         pTemplateMD = pMD;
 
         // Runtime lookup is only required for stubs. Regular entrypoints are always the same shared MethodDescs.
-        fRuntimeLookup = pMD->IsWrapperStub() &&
-            (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst));
+        // A composed MethodSpec describes the exact instantiation in the root.
+        // The original method handle identifies the template used to encode the slot.
+        _ASSERTE(pResolvedToken->tokenType != CORINFO_TOKENKIND_MethodExpression ||
+                 (pResolvedToken->token == mdTokenNil && pResolvedToken->pMethodSpec != nullptr &&
+                  pResolvedToken->tokenContext == METHOD_BEING_COMPILED_CONTEXT() &&
+                  GetMethod(callerHandle) == m_pMethodBeingCompiled &&
+                  pResolvedToken->tokenScope == GetScopeHandle(m_pMethodBeingCompiled)));
+        fRuntimeLookup = (pResolvedToken->tokenType == CORINFO_TOKENKIND_MethodExpression) ||
+            (pMD->IsWrapperStub() &&
+             (th.IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(methodInst)));
     }
     else
     if (!fEmbedParent && pResolvedToken->hField != NULL)
@@ -2835,8 +2914,6 @@ void CEEInfo::embedGenericHandle(
         pResult->lookup.constLookup.handle = pResult->compileTimeHandle;
         pResult->lookup.constLookup.accessType = IAT_VALUE;
     }
-
-    EE_TO_JIT_TRANSITION();
 }
 
 //
@@ -5160,9 +5237,15 @@ void CEEInfo::getCallInfo(
 
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
 
+        // A resolved non-generic method on the constrained value type needs only that
+        // type's context. Lookup preparation can obtain it from the constrained token.
+        bool canPassConstrainedTypeArg = allowInstParam && fResolvedConstraint && !fForceUseRuntimeLookup &&
+                                         !pTargetMD->HasMethodInstantiation() && exactType.IsValueType() &&
+                                         exactType == constrainedType;
+
         // If the target method is resolved via constrained static virtual dispatch
-        // And it requires an instParam, we do not have the generic dictionary infrastructure
-        // to load the correct generic context arg via EmbedGenericHandle.
+        // and needs a context other than the constrained type, we do not have the generic
+        // dictionary infrastructure to load the correct generic context arg via EmbedGenericHandle.
         // Instead, force the call to go down the CORINFO_CALL_CODE_POINTER code path
         // which should have somewhat inferior performance. This should only actually happen in the case
         // of shared generic code calling a shared generic implementation method, which should be rare.
@@ -5178,7 +5261,8 @@ void CEEInfo::getCallInfo(
         // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
         // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
         // sensitive.
-        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup)
+        if (IsMdStatic(dwTargetMethodAttrs) && constrainedType != NULL && pResult->exactContextNeedsRuntimeLookup &&
+            !canPassConstrainedTypeArg)
         {
             allowInstParam = FALSE;
         }
@@ -5206,10 +5290,11 @@ void CEEInfo::getCallInfo(
         //    (a) some JITs may call instantiating stubs (it makes the JIT simpler) and
         //    (b) if the method is a remote stub then the EE will force the
         //        call through an instantiating stub and
-        //    (c) constraint calls that require runtime context lookup are never resolved
-        //        to underlying shared generic code
+        //    (c) constrained calls that need a context other than the constrained type
+        //        still require a runtime lookup of the instantiating stub
 
-        if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup))
+        if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() &&
+              (!allowInstParam || (fResolvedConstraint && !canPassConstrainedTypeArg))) || fForceUseRuntimeLookup))
         {
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
@@ -5227,12 +5312,11 @@ void CEEInfo::getCallInfo(
                 // constrained. call or constrained. ldftn case
                 entryKind = ConstrainedMethodEntrySlot;
             }
-            ComputeRuntimeLookupForSharedGenericToken(entryKind,
-                                                        pResolvedToken,
-                                                        pConstrainedResolvedToken,
-                                                        pMD,
-                                                        GetMethod(callerHandle),
-                                                        &pResult->codePointerLookup);
+            // Keep the entry kind until import requests the code pointer.
+            pResult->codePointerLookup = {};
+            pResult->codePointerLookup.lookupKind.needsRuntimeLookup = true;
+            pResult->codePointerLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+            pResult->codePointerLookup.runtimeLookup.helper = (CorInfoHelpFunc)entryKind;
         }
         else
         {
@@ -5282,12 +5366,11 @@ void CEEInfo::getCallInfo(
 
         if (pResult->exactContextNeedsRuntimeLookup)
         {
-            ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
-                                                        pResolvedToken,
-                                                        pConstrainedResolvedToken,
-                                                        pMD,
-                                                        GetMethod(callerHandle),
-                                                        &pResult->stubLookup);
+            pResult->stubLookup = {};
+            pResult->stubLookup.lookupKind.needsRuntimeLookup = true;
+            pResult->stubLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+            pResult->stubLookup.runtimeLookup.helper =
+                (CorInfoHelpFunc)(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot);
         }
         else
         {
@@ -5519,6 +5602,130 @@ void CEEInfo::getCallInfo(
             pResult->callsiteCalloutHelper.args[2].classHandle = (CORINFO_CLASS_HANDLE)constrainedType.AsMethodTable();
             pResult->callsiteCalloutHelper.args[2].argType = CORINFO_HELPER_ARG_TYPE_Class;
         }
+    }
+
+    pResult->canForwardTypeArguments = false;
+    pResult->canForwardMethodContext = false;
+    pResult->methodInstantiationOffset = 0;
+    pResult->instParamLookup = {};
+    bool needsContext = pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup;
+    if (needsContext)
+    {
+        pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+        pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+    }
+    else if (pResult->sig.hasTypeArg())
+    {
+        pResult->instParamLookup.constLookup.accessType = IAT_VALUE;
+        pResult->instParamLookup.constLookup.handle =
+            (CORINFO_GENERIC_HANDLE)((SIZE_T)pResult->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+    }
+
+    bool directContext = needsContext && pResult->kind == CORINFO_CALL;
+    bool methodEntry = (flags & CORINFO_CALLINFO_LDFTN) && !(flags & CORINFO_CALLINFO_CALLVIRT) &&
+        pResult->kind == CORINFO_CALL_CODE_POINTER && pMD->HasMethodInstantiation();
+    // Class instance calls can bind the inlinee's type parameters even when
+    // its generic context comes from this rather than a hidden argument.
+    MethodTable* declaringType = pMD->GetMethodTable();
+    bool interfaceGvm = pResult->kind == CORINFO_VIRTUALCALL_LDVIRTFTN && pMD->HasMethodInstantiation() &&
+        !declaringType->HasVariance();
+    bool receiver = (pResolvedToken->pTypeSpec != nullptr || pResolvedToken->pMethodSpec != nullptr) &&
+        !(flags & CORINFO_CALLINFO_LDFTN) && !pMD->IsStatic() &&
+        (pResult->kind == CORINFO_CALL || pResult->kind == CORINFO_VIRTUALCALL_LDVIRTFTN) &&
+        !declaringType->IsValueType() && (!declaringType->IsInterface() || interfaceGvm) &&
+        !declaringType->IsDelegate() && !declaringType->IsArray();
+    bool dispatchStub = pResult->kind == CORINFO_VIRTUALCALL_STUB && pResult->exactContextNeedsRuntimeLookup &&
+        !pMD->IsStatic() && declaringType->IsInterface() && !declaringType->HasVariance() &&
+        !pMD->HasMethodInstantiation() && pResolvedToken->pTypeSpec != nullptr;
+    if (directContext || methodEntry || receiver || dispatchStub)
+    {
+        MethodDesc* caller = GetMethod(callerHandle);
+        if (pConstrainedResolvedToken == nullptr &&
+            (dispatchStub || receiver || pMD->IsStatic() || (declaringType->IsValueType() && !pMD->IsUnboxingStub())) &&
+            pMD->HasSameMethodDefAs(pTargetMD) && caller->IsSharedByGenericInstantiations() &&
+            !caller->IsILStub() && !caller->IsDynamicMethod() && pResolvedToken->tokenScope == GetScopeHandle(caller) &&
+            (pResolvedToken->tokenType == CORINFO_TOKENKIND_Method ||
+             (receiver && pResolvedToken->tokenType == CORINFO_TOKENKIND_NewObj)) &&
+            (pMD->HasMethodInstantiation() ? pResolvedToken->pMethodSpec != nullptr :
+             TypeFromToken(pResolvedToken->token) == mdtMemberRef && pResolvedToken->pTypeSpec != nullptr))
+        {
+            MethodDesc* context = GetMethodFromContext(pResolvedToken->tokenContext);
+            if (context != nullptr)
+            {
+                pResult->canForwardTypeArguments = context->HasSameMethodDefAs(caller);
+            }
+            else if (!caller->HasMethodInstantiation())
+            {
+                // A non-generic inlinee can resolve its tokens in its declaring type's context.
+                TypeHandle owner = GetTypeFromContext(pResolvedToken->tokenContext);
+                pResult->canForwardTypeArguments = !owner.IsNull() && !owner.IsTypeDesc() &&
+                    owner.AsMethodTable()->HasSameTypeDefAs(caller->GetMethodTable());
+            }
+            if (pResult->canForwardTypeArguments && (pMD->HasMethodInstantiation() || dispatchStub))
+            {
+                // These method-based slots can embed the declaring MethodTable. A constructed method or
+                // owner may also depend on another collectible loader allocator.
+                LoaderAllocator* root = m_pMethodBeingCompiled->GetModule()->GetLoaderAllocator();
+                auto canRetain = [root](LoaderAllocator* allocator) {
+                    return !allocator->IsCollectible() || allocator == root;
+                };
+                TypeHandle owner(pResolvedToken->hClass);
+                pResult->canForwardMethodContext = !owner.IsTypeDesc() &&
+                    owner.AsMethodTable()->HasSameTypeDefAs(pMD->GetMethodTable()) &&
+                    (!owner.HasInstantiation() || pResolvedToken->pTypeSpec != nullptr) &&
+                    canRetain(pMD->GetLoaderAllocator()) && canRetain(pMD->GetMethodTable()->GetLoaderAllocator()) &&
+                    canRetain(owner.GetLoaderAllocator());
+            }
+            if (pResult->canForwardTypeArguments && caller->RequiresInstMethodDescArg())
+            {
+                pResult->methodInstantiationOffset = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEEInfo::prepareCallLookups(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_METHOD_HANDLE callerHandle,
+                               CORINFO_CALL_INFO* pCallInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE((pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
+        ? (pCallInfo->codePointerLookup.lookupKind.needsRuntimeLookup
+            && pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
+        : (pCallInfo->sig.hasTypeArg() && pCallInfo->exactContextNeedsRuntimeLookup));
+
+    if (pCallInfo->kind == CORINFO_CALL_CODE_POINTER || pCallInfo->kind == CORINFO_VIRTUALCALL_STUB)
+    {
+        DictionaryEntryKind entryKind = (DictionaryEntryKind)pCallInfo->codePointerLookup.runtimeLookup.helper;
+        _ASSERTE(entryKind == MethodEntrySlot || entryKind == ConstrainedMethodEntrySlot || entryKind == DispatchStubAddrSlot);
+        ComputeRuntimeLookupForSharedGenericToken(entryKind,
+                                                  pResolvedToken,
+                                                  pConstrainedResolvedToken,
+                                                  GetMethod(pResolvedToken->hMethod),
+                                                  GetMethod(callerHandle),
+                                                  &pCallInfo->codePointerLookup);
+    }
+    else
+    {
+        bool embedParent = ((SIZE_T)pCallInfo->contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS;
+        CORINFO_RESOLVED_TOKEN* lookupToken = pResolvedToken;
+        if (embedParent && pConstrainedResolvedToken != nullptr &&
+            (CORINFO_CLASS_HANDLE)((SIZE_T)pCallInfo->contextHandle & ~CORINFO_CONTEXTFLAGS_MASK) == pConstrainedResolvedToken->hClass)
+        {
+            // The implementation needs the constrained type, not the interface in the method token.
+            lookupToken = pConstrainedResolvedToken;
+            embedParent = false;
+        }
+
+        CORINFO_GENERICHANDLE_RESULT embedInfo;
+        embedGenericHandleInternal(lookupToken, embedParent, callerHandle, &embedInfo);
+        pCallInfo->instParamLookup = embedInfo.lookup;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -8757,13 +8964,35 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
         {
-            // TODO: Support for runtime lookup
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
+            CORINFO_RESOLVED_TOKEN* source = info->pResolvedTokenVirtualMethod;
+            if (!isGenericVirtual || pObjMT->IsValueType() || TypeHandle(pExactMT).IsCanonicalSubtype() ||
+                source == nullptr || source->tokenType != CORINFO_TOKENKIND_Method ||
+                TypeFromToken(source->token) != mdtMethodSpec || source->pMethodSpec == nullptr ||
+                IsDynamicScope(source->tokenScope) || !pBaseMD->HasSameMethodDefAs(GetMethod(source->hMethod)) ||
+                (pExactMT->Collectible() && pExactMT->GetLoaderAllocator() != GetModule(source->tokenScope)->GetLoaderAllocator()))
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
 
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+            // Keep the call site's MethodSpec and its scope for the method arguments.
+            // The exact override owner and its arguments may be retained in the source
+            // module's dictionary. The collectible allocator check above also applies to forwarding.
+            CORINFO_RESOLVED_TOKEN& target = info->resolvedTokenDevirtualizedMethod;
+            target = *source;
+            target.tokenType = CORINFO_TOKENKIND_DevirtualizedMethod;
+            target.hClass = (CORINFO_CLASS_HANDLE)pExactMT;
+            target.hMethod = (CORINFO_METHOD_HANDLE)pInstantiatedMD;
+            target.pTypeSpec = nullptr;
+            target.cbTypeSpec = 0;
+            info->instParamLookup.lookupKind.needsRuntimeLookup = true;
+            info->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_DEFERRED;
+        }
+        else
+        {
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pInstantiatedMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
     else if (pInstArgMD->RequiresInstMethodTableArg())
     {

@@ -604,6 +604,16 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // hMethod is the unboxed entry; token data is used by R2R
     unsigned               likelihood;
 
+    // Each inlinee method and declaring-type argument expressed in the root method context.
+    MethodTypeArgument* rootClassArgs           = nullptr;
+    MethodTypeArgument* rootMethodArgs          = nullptr;
+    unsigned            rootInstantiationOffset = 0;
+
+    bool HasRootTypeArguments() const
+    {
+        return (rootClassArgs != nullptr) || (rootMethodArgs != nullptr);
+    }
+
     CORINFO_METHOD_INFO methInfo;
 
     // the logical IL caller of this inlinee.

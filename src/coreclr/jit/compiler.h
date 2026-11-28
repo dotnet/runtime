@@ -3985,6 +3985,7 @@ public:
     }
 
     GenTree* gtNewNullCheck(GenTree* addr);
+    unsigned gtImplicitNullCheckLocal(GenTree* tree);
 
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree);
@@ -5251,6 +5252,7 @@ public:
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token and method handle for the unboxed entry.
         CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        GenTree* deferredInstParam = nullptr;
         CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
         bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
@@ -5358,6 +5360,7 @@ protected:
     void impSaveStackState(SavedStack* savePtr, bool copy);
     void impRestoreStackState(SavedStack* savePtr);
 
+    bool impMaterializeVirtualFunctionPointer(GenTreeCall* call, CORINFO_RESOLVED_TOKEN* token, CORINFO_CALL_INFO* callInfo);
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -5389,6 +5392,12 @@ protected:
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
     bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
+#ifdef FEATURE_READYTORUN
+    GenTreeCall* impNativeAotDelegateCtor(CORINFO_CLASS_HANDLE clsHnd,
+                                          methodPointerInfo*   target,
+                                          GenTree*             delegateObj,
+                                          GenTree*             receiver);
+#endif
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
     bool impCanReorderWithNullCheck(GenTree* tree);
@@ -5420,11 +5429,8 @@ protected:
                             IL_OFFSET          rawILOffset);
 
     GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                CORINFO_CALL_INFO*      callInfo,
-                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
-                                bool                    exactContextNeedsRuntimeLookup,
-                                unsigned                clsFlags,
-                                bool                    isReadonlyCall);
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo, unsigned clsFlags, bool isReadonlyCall);
 
     void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
                                     CORINFO_RESOLVED_TOKEN*   pResolvedToken,
@@ -5457,12 +5463,15 @@ protected:
 
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
 
+    bool impReadInlineMemberOwner(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
+    GenTree* impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token);
     GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                          CORINFO_ACCESS_FLAGS    access,
                                          CORINFO_FIELD_INFO*     pFieldInfo,
                                          var_types               lclTyp,
                                          GenTreeFlags*           pIndirFlags,
-                                         bool*                   pIsHoistable = nullptr);
+                                         bool*                   pIsHoistable = nullptr,
+                                         GenTree*                forwardedOwner = nullptr);
     void impAnnotateFieldIndir(GenTreeIndir* indir);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
@@ -5633,7 +5642,9 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                              CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                              CORINFO_CALL_INFO*      pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -5683,6 +5694,7 @@ public:
 
     GenTree* impNormStructVal(GenTree* structVal, unsigned curLevel);
 
+    GenTree* impDeferredTypeExpression(const MethodTypeArgument& type, CORINFO_CLASS_HANDLE cls);
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               bool*                   pRuntimeLookup = nullptr,
                               bool                    importParent   = false);
@@ -5693,10 +5705,18 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
 
+    GenTree* impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo,
+                               CORINFO_LOOKUP* lookup,
+                               GenTreeFlags handleFlags,
+                               void* compileTimeHandle);
+
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
+    CORINFO_RUNTIME_LOOKUP_KIND impRuntimeContextKind() const;
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
     GenTree* impRuntimeLookupToTree(CORINFO_LOOKUP*         pLookup,
@@ -6028,6 +6048,38 @@ public:
 private:
 
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
+    void impBindInlineTypeArguments(GenTreeCall* call, const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
+                                    CORINFO_METHOD_HANDLE forwardedTarget, MethodTypeArgument* methodArgs, MethodTypeArgument* ownerArgs);
+    GenTree* impDeferredMethodExpression(const CORINFO_RESOLVED_TOKEN& token, const MethodTypeArgument& owner,
+                                         PCCOR_SIGNATURE methodSpec, unsigned size, CorInfoTokenKind kind, CORINFO_GENERIC_HANDLE handle);
+    GenTree* impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token, const CORINFO_CALL_INFO& callInfo,
+                                   const MethodTypeArgument* methodArgs);
+    GenTree* impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token, CORINFO_CONTEXT_HANDLE targetContext, CORINFO_METHOD_HANDLE devirtualizedMethod = nullptr, bool callVirt = false);
+    // Exact constructed types of single-definition reference locals during inlining, in the root context.
+    using LocalTypeExpressionMap = JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MethodTypeArgument>;
+    LocalTypeExpressionMap* impLocalTypeExpressions = nullptr;
+    struct InlineTypeCheck
+    {
+        MethodTypeArgument target;
+        GenTree* handle;
+        CorInfoHelpFunc helper;
+    };
+    using TypeCheckMap = JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, InlineTypeCheck>;
+    TypeCheckMap* impTypeChecks = nullptr;
+    void impRememberTypeCheck(GenTree* check, GenTree* value, GenTree* handle, const CORINFO_RESOLVED_TOKEN& token);
+    bool fgFoldInlineTypeChecks();
+    friend class InlineTypeCheckWalker;
+    bool impReadTokenType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
+    bool impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result);
+    bool impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN& token);
+    void impRecordAllocatedType(unsigned lclNum, const MethodTypeArgument& type);
+    MethodTypeArgument* impLocalTypeExpression(GenTree* value);
+
+    MethodTypeArgument* impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN& token, unsigned arity, CORINFO_METHOD_HANDLE declaringMethod);
+    bool getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE method,
+                                      CORINFO_CONTEXT_HANDLE context, CORINFO_LOOKUP* result);
+    GenTree* fgPrepareEarlyLookup(GenTreeCall* call);
+    GenTree* fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 CORINFO_CALL_INFO*     callInfo,
@@ -7419,11 +7471,8 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
-                           GenTreeFlags    handleFlags,
-                           void*           compileTimeHandle);
-    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
-                                  void*           compileTimeHandle);
+    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle, GenTree* context = nullptr);
+    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle, GenTree* context = nullptr);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);

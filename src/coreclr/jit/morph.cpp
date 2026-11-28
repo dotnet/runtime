@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include "sideeffects.h"
 #include "allocacheck.h" // for alloca
 
 //-------------------------------------------------------------
@@ -731,12 +732,44 @@ void CallArg::Dump(Compiler* comp)
 }
 #endif
 
+// A late argument can move past the helper and other arguments evaluated into
+// early temps. Check the remaining arguments in IL order, including their inputs.
+static bool CanDelayCallArgument(Compiler* comp, CallArg& earlier, unsigned& budget)
+{
+    SideEffectSet earlierEffects;
+    if (!earlierEffects.TryAddTree(comp, earlier.GetEarlyNode(), budget))
+    {
+        return false;
+    }
+
+    for (CallArg* arg = earlier.GetNext(); arg != nullptr; arg = arg->GetNext())
+    {
+        if ((budget == 0) || (arg->GetLateNode() != nullptr))
+        {
+            return false;
+        }
+        --budget;
+        GenTree* crossed = arg->GetEarlyNode();
+        if ((crossed == nullptr) || ((crossed->gtFlags & GTF_ALL_EFFECT) == 0))
+        {
+            continue;
+        }
+        SideEffectSet crossedEffects;
+        if (!crossedEffects.TryAddTree(comp, crossed, budget) || earlierEffects.InterferesWith(crossedEffects, true))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 //------------------------------------------------------------------------
 // ArgsComplete: Make final decisions on which arguments to evaluate into temporaries.
 //
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 {
-    unsigned argCount = CountArgs();
+    unsigned argCount     = CountArgs();
+    unsigned effectBudget = 64;
 
     // Previous argument with GTF_EXCEPT
     GenTree* prevExceptionTree = nullptr;
@@ -869,6 +902,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
+            // Even a pure helper needs its own ABI temp. Consult interference only
+            // when a register argument would otherwise be forced early by this call.
+            bool canCheckEffects = canEvalToTemp && comp->fgGlobalMorph && comp->opts.OptimizationEnabled() &&
+                                   argx->IsHelperCall() && argx->AsCall()->IsPure(comp) &&
+                                   !argx->AsCall()->HasSideEffects(comp, false);
             // All previous arguments may need to be evaluated into temps
             for (CallArg& prevArg : Args())
             {
@@ -888,7 +926,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                 // For all previous arguments, if they have any GTF_ALL_EFFECT
                 //  we require that they be evaluated into a temp
-                if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
+                GenTree* prev      = prevArg.GetEarlyNode();
+                bool     needsTemp = (prev != nullptr) && ((prev->gtFlags & GTF_ALL_EFFECT) != 0);
+                if (needsTemp && !prevArg.m_needTmp && canCheckEffects && effectBudget != 0 &&
+                    prevArg.AbiInfo.HasExactlyOneRegisterSegment() && !prev->TypeIs(TYP_STRUCT) &&
+                    ((prev->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0))
+                {
+                    needsTemp = !CanDelayCallArgument(comp, prevArg, effectBudget);
+                }
+                if (needsTemp)
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -1991,6 +2037,86 @@ unsigned CallArgs::CountUserArgs()
     return numArgs;
 }
 
+// The local whose null value would fault at this access. Restrict the address to
+// a local or a small field offset from it, with no intervening computation.
+unsigned Compiler::gtImplicitNullCheckLocal(GenTree* tree)
+{
+    if (!tree->OperIs(GT_IND, GT_NULLCHECK) || ((tree->gtFlags & GTF_EXCEPT) == 0))
+    {
+        return BAD_VAR_NUM;
+    }
+    GenTree* addr = tree->gtGetOp1();
+    if (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance() &&
+        !fgIsBigOffset(addr->AsFieldAddr()->gtFldOffset))
+    {
+        addr = addr->AsFieldAddr()->GetFldObj();
+    }
+    return addr->OperIs(GT_LCL_VAR) ? addr->AsLclVar()->GetLclNum() : BAD_VAR_NUM;
+}
+
+// Prepare an adjacent hidden lookup at the receiver's evaluation point. Keep its
+// setup separate from argument placement so the other arguments retain their IL order.
+GenTree* Compiler::fgPrepareEarlyLookup(GenTreeCall* call)
+{
+    if (call->gtArgs.IsEmpty())
+    {
+        return nullptr;
+    }
+    CallArg* first = &*call->gtArgs.Args().begin();
+    CallArg* inst  = first->GetNext();
+    if (first->GetWellKnownArg() != WellKnownArg::ThisPointer || inst == nullptr ||
+        inst->GetWellKnownArg() != WellKnownArg::InstParam || !first->AbiInfo.HasExactlyOneRegisterSegment() ||
+        !inst->AbiInfo.HasExactlyOneRegisterSegment())
+    {
+        return nullptr;
+    }
+    GenTree* receiver = first->GetEarlyNode();
+    GenTree* token    = inst->GetEarlyNode();
+    if ((token == nullptr) || (receiver == nullptr) || !token->OperIs(GT_RUNTIMELOOKUP) ||
+        token->AsRuntimeLookup()->gtDeferredLookup == nullptr || ((receiver->gtFlags & GTF_ALL_EFFECT) == 0) ||
+        ((receiver->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        return nullptr;
+    }
+
+    // Both dereferences are still faulting here. If their only possible fault is
+    // on the same object local, the method-table load can supply the receiver's check.
+    GenTree* context      = token->gtGetOp1();
+    unsigned checkedLocal = gtImplicitNullCheckLocal(receiver);
+    bool     sameCheck =
+        checkedLocal != BAD_VAR_NUM && receiver->OperIs(GT_IND) && receiver->TypeIs(TYP_REF) &&
+        context->OperIs(GT_IND) && context->gtGetOp1()->OperIs(GT_LCL_VAR) && context->gtGetOp1()->TypeIs(TYP_REF) &&
+        (context->gtGetOp1()->gtFlags & GTF_VAR_CONTEXT) && (context->gtFlags & GTF_IND_INVARIANT) &&
+        gtImplicitNullCheckLocal(context) == checkedLocal &&
+        ((context->gtFlags | receiver->gtFlags) & (GTF_ORDER_SIDEEFF | GTF_IND_MUST_PRESERVE_FLAGS)) == 0 &&
+        !lvaGetDesc(checkedLocal)->IsAddressExposed();
+    if (!sameCheck && !context->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
+    }
+    GenTree* lookup = fgMaterializeDeferredLookup(token->AsRuntimeLookup());
+    inst->SetEarlyNode(lookup);
+    if (!lookup->IsHelperCall() || !lookup->AsCall()->IsRuntimeLookupHelperCall(this) ||
+        lookup->AsCall()->HasSideEffects(this, false))
+    {
+        return nullptr;
+    }
+    if (!sameCheck)
+    {
+        unsigned      budget = 16;
+        SideEffectSet receiverEffects;
+        SideEffectSet lookupEffects;
+        if (!receiverEffects.TryAddTree(this, receiver, budget) || !lookupEffects.TryAddTree(this, lookup, budget) ||
+            receiverEffects.InterferesWith(lookupEffects, true))
+        {
+            return nullptr;
+        }
+    }
+    TempInfo temp = fgMakeTemp(lookup);
+    inst->SetEarlyNode(temp.load);
+    return fgMorphTree(temp.store);
+}
+
 //------------------------------------------------------------------------
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
@@ -2037,6 +2163,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     call->gtArgs.AddFinalArgsAndDetermineABIInfo(this, call);
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
+
+    GenTree* firstSetup =
+        (!reMorphing && fgGlobalMorph && opts.OptimizationEnabled()) ? fgPrepareEarlyLookup(call) : nullptr;
 
     // If we are remorphing, process the late arguments (which were determined by a previous caller).
     if (reMorphing)
@@ -2152,6 +2281,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     {
         // Do the 'defer or eval to temp' analysis.
         call->gtArgs.EvalArgsToTemps(this, call);
+        if (firstSetup != nullptr)
+        {
+            CallArg* first = &*call->gtArgs.Args().begin();
+            assert(first->GetLateNode() != nullptr);
+            GenTree* early = first->GetEarlyNode();
+            if (early != nullptr)
+            {
+                firstSetup = gtNewOperNode(GT_COMMA, early->TypeGet(), firstSetup, early);
+                fgMorphTreeDone(firstSetup);
+            }
+            first->SetEarlyNode(firstSetup);
+            call->gtFlags |= firstSetup->gtFlags & GTF_ALL_EFFECT;
+        }
     }
 
 #ifdef DEBUG
@@ -5630,11 +5772,15 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 //    pLookup - the lookup to get the tree for
 //    handleFlags - flags to set on the result node
 //    compileTimeHandle - compile-time handle corresponding to the lookup
+//    context - input generic context, or nullptr to use the current method
 //
 // Return Value:
 //    A node representing the lookup tree
 //
-GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
+GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup,
+                                 GenTreeFlags    handleFlags,
+                                 void*           compileTimeHandle,
+                                 GenTree*        context)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -5657,7 +5803,7 @@ GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFla
         return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
 
-    return getRuntimeLookupTree(pLookup, compileTimeHandle);
+    return getRuntimeLookupTree(pLookup, compileTimeHandle, context);
 }
 
 //------------------------------------------------------------------------
@@ -5666,12 +5812,17 @@ GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFla
 // Arguments:
 //    pLookup - the lookup to get the tree for
 //    compileTimeHandle - compile-time handle corresponding to the lookup
+//    context - input generic context, or nullptr to use the current method
 //
 // Return Value:
 //    A node representing the runtime lookup tree
 //
-GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
+GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle, GenTree* context)
 {
+    if (context == nullptr)
+    {
+        context = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    }
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
@@ -5679,12 +5830,10 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTi
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
         pRuntimeLookup->testForNull)
     {
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
-                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
-                                                compileTimeHandle);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, context, compileTimeHandle);
     }
 
-    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    GenTree* result = context;
 
     ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
 
@@ -6974,6 +7123,91 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     return op1->AsOp();
 }
 
+// Materialize a surviving lookup. Type expressions are relative to the root;
+// method contexts retain the scope in which their arguments were bound.
+GenTree* Compiler::fgMaterializeDeferredLookup(GenTreeRuntimeLookup* tree)
+{
+    assert(!compIsForInlining());
+    DeferredHandleLookup* pending        = tree->gtDeferredLookup;
+    const bool            typeExpression = pending->kind == DeferredHandleLookup::Kind::TypeExpression;
+    if (pending->preparedLookup == nullptr)
+    {
+        CORINFO_LOOKUP lookup;
+        if (typeExpression)
+        {
+            const MethodTypeArgument arg = pending->type.expression;
+            CORINFO_RESOLVED_TOKEN   expression{};
+            expression.tokenType    = CORINFO_TOKENKIND_TypeExpression;
+            expression.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+            expression.tokenScope   = info.compScopeHnd;
+            expression.pTypeSpec    = arg.signature;
+            expression.cbTypeSpec   = arg.signatureSize;
+            CORINFO_GENERICHANDLE_RESULT result;
+            info.compCompHnd->embedGenericHandle(&expression, false, info.compMethodHnd, &result);
+            lookup                          = result.lookup;
+            pending->type.compileTimeHandle = result.compileTimeHandle;
+        }
+        else if (pending->kind == DeferredHandleLookup::Kind::MethodExpression)
+        {
+            const auto&            method = *pending->methodExpression;
+            CORINFO_RESOLVED_TOKEN expression{};
+            expression.tokenType    = method.tokenType;
+            expression.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+            expression.tokenScope   = info.compScopeHnd;
+            expression.hMethod      = method.method;
+            expression.hClass       = method.owner;
+            expression.pTypeSpec    = method.ownerType.signature;
+            expression.cbTypeSpec   = method.ownerType.signatureSize;
+            expression.pMethodSpec  = method.methodSpec;
+            expression.cbMethodSpec = method.methodSpecSize;
+            CORINFO_GENERICHANDLE_RESULT result;
+            info.compCompHnd->embedGenericHandle(&expression, false, info.compMethodHnd, &result);
+            lookup = result.lookup;
+        }
+        else if (pending->kind == DeferredHandleLookup::Kind::DevirtualizedMethodContext)
+        {
+            CORINFO_CONTEXT_HANDLE context = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE)tree->gtHnd);
+            if (!getDevirtualizedMethodLookup(pending->target.token, pending->caller, pending->target.method, context,
+                                              &lookup))
+            {
+                IMPL_LIMITATION("Devirtualized method context is no longer available");
+            }
+        }
+        else
+        {
+            CORINFO_RESOLVED_TOKEN token{};
+            token.tokenContext = pending->il.context;
+            token.tokenScope   = pending->il.scope;
+            token.token        = pending->token;
+            token.tokenType    = CORINFO_TOKENKIND_Method;
+            info.compCompHnd->resolveToken(&token);
+
+            CORINFO_CALL_INFO      callInfo;
+            CORINFO_CALLINFO_FLAGS flags = CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS;
+            if (pending->il.callVirt)
+            {
+                flags |= CORINFO_CALLINFO_CALLVIRT;
+            }
+            info.compCompHnd->getCallInfo(&token, nullptr, pending->caller, flags, &callInfo);
+            assert(callInfo.kind == CORINFO_CALL && callInfo.sig.hasTypeArg() && callInfo.canForwardTypeArguments);
+            assert(callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
+            assert((size_t)tree->gtHnd == ((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK));
+            info.compCompHnd->prepareCallLookups(&token, nullptr, pending->caller, &callInfo);
+            lookup = callInfo.instParamLookup;
+        }
+        pending->preparedLookup = new (this, CMK_Inlining) CORINFO_LOOKUP(lookup);
+    }
+
+    if (typeExpression)
+    {
+        return getLookupTree(pending->preparedLookup, GTF_ICON_CLASS_HDL, pending->type.compileTimeHandle, tree->gtOp1);
+    }
+    GenTreeFlags flags = tree->IsClassHandle()    ? GTF_ICON_CLASS_HDL
+                         : tree->IsMethodHandle() ? GTF_ICON_METHOD_HDL
+                                                  : GTF_ICON_FTN_ADDR;
+    return getLookupTree(pending->preparedLookup, flags, tree->gtHnd, tree->gtOp1);
+}
+
 //------------------------------------------------------------------------
 // fgMorphSmpOp: morph a GTK_SMPOP tree
 //
@@ -7571,6 +7805,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
         }
 
         case GT_RUNTIMELOOKUP:
+            if (tree->AsRuntimeLookup()->gtDeferredLookup != nullptr)
+            {
+                return fgMorphTree(fgMaterializeDeferredLookup(tree->AsRuntimeLookup()));
+            }
             return fgMorphTree(op1);
 
         case GT_COMMA:

@@ -1281,6 +1281,40 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 {
     assert(!fgGlobalMorph);
 
+    if (compIsForInlining() && impInlineInfo->inlineCandidateInfo->HasRootTypeArguments() && !importParent &&
+        (pResolvedToken->hMethod == nullptr) && (pResolvedToken->hField == nullptr) &&
+        ((pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken) ||
+         (pResolvedToken->tokenType == CORINFO_TOKENKIND_Casting) ||
+         (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)))
+    {
+        MethodTypeArgument   arg;
+        InlineCandidateInfo* candidate = impInlineInfo->inlineCandidateInfo;
+        if (impReadTokenType(*pResolvedToken, &arg) && eeIsSharedInst(pResolvedToken->hClass))
+        {
+            if (pRuntimeLookup != nullptr)
+            {
+                *pRuntimeLookup = true;
+            }
+            if (arg.signature != nullptr)
+            {
+                return impDeferredTypeExpression(arg, pResolvedToken->hClass);
+            }
+            // A bare projection denotes !!n in the root. Class arguments use the EE's type-expression lookup.
+            assert(impInlineRoot()->impRuntimeContextKind() == CORINFO_LOOKUP_METHODPARAM);
+            assert(candidate->rootInstantiationOffset != 0);
+            CORINFO_LOOKUP lookup{};
+            lookup.lookupKind.needsRuntimeLookup = true;
+            lookup.lookupKind.runtimeLookupKind  = CORINFO_LOOKUP_METHODPARAM;
+            lookup.runtimeLookup.indirections    = 2;
+            lookup.runtimeLookup.sizeOffset      = CORINFO_NO_SIZE_CHECK;
+            lookup.runtimeLookup.offsets[0]      = candidate->rootInstantiationOffset;
+            lookup.runtimeLookup.offsets[1]      = arg.index * TARGET_POINTER_SIZE;
+            JITDUMP("Forward inlinee type as root !!%u\n", arg.index);
+            GenTree* handle = impInlineRoot()->impRuntimeLookupToTree(&lookup, pResolvedToken->hClass);
+            return gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass, CORINFO_HANDLETYPE_CLASS, handle);
+        }
+    }
+
     CORINFO_GENERICHANDLE_RESULT embedInfo;
     info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, info.compMethodHnd, &embedInfo);
 
@@ -1302,8 +1336,47 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return result;
 }
 
+// Keep the root context with the type expression. Morph prepares the lookup if the use survives.
+GenTree* Compiler::impDeferredTypeExpression(const MethodTypeArgument& type, CORINFO_CLASS_HANDLE cls)
+{
+    assert(type.signature != nullptr);
+    Compiler* root           = impInlineRoot();
+    GenTree*  lookup         = gtNewRuntimeLookup((CORINFO_GENERIC_HANDLE)cls, CORINFO_HANDLETYPE_CLASS,
+                                                  root->getRuntimeContextTree(root->impRuntimeContextKind()));
+    auto*     pending        = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->kind            = DeferredHandleLookup::Kind::TypeExpression;
+    pending->type.expression = type;
+    lookup->AsRuntimeLookup()->gtDeferredLookup = pending;
+    JITDUMP("Forward inlinee type as a root signature (%u bytes)\n", type.signatureSize);
+    return lookup;
+}
+
+//------------------------------------------------------------------------
+// impCallLookupToTree: Prepare a call lookup on demand and materialize it.
+// The lookup must refer to the selected slot in callInfo, not a copy.
+//
+GenTree* Compiler::impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                       CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                       CORINFO_CALL_INFO*      callInfo,
+                                       CORINFO_LOOKUP*         lookup,
+                                       GenTreeFlags            handleFlags,
+                                       void*                   compileTimeHandle)
+{
+    assert((lookup == &callInfo->instParamLookup) || (lookup == &callInfo->codePointerLookup));
+    if (lookup->lookupKind.needsRuntimeLookup && (lookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        info.compCompHnd->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, info.compMethodHnd, callInfo);
+    }
+    return impLookupToTree(lookup, handleFlags, compileTimeHandle);
+}
+
 GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
+    // A lookup deferred by getCallInfo carries CORINFO_LOOKUP_DEFERRED until prepareCallLookups
+    // completes it. Reaching materialization in that state means prepareCallLookups was not called.
+    assert(!pLookup->lookupKind.needsRuntimeLookup ||
+           (pLookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_DEFERRED));
+
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
         // No runtime lookup is required.
@@ -1457,7 +1530,44 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
-GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
+#ifdef FEATURE_READYTORUN
+// Build the NativeAOT delegate constructor from the target token. The helper binds
+// the target itself, so it takes only the allocated delegate and the receiver.
+GenTreeCall* Compiler::impNativeAotDelegateCtor(CORINFO_CLASS_HANDLE clsHnd,
+                                                methodPointerInfo*   target,
+                                                GenTree*             delegateObj,
+                                                GenTree*             receiver)
+{
+    CORINFO_LOOKUP lookup;
+    info.compCompHnd->getReadyToRunDelegateCtorHelper(&target->m_token, target->m_tokenConstraint, clsHnd,
+                                                      info.compMethodHnd, &lookup);
+    if (!lookup.lookupKind.needsRuntimeLookup)
+    {
+        GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, delegateObj, receiver);
+        call->setEntryPoint(lookup.constLookup);
+        return call;
+    }
+
+    if (lookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
+    {
+        assert(compIsForInlining());
+        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+        return nullptr;
+    }
+
+    assert((lookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
+           (lookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
+    GenTree*     context = getRuntimeContextTree(lookup.lookupKind.runtimeLookupKind);
+    GenTreeCall* call =
+        gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, delegateObj, receiver, context);
+    call->setEntryPoint(lookup.runtimeLookup.helperEntryPoint);
+    return call;
+}
+#endif
+
+GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                    CORINFO_CALL_INFO*      pCallInfo)
 {
     GenTree* op1 = nullptr;
 
@@ -1475,7 +1585,19 @@ GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            op1 = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            if (compIsForInlining() && pCallInfo->canForwardMethodContext && !IsAot() && !opts.MinOpts())
+            {
+                assert(pConstrainedResolvedToken == nullptr);
+                const MethodTypeArgument* args =
+                    impForwardedTypeArgs(*pResolvedToken, pCallInfo->sig.sigInst.methInstCount, nullptr);
+                op1 = impTryRootMethodLookup(*pResolvedToken, *pCallInfo, args);
+                if (op1 != nullptr)
+                {
+                    break;
+                }
+            }
+            op1 = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, pCallInfo,
+                                      &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:
@@ -1484,6 +1606,22 @@ GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
     }
 
     return op1;
+}
+
+// Return the source of this method's generic context, including when it is itself an inlinee.
+CORINFO_RUNTIME_LOOKUP_KIND Compiler::impRuntimeContextKind() const
+{
+    switch (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK)
+    {
+        case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
+            return CORINFO_LOOKUP_METHODPARAM;
+        case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
+            return CORINFO_LOOKUP_CLASSPARAM;
+        case CORINFO_GENERICS_CTXT_FROM_THIS:
+            return CORINFO_LOOKUP_THISOBJ;
+        default:
+            return CORINFO_LOOKUP_NOT_SUPPORTED;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2676,6 +2814,35 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
     }
 
     return true; // Yes, tailcall is legal
+}
+
+// Materialize the control expression for an indirect virtual call. The receiver
+// is passed both to the lookup helper and to the target, but evaluated once.
+bool Compiler::impMaterializeVirtualFunctionPointer(GenTreeCall*            call,
+                                                    CORINFO_RESOLVED_TOKEN* token,
+                                                    CORINFO_CALL_INFO*      callInfo)
+{
+    CallArg* thisArg  = call->gtArgs.GetThisArg();
+    GenTree* receiver = thisArg->GetNode();
+    GenTree* copy;
+    GenTree* lookupReceiver =
+        impCloneExpr(receiver, &copy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
+    if ((lookupReceiver != receiver) && lookupReceiver->OperIsLocal() && lookupReceiver->TypeIs(TYP_REF))
+    {
+        unsigned lcl                 = lookupReceiver->AsLclVarCommon()->GetLclNum();
+        lvaGetDesc(lcl)->lvSingleDef = 1;
+        lvaSetClass(lcl, receiver);
+    }
+    thisArg->SetEarlyNode(copy);
+    GenTree* target = impImportLdvirtftn(lookupReceiver, token, callInfo);
+    if (target == nullptr)
+    {
+        assert(compDonotInline());
+        return false;
+    }
+    call->gtControlExpr = target;
+    call->gtFlags |= (target->gtFlags | copy->gtFlags) & GTF_ALL_EFFECT;
+    return !compDonotInline();
 }
 
 GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
@@ -4144,6 +4311,33 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
     return nullptr;
 }
 
+// The TypeSpec on a MemberRef describes the class named by the IL. Use it
+// for a declaring-type lookup only when the resolved member belongs to that definition.
+bool Compiler::impReadInlineMemberOwner(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
+{
+    if (!impReadInlineType(token, result))
+    {
+        return false;
+    }
+    assert((token.hField != nullptr) != (token.hMethod != nullptr));
+    CORINFO_CLASS_HANDLE declaring = (token.hField != nullptr) ? info.compCompHnd->getFieldClass(token.hField)
+                                                               : info.compCompHnd->getMethodClass(token.hMethod);
+    return (declaring == token.hClass) ||
+           (info.compCompHnd->getTypeDefinition(declaring) == info.compCompHnd->getTypeDefinition(token.hClass));
+}
+
+GenTree* Compiler::impTryForwardStaticFieldOwner(const CORINFO_RESOLVED_TOKEN& token)
+{
+    // With a context from this, the field owner is already a single lookup.
+    // Keep the receiver dictionary instead of growing the root dictionary for the same access.
+    if (!compIsForInlining() || (impRuntimeContextKind() == CORINFO_LOOKUP_THISOBJ))
+    {
+        return nullptr;
+    }
+    MethodTypeArgument owner;
+    return impReadInlineMemberOwner(token, &owner) ? impDeferredTypeExpression(owner, token.hClass) : nullptr;
+}
+
 //------------------------------------------------------------------------
 // impImportStaticFieldAddress: Generate an address of a static field
 //
@@ -4155,6 +4349,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 //   pIndirFlags    - in/out parameter for the field indirection flags (e. g. IND_INITCLASS)
 //   pIsHoistable   - optional out parameter - whether any type initialization side
 //                    effects of the returned tree can be hoisted to occur earlier
+//   forwardedOwner - exact owner already computed while checking whether a store can inline
 //
 // Return Value:
 //   Tree representing the field's address.
@@ -4173,7 +4368,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                                                CORINFO_FIELD_INFO*     pFieldInfo,
                                                var_types               lclTyp,
                                                GenTreeFlags*           pIndirFlags,
-                                               bool*                   pIsHoistable)
+                                               bool*                   pIsHoistable,
+                                               GenTree*                forwardedOwner)
 {
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -4224,9 +4420,11 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
         {
             // We first call a special helper to get the statics base pointer
-            op1 = impParentClassTokenToHandle(pResolvedToken);
-
-            // compIsForInlining() is false so we should not get NULL here
+            if (forwardedOwner == nullptr)
+            {
+                forwardedOwner = impTryForwardStaticFieldOwner(*pResolvedToken);
+            }
+            op1 = (forwardedOwner != nullptr) ? forwardedOwner : impParentClassTokenToHandle(pResolvedToken);
             assert(op1 != nullptr);
 
             var_types type = TYP_BYREF;
@@ -5733,6 +5931,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         op2->gtFlags |= GTF_DONT_CSE;
         GenTreeCall* call          = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
         call->gtCastHelperILOffset = ilOffset;
+        impRememberTypeCheck(call, op1, op2, *pResolvedToken);
 
         // Instrument this castclass/isinst
         if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
@@ -5785,6 +5984,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
 
     GenTreeOp* condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
     GenTreeOp* condMT   = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+    impRememberTypeCheck(condMT, op1Clone, op2, *pResolvedToken);
 
     GenTreeQmark* qmarkResult;
 
@@ -6545,8 +6745,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     signed jmpDist;
 
-    /* remember the start of the delegate creation sequence (used for verification) */
-    const BYTE* delegateCreateStart = nullptr;
+#ifdef FEATURE_READYTORUN
+    methodPointerInfo* delegateTarget = nullptr;
+#endif
 
     int  prefixFlags = 0;
     bool explicitTailCall, constraintCall, readonlyCall;
@@ -6577,9 +6778,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
         bool usingReadyToRunHelper = false;
 #endif
-        CORINFO_RESOLVED_TOKEN resolvedToken;
-        CORINFO_CALL_INFO      callInfo;
-        CORINFO_FIELD_INFO     fieldInfo;
+        CORINFO_RESOLVED_TOKEN  resolvedToken;
+        CORINFO_CALL_INFO       callInfo;
+        CORINFO_FIELD_INFO      fieldInfo;
+        CORINFO_RESOLVED_TOKEN* pLdftnConstrainedToken = nullptr;
 
         typeInfo tiRetVal = typeInfo(); // Default type info
 
@@ -8865,7 +9067,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                pLdftnConstrainedToken = (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr;
+                eeGetCallInfo(&resolvedToken, pLdftnConstrainedToken,
                               CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
@@ -8878,19 +9081,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&callInfo);
+                mdToken constrainedToken     = prefixFlags & PREFIX_CONSTRAINED ? constrainedResolvedToken.token : 0;
+                methodPointerInfo* heapToken = impAllocateMethodPointerInfo(resolvedToken, constrainedToken);
+                assert(callInfo.hMethod != nullptr);
+                heapToken->m_token.hMethod = callInfo.hMethod;
 
+#ifdef FEATURE_READYTORUN
+                // Match the scanner's ldftn/newobj pair within this block. The delegate helper
+                // consumes the target token directly. A standalone ldftn still needs its entry point.
+                if (IsNativeAot() && !opts.compDbgCode && (opcode == CEE_LDFTN) &&
+                    (callInfo.kind == CORINFO_CALL_CODE_POINTER) && (impStackHeight() > 0) &&
+                    (impStackHeight() < info.compMaxStack) && impStackTop().val->TypeIs(TYP_REF) &&
+                    callInfo.codePointerLookup.lookupKind.needsRuntimeLookup &&
+                    (callInfo.codePointerLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED) &&
+                    (codeEndp - codeAddr >= (int)(2 * sizeof(mdToken) + 1)) &&
+                    (codeAddr[sizeof(mdToken)] == CEE_NEWOBJ))
+                {
+                    CORINFO_RESOLVED_TOKEN ctor;
+                    impResolveToken(codeAddr + sizeof(mdToken) + 1, &ctor, CORINFO_TOKENKIND_NewObj);
+                    if ((info.compCompHnd->getClassAttribs(ctor.hClass) & CORINFO_FLG_DELEGATE) != 0 &&
+                        (info.compCompHnd->getMethodAttribs(ctor.hMethod) & CORINFO_FLG_CONSTRUCTOR) != 0)
+                    {
+                        delegateTarget = heapToken;
+                        break;
+                    }
+                }
+#endif
+                op1 = impMethodPointer(&resolvedToken, pLdftnConstrainedToken, &callInfo);
                 if (compDonotInline())
                 {
                     return;
                 }
 
-                // Call info may have more precise information about the function than
-                // the resolved token.
-                mdToken constrainedToken     = prefixFlags & PREFIX_CONSTRAINED ? constrainedResolvedToken.token : 0;
-                methodPointerInfo* heapToken = impAllocateMethodPointerInfo(resolvedToken, constrainedToken);
-                assert(callInfo.hMethod != nullptr);
-                heapToken->m_token.hMethod = callInfo.hMethod;
                 impPushOnStack(op1, typeInfo(heapToken));
 
                 break;
@@ -8904,7 +9126,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef */,
+                pLdftnConstrainedToken = nullptr; // ldvirtftn has no constraint typeRef
+                eeGetCallInfo(&resolvedToken, pLdftnConstrainedToken,
                               CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
                               &callInfo);
 
@@ -9199,11 +9422,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("finalizable newobj spill"));
                         }
 
-                        const bool useParent = true;
-                        op1                  = gtNewAllocObjNode(&resolvedToken, info.compMethodHnd, useParent);
-                        if (op1 == nullptr)
+                        MethodTypeArgument allocatedType;
+                        bool               hasAllocatedType = impReadInlineMemberOwner(resolvedToken, &allocatedType);
+                        if (hasAllocatedType && compIsForInlining() && eeIsSharedInst(resolvedToken.hClass))
                         {
-                            return;
+                            GenTree* handle = impDeferredTypeExpression(allocatedType, resolvedToken.hClass);
+                            op1 = gtNewAllocObjNode(newHelper, hasSideEffects, resolvedToken.hClass, TYP_REF, handle);
+                        }
+                        else
+                        {
+                            op1 = gtNewAllocObjNode(&resolvedToken, info.compMethodHnd, /* useParent */ true);
+                            if (op1 == nullptr)
+                            {
+                                return;
+                            }
                         }
 
                         // Flag if this allocation happens within a method that uses the static empty
@@ -9251,10 +9483,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaTable[lclNum].lvSingleDef = 1;
                         JITDUMP("Marked V%02u as a single def local\n", lclNum);
                         lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+                        if (hasAllocatedType)
+                        {
+                            impRecordAllocatedType(lclNum, allocatedType);
+                        }
 
                         newObjThisPtr = gtNewLclvNode(lclNum, TYP_REF);
                     }
                 }
+#ifdef FEATURE_READYTORUN
+                if (delegateTarget != nullptr)
+                {
+                    assert(IsNativeAot() && (clsFlags & CORINFO_FLG_DELEGATE) && newObjThisPtr->OperIs(GT_LCL_VAR));
+                    GenTree*             receiver     = impPopStack().val;
+                    CORINFO_CLASS_HANDLE delegateType = info.compCompHnd->getMethodClass(callInfo.hMethod);
+                    GenTree* ctor = impNativeAotDelegateCtor(delegateType, delegateTarget, newObjThisPtr, receiver);
+                    if (ctor == nullptr)
+                    {
+                        return;
+                    }
+                    impAppendTree(ctor, CHECK_SPILL_ALL, impCurStmtDI);
+                    impPushOnStack(gtNewLclvNode(newObjThisPtr->AsLclVar()->GetLclNum(), TYP_REF),
+                                   typeInfo(resolvedToken.hClass));
+                    delegateTarget = nullptr;
+                    callTyp        = TYP_REF;
+                    break;
+                }
+#endif
                 goto CALL;
 
             case CEE_CALLI:
@@ -9824,7 +10079,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STFLD:
             case CEE_STSFLD:
             {
-                bool isStoreStatic = (opcode == CEE_STSFLD);
+                GenTree* forwardedOwner = nullptr;
+                bool     isStoreStatic  = (opcode == CEE_STSFLD);
 
                 /* Get the CP_Fieldref index */
 
@@ -9858,6 +10114,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+                            forwardedOwner = impTryForwardStaticFieldOwner(resolvedToken);
+                            if (forwardedOwner != nullptr)
+                            {
+                                break;
+                            }
+                            FALLTHROUGH;
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
@@ -9928,7 +10190,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
                         bool isHoistable;
                         op1 = impImportStaticFieldAddress(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
-                                                          lclTyp, &indirFlags, &isHoistable);
+                                                          lclTyp, &indirFlags, &isHoistable, forwardedOwner);
 
                         if (!isHoistable)
                         {
@@ -10477,7 +10739,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!IsAot())
+                bool matchesInlineType = impMatchesInlineType(impStackTop().val, resolvedToken);
+                if (!IsAot() && !matchesInlineType)
                 {
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
@@ -10492,7 +10755,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impPopStack().val;
 
-                GenTree* optTree = impOptimizeCastClassOrIsInst(op1, &resolvedToken, false);
+                // A successful isinst returns the original reference, including null.
+                GenTree* optTree = matchesInlineType ? op1 : impOptimizeCastClassOrIsInst(op1, &resolvedToken, false);
 
                 if (optTree != nullptr)
                 {
@@ -10988,6 +11252,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_CASTCLASS:
+            {
 
                 /* Get the Class index */
 
@@ -10997,7 +11262,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (!IsAot())
+                bool matchesInlineType = impMatchesInlineType(impStackTop().val, resolvedToken);
+                if (!IsAot() && !matchesInlineType)
                 {
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
@@ -11011,6 +11277,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(accessAllowedResult, &calloutHelper);
 
                 op1 = impPopStack().val;
+                if (matchesInlineType)
+                {
+                    impPushOnStack(op1, tiRetVal);
+                    break;
+                }
+            }
 
             /* Pop the address and create the 'checked cast' helper call */
 

@@ -459,6 +459,7 @@ enum GenTreeFlags : unsigned
     GTF_CALL_NONVIRT            = 0x00000000, // GT_CALL -- a non virtual call
     GTF_CALL_VIRT_STUB          = 0x10000000, // GT_CALL -- a stub-dispatch virtual call
     GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a  vtable-based virtual call
+    GTF_CALL_VIRT_GVM           = 0x30000000, // GT_CALL -- GVM awaiting import-time dispatch selection
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
@@ -5404,9 +5405,14 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+    bool IsPendingGvm() const
+    {
+        return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_GVM;
+    }
     bool IsGenericVirtual(Compiler* compiler) const
     {
-        return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+        return IsPendingGvm() ||
+               (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
                                               gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
                                               gtControlExpr->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN
@@ -9198,12 +9204,88 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 #endif
 };
 
+// Either a projection of a root method argument or a type expression in
+// that same context. The latter is prepared by the EE only if a use survives.
+struct MethodTypeArgument
+{
+    unsigned        index;
+    unsigned short  signatureSize;
+    unsigned short  depth;
+    PCCOR_SIGNATURE signature;
+
+    bool SameExpression(const MethodTypeArgument& other) const
+    {
+        return (signature != nullptr) && (signatureSize == other.signatureSize) &&
+               (memcmp(signature, other.signature, signatureSize) == 0);
+    }
+
+    static constexpr unsigned MaxDepth         = 32;
+    static constexpr unsigned MaxSignatureSize = 256;
+
+    static bool TryRead(Compiler*                     comp,
+                        const CORINFO_RESOLVED_TOKEN& source,
+                        PCCOR_SIGNATURE&              sig,
+                        unsigned&                     size,
+                        MethodTypeArgument*           result);
+};
+
+// An ordinary call can be re-resolved from its metadata identity. A
+// devirtualized MethodSpec names the declaration in IL and the override in its
+// resolved handles, so retain the token supplied by the EE for that case.
+struct DeferredHandleLookup
+{
+    enum class Kind : uint8_t
+    {
+        TypeExpression,
+        MethodExpression,
+        CallContext,
+        DevirtualizedMethodContext,
+    };
+
+    struct MethodExpression
+    {
+        CORINFO_METHOD_HANDLE method;
+        CORINFO_CLASS_HANDLE  owner;
+        MethodTypeArgument    ownerType;
+        PCCOR_SIGNATURE       methodSpec;
+        unsigned              methodSpecSize;
+        CorInfoTokenKind      tokenType;
+    };
+
+    union
+    {
+        struct
+        {
+            MethodTypeArgument     expression;
+            CORINFO_GENERIC_HANDLE compileTimeHandle;
+        } type;
+        MethodExpression* methodExpression;
+        struct
+        {
+            CORINFO_CONTEXT_HANDLE context;
+            CORINFO_MODULE_HANDLE  scope;
+            bool                   callVirt;
+        } il;
+        struct
+        {
+            CORINFO_RESOLVED_TOKEN* token;
+            CORINFO_METHOD_HANDLE   method;
+        } target;
+    };
+    CORINFO_METHOD_HANDLE caller;
+    mdToken               token;
+    Kind                  kind;
+    CORINFO_LOOKUP*       preparedLookup = nullptr;
+};
+
 // Represents GT_RUNTIMELOOKUP node
 
 struct GenTreeRuntimeLookup final : public GenTreeUnOp
 {
     CORINFO_GENERIC_HANDLE   gtHnd;
     CorInfoGenericHandleType gtHndType;
+    // While pending, gtOp1 supplies the input dictionary to the lookup.
+    DeferredHandleLookup* gtDeferredLookup = nullptr;
 
     GenTreeRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* tree)
         : GenTreeUnOp(GT_RUNTIMELOOKUP, tree->gtType, tree DEBUGARG(/*largeNode*/ FALSE))
@@ -9222,6 +9304,7 @@ struct GenTreeRuntimeLookup final : public GenTreeUnOp
     // Return reference to the actual tree that does the lookup
     GenTree*& Lookup()
     {
+        assert(gtDeferredLookup == nullptr);
         return gtOp1;
     }
 

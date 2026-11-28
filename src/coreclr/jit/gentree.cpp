@@ -321,6 +321,7 @@ void GenTree::InitNodeSize()
     static_assert(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeRuntimeLookup) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
@@ -2994,8 +2995,11 @@ AGAIN:
                     }
                     break;
 
-                // For the ones below no extra argument matters for comparison.
                 case GT_RUNTIMELOOKUP:
+                    if (op1->AsRuntimeLookup()->gtDeferredLookup != op2->AsRuntimeLookup()->gtDeferredLookup)
+                    {
+                        return false;
+                    }
                     break;
 
                 default:
@@ -11693,6 +11697,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
                 copy = new (this, GT_RUNTIMELOOKUP)
                     GenTreeRuntimeLookup(asRuntimeLookup->gtHnd, asRuntimeLookup->gtHndType, asRuntimeLookup->gtOp1);
+                copy->AsRuntimeLookup()->gtDeferredLookup = asRuntimeLookup->gtDeferredLookup;
             }
             break;
 
@@ -15196,11 +15201,18 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
             if (call->gtCallType != CT_INDIRECT)
             {
-                auto disp = [&]() {
+                if ((call->gtCallMethHnd == nullptr) && (call->gtDirectCallAddress != nullptr))
+                {
+                    // LowerVirtualStubCall rewrites an interface dispatch into a direct call to the
+                    // dispatch helper and clears the method handle. Describe it by its role and the
+                    // helper target rather than the absent method.
+                    printf(" [stub dispatch helper @ %p]", dspPtr(call->gtDirectCallAddress));
+                }
+                else
+                {
                     char buffer[256];
                     printf(" %s", eeGetMethodFullName(call->gtCallMethHnd, true, true, buffer, sizeof(buffer)));
-                };
-                disp();
+                }
             }
 
             if (call->IsAsync())
@@ -16362,8 +16374,23 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
 
     // Screen for the right kinds of operands
-    GenTree* const         op1     = tree->AsOp()->gtOp1;
-    GenTree* const         op2     = tree->AsOp()->gtOp2;
+    GenTree* const op1 = tree->AsOp()->gtOp1;
+    GenTree* const op2 = tree->AsOp()->gtOp2;
+    // Compare the root-relative type expressions before morph expands their dictionary lookups.
+    if (op1->OperIs(GT_RUNTIMELOOKUP) && op2->OperIs(GT_RUNTIMELOOKUP))
+    {
+        DeferredHandleLookup* left  = op1->AsRuntimeLookup()->gtDeferredLookup;
+        DeferredHandleLookup* right = op2->AsRuntimeLookup()->gtDeferredLookup;
+        if ((left != nullptr) && (right != nullptr) && (left->kind == DeferredHandleLookup::Kind::TypeExpression) &&
+            (right->kind == DeferredHandleLookup::Kind::TypeExpression) &&
+            left->type.expression.SameExpression(right->type.expression) &&
+            ((tree->gtFlags & (GTF_ALL_EFFECT & ~GTF_EXCEPT)) == 0) &&
+            GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+        {
+            return gtWrapWithSideEffects(gtNewIconNode(oper == GT_EQ), tree, GTF_OBS_EFFECT);
+        }
+    }
+
     const TypeProducerKind op1Kind = gtGetTypeProducerKind(op1);
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
 

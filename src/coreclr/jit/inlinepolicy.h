@@ -130,6 +130,11 @@ public:
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
     bool BudgetCheck() const override;
 
+    virtual bool MayFoldToEmpty() const
+    {
+        return false;
+    }
+
     virtual unsigned EstimatedTotalILSize() const
     {
         return m_CodeSize;
@@ -240,6 +245,11 @@ public:
     void NoteDouble(InlineObservation obs, double value) override;
 
     double DetermineMultiplier() override;
+
+    bool MayFoldToEmpty() const override
+    {
+        return (m_ThrowBlock == 1) && (m_FoldableBranch != 0) && (m_ArgIsConst != 0) && (m_BackwardJump == 0);
+    }
 
     unsigned EstimatedTotalILSize() const override;
 

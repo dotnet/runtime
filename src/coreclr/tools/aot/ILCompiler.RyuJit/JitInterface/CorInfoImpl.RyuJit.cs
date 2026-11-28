@@ -269,18 +269,20 @@ namespace Internal.JitInterface
             }
         }
 
-        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle,
+            ref CORINFO_LOOKUP lookup, bool useHelperIfSlotMissing = false)
         {
-            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup);
+            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup, useHelperIfSlotMissing);
         }
 
-        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle,
+            ref CORINFO_LOOKUP lookup, bool useHelperIfSlotMissing = false)
         {
             Debug.Assert(callerHandle != null);
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
-                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
+                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity, useHelperIfSlotMissing);
 
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
@@ -1193,6 +1195,10 @@ namespace Internal.JitInterface
             // properly.
             NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
+            pResult->canForwardTypeArguments = false;
+            pResult->canForwardMethodContext = false;
+            pResult->methodInstantiationOffset = 0;
+            pResult->instParamLookup = default;
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
@@ -1375,7 +1381,14 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
             }
 
-            if (directCall && resolvedConstraint && (pResult->exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
+            // A resolved non-generic method on the constrained value type needs only that type's
+            // context, which the EE supplies from the constrained token. Keep the call direct and
+            // inlinable instead of falling back to a fat function pointer, matching the CoreCLR VM.
+            bool canPassConstrainedTypeArg = allowInstParam && resolvedConstraint && !forceUseRuntimeLookup &&
+                                             !targetMethod.HasInstantiation && exactType.IsValueType &&
+                                             exactType == constrainedType;
+
+            if (directCall && resolvedConstraint && !canPassConstrainedTypeArg && (pResult->exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
             {
                 // We want to do a direct call to a shared method on a type. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
@@ -1401,11 +1414,15 @@ namespace Internal.JitInterface
                     lookupHelper = ReadyToRunHelperId.MethodEntry;
                 }
 
-                ComputeLookup(ref pResolvedToken,
-                    targetOfLookup,
-                    lookupHelper,
-                    HandleToObject(callerHandle),
-                    ref pResult->codePointerOrStubLookup);
+                if (_compilation.NeedsRuntimeLookup(lookupHelper, targetOfLookup))
+                {
+                    DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)lookupHelper,
+                        forceUseRuntimeLookup ? null : ObjectToHandle(runtimeDeterminedTarget));
+                }
+                else
+                {
+                    ComputeLookup(ref pResolvedToken, targetOfLookup, lookupHelper, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                }
 
                 targetIsFatFunctionPointer = true;
                 useFatCallTransform = true;
@@ -1434,14 +1451,7 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        MethodDesc caller = HandleToObject(callerHandle);
-
-                        pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                        pResult->codePointerOrStubLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
-                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        ISymbolNode helper = GetGenericLookupHelper(pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.MethodEntry, caller, helperArg);
-                        pResult->codePointerOrStubLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
+                        DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)ReadyToRunHelperId.MethodEntry, null);
                     }
                 }
                 else
@@ -1521,7 +1531,7 @@ namespace Internal.JitInterface
 
                     if (instParam != null)
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParam);
+                        pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(instParam);
                     }
 
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
@@ -1556,11 +1566,7 @@ namespace Internal.JitInterface
                 if (!_compilation.NeedsRuntimeLookup(constrainedHelperId, constrainedCallInfo))
                     ThrowHelper.ThrowTypeLoadException(constrainedType);
 
-                ComputeLookup(ref pResolvedToken,
-                    constrainedCallInfo,
-                    constrainedHelperId,
-                    HandleToObject(callerHandle),
-                    ref pResult->codePointerOrStubLookup);
+                DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)constrainedHelperId, null);
 
                 targetIsFatFunctionPointer = true;
                 useFatCallTransform = true;
@@ -1619,12 +1625,15 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    ComputeLookup(ref pResolvedToken,
-                        GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
-                        ReadyToRunHelperId.DispatchCell,
-                        HandleToObject(callerHandle),
-                        ref pResult->codePointerOrStubLookup);
-                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                    object dispatchTarget = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                    if (isWasm)
+                    {
+                        ComputeLookup(ref pResolvedToken, dispatchTarget, ReadyToRunHelperId.DispatchCell, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                    }
+                    else
+                    {
+                        DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)ReadyToRunHelperId.DispatchCell, (void*)ObjectToHandle(dispatchTarget));
+                    }
                 }
                 else
                 {
@@ -1698,6 +1707,11 @@ namespace Internal.JitInterface
             targetIsFatFunctionPointer |= (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !(pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL);
 
             Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, scope: null, targetIsFatFunctionPointer);
+            if ((pResult->sig.callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0 && pResult->exactContextNeedsRuntimeLookup)
+            {
+                pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+                pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            }
             if (useFatCallTransform)
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
@@ -1719,6 +1733,28 @@ namespace Internal.JitInterface
             {
                 ppIndirection = null;
                 return result;
+            }
+        }
+
+        private void PrepareCodePointerOrStubLookup(ref CORINFO_RESOLVED_TOKEN token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+            MethodDesc caller, ref CORINFO_LOOKUP lookup)
+        {
+            ReadyToRunHelperId helper = (ReadyToRunHelperId)lookup.runtimeLookup.helper;
+            void* target = lookup.runtimeLookup.signature;
+            lookup = default;
+            if (helper == ReadyToRunHelperId.ConstrainedDirectCall)
+            {
+                var constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *constrainedToken);
+                var method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref token);
+                ComputeLookup(ref token, new ConstrainedCallInfo(constrainedType, method), helper, caller, ref lookup);
+            }
+            else
+            {
+                bool fatLdftn = target == null;
+                Debug.Assert(!fatLdftn || (helper == ReadyToRunHelperId.MethodEntry && token.tokenContext == contextFromMethodBeingCompiled()));
+                object entity = fatLdftn ? GetRuntimeDeterminedObjectForToken(ref token) : HandleToObject(target);
+                // The scanner may have predicted only the delegate helper for a fat ldftn.
+                ComputeLookup(ref token, entity, helper, caller, ref lookup, useHelperIfSlotMissing: fatLdftn);
             }
         }
 

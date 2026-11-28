@@ -205,6 +205,7 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
         CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
+        CORINFO_LOOKUP_DEFERRED,      // Completed by prepareCallLookups before materialization
     }
 
     public unsafe struct CORINFO_LOOKUP_KIND
@@ -1156,13 +1157,18 @@ namespace Internal.JitInterface
 
         public byte _exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
         public bool exactContextNeedsRuntimeLookup { get { return _exactContextNeedsRuntimeLookup != 0; } set { _exactContextNeedsRuntimeLookup = value ? (byte)1 : (byte)0; } }
+        private byte _canForwardTypeArguments;
+        public bool canForwardTypeArguments { get { return _canForwardTypeArguments != 0; } set { _canForwardTypeArguments = value ? (byte)1 : (byte)0; } }
+        private byte _canForwardMethodContext;
+        public bool canForwardMethodContext { get { return _canForwardMethodContext != 0; } set { _canForwardMethodContext = value ? (byte)1 : (byte)0; } }
+        public ushort methodInstantiationOffset;
 
         // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
         // If kind.CORINFO_CALL_CODE_POINTER then entryPointLookup will be set.
         public CORINFO_LOOKUP codePointerOrStubLookup;
 
         // Used by Ready-to-Run
-        public CORINFO_CONST_LOOKUP instParamLookup;
+        public CORINFO_LOOKUP instParamLookup;
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1211,6 +1217,7 @@ namespace Internal.JitInterface
         //   an R2R image.
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
         //   the devirtualized method or its unboxed entry point.
+        //   A deferred lookup is prepared using the resolved target token if devirtualization is accepted.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* tokenLookupContext;
@@ -1497,6 +1504,15 @@ namespace Internal.JitInterface
 
         // token comes from resolved static virtual method
         CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
+
+        CORINFO_TOKENKIND_MethodExpression = 0x10000 | CORINFO_TOKENKIND_Method,
+        CORINFO_TOKENKIND_MethodEntryExpression = 0x20000 | CORINFO_TOKENKIND_Method,
+        CORINFO_TOKENKIND_DispatchStubExpression = 0x40000 | CORINFO_TOKENKIND_Method,
+        CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
+
+        // Resolve a TypeDef/TypeRef for use as a named type in a root TypeExpression.
+        // A null hClass means the root dictionary cannot safely retain this definition.
+        CORINFO_TOKENKIND_TypeExpressionDefinition = 0x8000 | CORINFO_TOKENKIND_Class,
 
         // token comes from runtime async awaiting pattern
         CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,

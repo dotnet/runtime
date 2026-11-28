@@ -393,7 +393,10 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORDLONG                     contextHandle;
     DWORD                         exactContextNeedsRuntimeLookup;
     Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
-    Agnostic_CORINFO_CONST_LOOKUP instParamLookup;
+    Agnostic_CORINFO_LOOKUP instParamLookup;
+    BYTE canForwardTypeArguments;
+    BYTE canForwardMethodContext;
+    WORD methodInstantiationOffset;
     DWORD                         exceptionCode;
 };
 
@@ -472,6 +475,15 @@ struct Agnostic_EmbedGenericHandle
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
     DWORDLONG                       hCallerHandle;
     DWORD                           fEmbedParent;
+};
+
+struct Agnostic_PrepareCallLookups
+{
+    Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
+    Agnostic_CORINFO_RESOLVED_TOKEN ConstrainedResolvedToken;
+    DWORDLONG context;
+    DWORDLONG callerHandle;
+    DWORD callKind;
 };
 
 struct Agnostic_ExpandRawHandleIntrinsic

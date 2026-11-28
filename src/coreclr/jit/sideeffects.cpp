@@ -34,6 +34,10 @@ void LclVarSet::Add(Compiler* compiler, unsigned lclNum)
     {
         if (!m_hasBitVector)
         {
+            if (m_lclNum == lclNum)
+            {
+                return;
+            }
             unsigned singleLclNum = m_lclNum;
             m_bitVector           = hashBv::Create(compiler);
             m_bitVector->setBit(singleLclNum);
@@ -301,6 +305,13 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
         return GenTree::VisitResult::Continue;
     });
 
+    AddNodeInfo(compiler, node);
+}
+
+// Record just the operation. HIR reads locals at their own nodes; LIR
+// additionally handles local operands and containment in AddNode.
+void AliasSet::AddNodeInfo(Compiler* compiler, GenTree* node)
+{
     NodeInfo nodeInfo(compiler, node);
     if (nodeInfo.ReadsAddressableLocation())
     {
@@ -544,6 +555,43 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
     m_sideEffectFlags |= operEffects;
     m_preciseExceptions |= preciseExceptions;
     m_aliasSet.AddNode(compiler, node);
+}
+
+// Can the operation's effects be summarized by OperEffects and AddNodeInfo,
+// with each operand evaluated explicitly by the tree walk?
+static bool CanSummarizeArgumentNode(Compiler* compiler, GenTree* tree)
+{
+    if (tree->IsCall())
+    {
+        return tree->IsHelperCall() && tree->AsCall()->IsPure(compiler) &&
+               !tree->AsCall()->HasSideEffects(compiler, false);
+    }
+    if (tree->OperIsIndir())
+    {
+        return (tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_INITCLASS)) == 0;
+    }
+    if (tree->OperIs(GT_FIELD_ADDR))
+    {
+        return tree->AsFieldAddr()->IsInstance();
+    }
+    return tree->OperIsNonPhiLocal() || tree->OperIsConst() || GenTree::OperIsArrMetaData(tree->OperGet()) ||
+           tree->OperIs(GT_LCL_ADDR, GT_COMMA, GT_ADD, GT_SUB, GT_MUL, GT_CAST, GT_BITCAST, GT_BOUNDS_CHECK);
+}
+
+bool SideEffectSet::TryAddTree(Compiler* compiler, GenTree* tree, unsigned& budget)
+{
+    if ((budget == 0) || !CanSummarizeArgumentNode(compiler, tree))
+    {
+        return false;
+    }
+    --budget;
+    ExceptionSetFlags exceptions;
+    m_sideEffectFlags |= tree->OperEffects(compiler, &exceptions);
+    m_preciseExceptions |= exceptions;
+    m_aliasSet.AddNodeInfo(compiler, tree);
+    return tree->VisitOperands([&](GenTree* operand) {
+        return TryAddTree(compiler, operand, budget) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
+    }) == GenTree::VisitResult::Continue;
 }
 
 //------------------------------------------------------------------------

@@ -23,6 +23,36 @@ public class MainApp
         }
     }
 
+    private static int s_guardEffects;
+
+    private static void Validate(int value)
+    {
+        if (value < 0 && value != -1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), value, string.Format("Expected {0} through {1}", -1, int.MaxValue));
+        }
+    }
+
+    private static void ValidateAndCount(int value)
+    {
+        if (value < 0 && value != -1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), value, string.Format("Expected {0} through {1}", -1, int.MaxValue));
+        }
+        s_guardEffects += value;
+    }
+
+    [Fact]
+    public static void ConstantGuard()
+    {
+        Validate(-1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => Validate(-2));
+
+        int before = s_guardEffects;
+        ValidateAndCount(5);
+        Assert.Equal(before + 5, s_guardEffects);
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {

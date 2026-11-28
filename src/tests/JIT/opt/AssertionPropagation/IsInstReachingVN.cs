@@ -73,6 +73,40 @@ public class IsInstReachingVN
         return bc is BaseClass;
     }
 
+    private sealed class Source<T> where T : class
+    {
+        public object Value;
+        public int Reads;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private object Read()
+        {
+            Reads++;
+            return Value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public T Match() => Read() is T value ? value : null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public U CastMatch<U>() where U : class => (U)(object)(Read() as T);
+    }
+
+    [Fact]
+    public static void CastAfterIsInst()
+    {
+        var source = new Source<BaseClass> { Value = new DerivedClass1() };
+        Assert.Same(source.Value, source.Match());
+        Assert.Same(source.Value, source.CastMatch<DerivedClass1>());
+        Assert.Throws<InvalidCastException>(() => source.CastMatch<DerivedClass2>());
+
+        source.Value = new Unrelated();
+        Assert.Null(source.Match());
+        Assert.Null(source.CastMatch<DerivedClass2>());
+        Assert.Equal(5, source.Reads);
+        Assert.Throws<NullReferenceException>(() => ((Source<BaseClass>)null).Match());
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {

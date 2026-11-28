@@ -751,6 +751,17 @@ private:
             const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
             GenTree* const value  = tree->AsLclVarCommon()->Data();
 
+            // Sharing a return spill temp can produce Vn = Vn. Remove it before propagating the source's type facts.
+            //
+            if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
+            {
+                JITDUMP("... removing self-store\n");
+                DISPTREE(tree);
+                tree->gtBashToNOP();
+                m_madeChanges = true;
+                return;
+            }
+
             // If we're storing to a ref typed local that has one definition,
             // we may be able to sharpen the type for the local.
             if (tree->TypeIs(TYP_REF))
@@ -770,17 +781,15 @@ private:
 
                     m_madeChanges                    = true;
                     m_compiler->hasUpdatedTypeLocals = true;
-                }
-            }
 
-            // If we created a self-store (say because we are sharing return spill temps) we can remove it.
-            //
-            if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
-            {
-                JITDUMP("... removing self-store\n");
-                DISPTREE(tree);
-                tree->gtBashToNOP();
-                m_madeChanges = true;
+                    MethodTypeArgument* type = m_compiler->impLocalTypeExpression(value);
+                    if ((type != nullptr) && !lcl->lvIsParam && !lcl->lvHasLdAddrOp && !lcl->IsAddressExposed())
+                    {
+                        // Set may grow the map that owns the source entry.
+                        MethodTypeArgument copy = *type;
+                        m_compiler->impLocalTypeExpressions->Set(lclNum, copy);
+                    }
+                }
             }
         }
         else if (tree->OperIs(GT_JTRUE))
@@ -952,6 +961,181 @@ public:
 
 #endif // DEBUG
 
+// Before morph expands dictionary lookups, revisit casts whose inputs were still
+// return placeholders or merge temps during import. Keep the ordinary cast tree
+// when any reaching definition is unknown.
+class InlineTypeCheckWalker final : public GenTreeVisitor<InlineTypeCheckWalker>
+{
+    struct Definition
+    {
+        GenTree*    value;
+        BasicBlock* block;
+        unsigned    statement;
+        Definition* next;
+    };
+    struct Local
+    {
+        Definition* stores;
+        bool        unknown;
+    };
+    Local*      m_locals;
+    BasicBlock* m_block     = nullptr;
+    Statement*  m_stmt      = nullptr;
+    unsigned    m_statement = 0;
+    bool        m_collect   = true;
+    bool        m_changed   = false;
+
+    bool Holds(unsigned                  num,
+               BasicBlock*               block,
+               unsigned                  before,
+               const MethodTypeArgument& target,
+               unsigned&                 budget,
+               bool&                     joined)
+    {
+        if ((budget == 0) || m_locals[num].unknown || m_compiler->lvaGetDesc(num)->IsAddressExposed() ||
+            m_compiler->lvaGetDesc(num)->lvHasLdAddrOp)
+        {
+            return false;
+        }
+        --budget;
+        for (Definition* def = m_locals[num].stores; def != nullptr; def = def->next)
+        {
+            if (budget == 0)
+            {
+                return false;
+            }
+            --budget;
+            if ((def->block != block) || (def->statement >= before))
+            {
+                continue;
+            }
+            GenTree* value = def->value->gtEffectiveVal();
+            if (value->OperIs(GT_ALLOCOBJ))
+            {
+                MethodTypeArgument* fact = m_compiler->impLocalTypeExpressions->LookupPointer(num);
+                return m_compiler->lvaGetDesc(num)->lvSingleDef && (fact != nullptr) && fact->SameExpression(target);
+            }
+            return value->OperIs(GT_LCL_VAR) && value->TypeIs(TYP_REF) &&
+                   Holds(value->AsLclVar()->GetLclNum(), block, def->statement, target, budget, joined);
+        }
+        if ((block == m_compiler->fgFirstBB) || !m_compiler->fgPredsComputed || (block->bbPreds == nullptr))
+        {
+            return false;
+        }
+        joined |= block->bbPreds->getNextPredEdge() != nullptr;
+        for (FlowEdge* pred : block->PredEdges())
+        {
+            if (!Holds(num, pred->getSourceBlock(), UINT_MAX, target, budget, joined))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+public:
+    enum
+    {
+        DoPostOrder = true
+    };
+    InlineTypeCheckWalker(Compiler* compiler)
+        : GenTreeVisitor(compiler)
+    {
+        m_locals = compiler->getAllocator(CMK_Inlining).allocate<Local>(compiler->lvaCount);
+        memset(m_locals, 0, sizeof(Local) * compiler->lvaCount);
+    }
+
+    bool Run()
+    {
+        for (unsigned pass = 0; pass < 2; pass++)
+        {
+            m_collect   = pass == 0;
+            m_statement = 0;
+            for (BasicBlock* block : m_compiler->Blocks())
+            {
+                m_block = block;
+                for (Statement* stmt : block->Statements())
+                {
+                    m_stmt = stmt;
+                    m_statement++;
+                    WalkTree(stmt->GetRootNodePointer(), nullptr);
+                }
+            }
+        }
+        return m_changed;
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* parent)
+    {
+        GenTree* tree = *use;
+        if (m_collect)
+        {
+            if (tree->OperIs(GT_LCL_ADDR, GT_STORE_LCL_FLD, GT_STORE_LCL_VAR) ||
+                (tree->OperIsLocal() && ((tree->gtFlags & GTF_VAR_DEF) != 0)))
+            {
+                Local& local = m_locals[tree->AsLclVarCommon()->GetLclNum()];
+                if ((parent != nullptr) || !tree->OperIs(GT_STORE_LCL_VAR) || !tree->TypeIs(TYP_REF))
+                {
+                    local.unknown = true;
+                }
+                else
+                {
+                    local.stores = new (m_compiler, CMK_Inlining)
+                        Definition{tree->AsLclVar()->Data(), m_block, m_statement, local.stores};
+                }
+            }
+        }
+        else if (tree->OperIs(GT_CALL, GT_NE))
+        {
+            Compiler::InlineTypeCheck* check = m_compiler->impTypeChecks->LookupPointer(tree);
+            if (check == nullptr)
+            {
+                return fgWalkResult::WALK_CONTINUE;
+            }
+            GenTree* value;
+            if (tree->IsHelperCall() && (tree->AsCall()->GetHelperNum() == check->helper) &&
+                (tree->AsCall()->gtArgs.GetUserArgByIndex(0)->GetEarlyNode() == check->handle))
+            {
+                value = tree->AsCall()->gtArgs.GetUserArgByIndex(1)->GetEarlyNode();
+            }
+            else if (tree->OperIs(GT_NE) && (check->helper == CORINFO_HELP_UNDEF) && tree->gtGetOp1()->OperIs(GT_IND) &&
+                     (tree->gtGetOp2() == check->handle))
+            {
+                value = tree->gtGetOp1()->AsIndir()->Addr();
+            }
+            else
+            {
+                return fgWalkResult::WALK_CONTINUE;
+            }
+            unsigned budget = 64;
+            bool     joined = false;
+            if (value->OperIs(GT_LCL_VAR) && value->TypeIs(TYP_REF) &&
+                Holds(value->AsLclVar()->GetLclNum(), m_block, m_statement, check->target, budget, joined))
+            {
+                *use = tree->OperIs(GT_CALL) ? value : m_compiler->gtNewZeroConNode(TYP_INT);
+                m_compiler->gtUpdateStmtSideEffects(m_stmt);
+                m_compiler->Metrics.InlineTypeLateFold++;
+                if (joined)
+                {
+                    m_compiler->Metrics.InlineTypeJoinFold++;
+                }
+                m_changed = true;
+            }
+        }
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+bool Compiler::fgFoldInlineTypeChecks()
+{
+    if ((impTypeChecks == nullptr) || (impLocalTypeExpressions == nullptr) || opts.IsOSR() || (compHndBBtabCount != 0))
+    {
+        return false;
+    }
+    InlineTypeCheckWalker walker(this);
+    return walker.Run();
+}
+
 PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
@@ -1078,6 +1262,7 @@ PhaseStatus Compiler::fgInline()
     } while (block);
 
     madeChanges |= walker.MadeChanges();
+    madeChanges |= fgFoldInlineTypeChecks();
 
 #ifdef DEBUG
 
@@ -1330,6 +1515,10 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
         for (unsigned i = startVars; i < lvaCount; i++)
         {
             new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
+            if (impLocalTypeExpressions != nullptr)
+            {
+                impLocalTypeExpressions->Remove(i);
+            }
         }
 
         // Reset local var count and max bb num
@@ -2178,6 +2367,54 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     iciStmt->SetRootNode(gtNewNothingNode());
 }
 
+// Does completing this expression require a non-null value for the given local?
+// The caller excludes writes and calls so that the local cannot change in the expression.
+static bool DereferencesLocal(Compiler* compiler, GenTree* tree, unsigned lclNum, unsigned& budget)
+{
+    if ((budget == 0) || ((tree->gtFlags & GTF_EXCEPT) == 0) ||
+        tree->OperIs(GT_QMARK, GT_COLON, GT_SELECT, GT_RET_EXPR))
+    {
+        return false;
+    }
+    --budget;
+    if (compiler->gtImplicitNullCheckLocal(tree) == lclNum)
+    {
+        return true;
+    }
+    for (GenTree* operand : tree->Operands())
+    {
+        if (DereferencesLocal(compiler, operand, lclNum, budget))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// An unused method-table load from this only needs its null check. If the
+// preceding argument evaluation already checked that local, appending another
+// statement here can separate a single-use temp from its consumer.
+static bool PreviousArgumentChecksContext(Compiler* compiler, Statement* previous, GenTree* effects)
+{
+    if (!effects->OperIs(GT_IND) || ((effects->gtFlags & GTF_IND_INVARIANT) == 0) || effects->AsIndir()->IsVolatile())
+    {
+        return false;
+    }
+    GenTree* obj   = effects->gtGetOp1();
+    GenTree* store = previous->GetRootNode();
+    if (!obj->OperIs(GT_LCL_VAR) || !obj->TypeIs(TYP_REF) || ((obj->gtFlags & GTF_VAR_CONTEXT) == 0) ||
+        !store->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+    unsigned   num    = obj->AsLclVar()->GetLclNum();
+    LclVarDsc* local  = compiler->lvaGetDesc(num);
+    GenTree*   value  = store->AsLclVarCommon()->Data();
+    unsigned   budget = 16;
+    return (store->AsLclVarCommon()->GetLclNum() != num) && !local->lvHasLdAddrOp && !local->IsAddressExposed() &&
+           ((value->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) && DereferencesLocal(compiler, value, num, budget);
+}
+
 //------------------------------------------------------------------------
 // fgInsertInlineeArgument: wire up the given argument from the callsite with the inlinee
 //
@@ -2268,23 +2505,10 @@ void Compiler::fgInsertInlineeArgument(
             }
             else
             {
-                // In some special cases, unused args with side effects can
-                // trigger further changes.
-                //
-                // (1) If the arg is a static field access and the field access
-                // was produced by a call to EqualityComparer<T>.get_Default, the
-                // helper call to ensure the field has a value can be suppressed.
-                // This helper call is marked as a "Special DCE" helper during
-                // importation, over in fgGetStaticsCCtorHelper.
-                //
-                // (2) NYI. If we find that the actual arg expression
-                // has no side effects, we can skip appending all
-                // together. This will help jit TP a bit.
-                //
+                // A static field access produced by EqualityComparer<T>.get_Default can also
+                // discard the class initialization marked for special DCE by fgGetStaticsCCtorHelper.
                 assert(!argNode->OperIs(GT_RET_EXPR));
 
-                // For case (1)
-                //
                 // Look for the following tree shapes
                 // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
                 // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
@@ -2336,7 +2560,20 @@ void Compiler::fgInsertInlineeArgument(
                 // just append the arg node as an unused value.
                 if (*newStmt == nullptr)
                 {
-                    *newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
+                    // Extract effects before morph materializes any deferred generic lookups.
+                    // This also preserves a faulting context input when the lookup itself is unused.
+                    GenTree* effects = nullptr;
+                    gtExtractSideEffList(argNode, &effects, GTF_OBS_EFFECT);
+                    if (effects == nullptr)
+                    {
+                        return;
+                    }
+                    if ((arg->GetWellKnownArg() == WellKnownArg::InstParam) &&
+                        PreviousArgumentChecksContext(this, *afterStmt, effects))
+                    {
+                        return;
+                    }
+                    *newStmt = gtNewStmt(gtUnusedValNode(effects), callDI);
                 }
 
                 fgInsertStmtAfter(block, *afterStmt, *newStmt);
@@ -2940,7 +3177,7 @@ PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
                 m_result = tree->AsCall();
                 return WALK_ABORT;
             }
-            return WALK_CONTINUE;
+            return fgWalkResult::WALK_CONTINUE;
         }
     };
 

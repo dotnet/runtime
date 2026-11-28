@@ -1181,6 +1181,7 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_METHODPARAM,
     CORINFO_LOOKUP_CLASSPARAM,
     CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
+    CORINFO_LOOKUP_DEFERRED,      // Completed by prepareCallLookups before materialization
 };
 
 struct CORINFO_LOOKUP_KIND
@@ -1496,6 +1497,18 @@ enum CorInfoTokenKind
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
 
+    // A resolved method template with its owner and MethodSpec expressed in the root context.
+    CORINFO_TOKENKIND_MethodExpression = 0x10000 | CORINFO_TOKENKIND_Method,
+    CORINFO_TOKENKIND_MethodEntryExpression = 0x20000 | CORINFO_TOKENKIND_Method,
+    CORINFO_TOKENKIND_DispatchStubExpression = 0x40000 | CORINFO_TOKENKIND_Method,
+
+    // Signature-only query to embedGenericHandle in the root method context.
+    CORINFO_TOKENKIND_TypeExpression = 0x4000 | CORINFO_TOKENKIND_Class,
+
+    // Resolve a TypeDef/TypeRef for use as a named type in a root TypeExpression.
+    // A null hClass means the root dictionary cannot safely retain this definition.
+    CORINFO_TOKENKIND_TypeExpressionDefinition = 0x8000 | CORINFO_TOKENKIND_Class,
+
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
 };
@@ -1557,9 +1570,16 @@ struct CORINFO_CALL_INFO
     // Context for inlining and hidden arg
     CORINFO_CONTEXT_HANDLE  contextHandle;
     bool                    exactContextNeedsRuntimeLookup; // Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.
+    // The token can supply argument bindings for inlining. An override supplies its own declaring type.
+    bool canForwardTypeArguments;
+    // The root dictionary can retain the method template for a composed context, callable entry or dispatch stub.
+    bool canForwardMethodContext;
+    // Only for method contexts: offset of the argument vector from the caller's MethodDesc.
+    unsigned short methodInstantiationOffset;
 
     // If kind.CORINFO_VIRTUALCALL_STUB then stubLookup will be set.
-    // If kind.CORINFO_CALL_CODE_POINTER then entryPointLookup will be set.
+    // If kind.CORINFO_CALL_CODE_POINTER then codePointerLookup will be set.
+    // Either lookup may require prepareCallLookups before materialization.
     union
     {
         CORINFO_LOOKUP      stubLookup;
@@ -1567,7 +1587,9 @@ struct CORINFO_CALL_INFO
         CORINFO_LOOKUP      codePointerLookup;
     };
 
-    CORINFO_CONST_LOOKUP    instParamLookup;
+    // Lookup for the hidden instantiation argument when sig.hasTypeArg().
+    // Runtime-dependent lookups are populated by prepareCallLookups, after intrinsic expansion.
+    CORINFO_LOOKUP          instParamLookup;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1616,6 +1638,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     //   an R2R image.
     // - instParamLookup contains all the information necessary to pass the instantiation parameter for
     //   the devirtualized method or its unboxed entry point.
+    //   A deferred lookup is prepared using the resolved target token if devirtualization is accepted.
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          tokenLookupContext;
@@ -3373,6 +3396,15 @@ public:
     // code is shared and the token contains generic parameters)
     // then indicate how the handle should be looked up at run-time.
     //
+    // A TypeExpression supplies pTypeSpec/cbTypeSpec in the caller's scope
+    // without a metadata token. Metadata tokens are relative to tokenScope. A named type from
+    // another scope may instead be encoded using INTERNAL and the opaque class handle
+    // returned by resolveToken(TypeExpressionDefinition).
+    // A MethodExpression additionally supplies pMethodSpec in that same context and the
+    // resolved hMethod/hClass of a call for which getCallInfo set canForwardMethodContext.
+    // MethodEntryExpression uses the same inputs to obtain the callable entry for ldftn.
+    // DispatchStubExpression requests the dispatch cell for a non-generic interface method
+    // using its resolved template and the composed interface TypeSpec.
     CORINFO_VIRTUAL void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle
@@ -3420,6 +3452,8 @@ public:
             ) CORINFO_PURE;
 
     // Returns instructions on how to make the call. See code:CORINFO_CALL_INFO for possible return values.
+    // Resolves the target and its signature. Call prepareCallLookups if a deferred
+    // lookup survives optimization and needs to be materialized.
     CORINFO_VIRTUAL void getCallInfo(
             // Token info (in)
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -3435,6 +3469,18 @@ public:
 
             // out params
             CORINFO_CALL_INFO       *pResult
+            ) CORINFO_PURE;
+
+    // Completes the runtime-dependent lookups of a call: instParamLookup for a call
+    // with sig.hasTypeArg() and exactContextNeedsRuntimeLookup, codePointerLookup for
+    // CORINFO_CALL_CODE_POINTER, or stubLookup for CORINFO_VIRTUALCALL_STUB.
+    // Other call information is unchanged.
+    // The tokens and caller must match the getCallInfo query that produced pCallInfo.
+    CORINFO_VIRTUAL void prepareCallLookups(
+            CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+            CORINFO_RESOLVED_TOKEN*       pConstrainedResolvedToken,
+            CORINFO_METHOD_HANDLE        callerHandle,
+            CORINFO_CALL_INFO*            pCallInfo
             ) CORINFO_PURE;
 
     //------------------------------------------------------------------------------

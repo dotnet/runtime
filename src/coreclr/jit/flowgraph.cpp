@@ -539,11 +539,21 @@ PhaseStatus Compiler::fgImport()
     //
     // Note this includes (to some extent) the impact of importer folded
     // branches, provided the folded tree covered the entire block's IL.
+    bool mustFoldToEmpty = compIsForInlining() && compInlineResult->IsCandidate() &&
+                           (compInlineResult->GetObservation() == InlineObservation::CALLSITE_MAY_FOLD_TO_EMPTY);
     unsigned importedILSize = 0;
     for (BasicBlock* const block : Blocks())
     {
         if (block->HasFlag(BBF_IMPORTED))
         {
+            // A guard that exceeded the normal budget is only profitable if
+            // the constant argument eliminated all its work.
+            if (mustFoldToEmpty && (!block->KindIs(BBJ_ALWAYS, BBJ_RETURN) || !block->isEmpty()))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+                impInlineRoot()->m_inlineStrategy->NoteUnprofitable();
+                mustFoldToEmpty = false;
+            }
             // Assume if we generate any IR for the block we generate IR for the entire block.
             if (block->firstStmt() != nullptr)
             {
@@ -1141,38 +1151,12 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             {
                 JITDUMP("optimized\n");
 
-                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetNode();
-                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
-                CORINFO_LOOKUP pLookup;
-                info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                                  clsHnd, info.compMethodHnd, &pLookup);
-                if (!pLookup.lookupKind.needsRuntimeLookup)
+                GenTree*     thisPointer       = call->gtArgs.GetThisArg()->GetNode();
+                GenTree*     targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
+                GenTreeCall* helper = impNativeAotDelegateCtor(clsHnd, ldftnToken, thisPointer, targetObjPointers);
+                if (helper != nullptr)
                 {
-                    call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                               targetObjPointers);
-                    call->setEntryPoint(pLookup.constLookup);
-                }
-                else
-                {
-                    assert(oper != GT_FTN_ADDR);
-
-                    if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
-                    {
-                        assert((pLookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
-                               (pLookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
-                        GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                        call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                                   targetObjPointers, ctxTree);
-                        call->setEntryPoint(pLookup.runtimeLookup.helperEntryPoint);
-                    }
-                    else
-                    {
-                        // Runtime does not support inlining of all shapes of runtime lookups
-                        // Inlining has to be aborted in such a case
-                        assert(compIsForInlining());
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
-                        JITDUMP("not optimized, generic inlining restriction\n");
-                    }
+                    call = helper;
                 }
             }
             else

@@ -2114,6 +2114,9 @@ namespace Internal.JitInterface
             // properly.
             NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
+            pResult->canForwardTypeArguments = false;
+            pResult->canForwardMethodContext = false;
+            pResult->methodInstantiationOffset = 0;
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);
@@ -2176,6 +2179,7 @@ namespace Internal.JitInterface
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
+            bool resolvedOnConstrainedValueType = false;
 
             MethodDesc methodAfterConstraintResolution = originalMethod;
             if (constrainedType == null)
@@ -2248,6 +2252,12 @@ namespace Internal.JitInterface
                     exactType = (isStaticVirtual && dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
                         ? directMethod.OwningType
                         : constrainedType;
+
+                    // Capture whether the implementation is a non-generic method on the constrained
+                    // value type itself before constrainedType is cleared for static virtuals below.
+                    resolvedOnConstrainedValueType = !forceUseRuntimeLookup && !directMethod.HasInstantiation &&
+                                                     constrainedType.IsValueType && exactType == constrainedType;
+
                     if (isStaticVirtual)
                     {
                         pResolvedToken.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod;
@@ -2418,7 +2428,13 @@ namespace Internal.JitInterface
                 // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
                 // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
                 // sensitive.
-                if (isStaticVirtual && pResult->exactContextNeedsRuntimeLookup)
+                // A resolved non-generic method on the constrained value type needs only that type's
+                // context, which the EE supplies from the constrained token. Keep the call direct and
+                // inlinable instead of a fat function pointer, matching the CoreCLR VM. The resolved
+                // target is in the version bubble, so the direct call stays version resilient.
+                bool canPassConstrainedTypeArg = allowInstParam && resolvedConstraint && resolvedOnConstrainedValueType;
+
+                if (isStaticVirtual && pResult->exactContextNeedsRuntimeLookup && !canPassConstrainedTypeArg)
                 {
                     allowInstParam = false;
                 }
@@ -2457,7 +2473,7 @@ namespace Internal.JitInterface
                     // to have an unlimited number of constructors to cover stuff like "int[][][][][][]..."
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 }
-                else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
+                else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || (resolvedConstraint && !canPassConstrainedTypeArg))) || forceUseRuntimeLookup)
                 {
                     if (unresolvedLdVirtFtn)
                     {
@@ -2479,7 +2495,7 @@ namespace Internal.JitInterface
                             useInstantiatingStub = true;
                         }
 
-                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                        DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)entryKind, ObjectToHandle(originalMethod));
                     }
                 }
                 else
@@ -2515,7 +2531,7 @@ namespace Internal.JitInterface
                     if (pResult->exactContextNeedsRuntimeLookup)
                     {
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                        ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.ConstrainedMethodEntrySlot, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                        DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)DictionaryEntryKind.ConstrainedMethodEntrySlot, ObjectToHandle(originalMethod));
                         useInstantiatingStub = true;
                     }
                     else
@@ -2562,7 +2578,7 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                    DeferCallLookup(ref pResult->codePointerOrStubLookup, (int)DictionaryEntryKind.DispatchStubAddrSlot, ObjectToHandle(originalMethod));
                 }
                 else
                 {
@@ -2883,41 +2899,37 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(pResult->kind.ToString());
             }
 
-            if (pResult->sig.hasTypeArg())
+            pResult->instParamLookup = default;
+            if (pResult->sig.hasTypeArg() && pResult->exactContextNeedsRuntimeLookup)
             {
-                if (pResult->exactContextNeedsRuntimeLookup)
+                pResult->instParamLookup.lookupKind.needsRuntimeLookup = true;
+                pResult->instParamLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_DEFERRED;
+            }
+            else if (pResult->sig.hasTypeArg())
+            {
+                MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (canonMethod.RequiresInstMethodDescArg())
                 {
-                    // Nothing to do... The generic handle lookup gets embedded in to the codegen
-                    // during the jitting of the call.
-                    // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
-                    // codegen emitted at crossgen time)
+                    pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
                 }
                 else
                 {
-                    MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (canonMethod.RequiresInstMethodDescArg())
+                    ISymbolNode instParamLookup;
+                    if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
                     {
-                        pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
+                        instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.DeclaringTypeHandle,
+                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
                     }
                     else
                     {
-                        ISymbolNode instParamLookup;
-                        if (targetMethod.OwningType == exactType && !CanEncodeTypeInSignature(exactType))
-                        {
-                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.DeclaringTypeHandle,
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
-                        }
-                        else
-                        {
-                            instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.TypeDictionary,
-                                exactType);
-                        }
-                        pResult->instParamLookup = CreateConstLookupToSymbol(instParamLookup);
+                        instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.TypeDictionary,
+                            exactType);
                     }
+                    pResult->instParamLookup.constLookup = CreateConstLookupToSymbol(instParamLookup);
                 }
             }
         }
@@ -3237,6 +3249,16 @@ namespace Internal.JitInterface
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
             ppIndirection = (void*)ObjectToHandle(typeHandleImport);
             return null;
+        }
+
+        private void PrepareCodePointerOrStubLookup(ref CORINFO_RESOLVED_TOKEN token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+            MethodDesc caller, ref CORINFO_LOOKUP lookup)
+        {
+            DictionaryEntryKind kind = (DictionaryEntryKind)lookup.runtimeLookup.helper;
+            MethodDesc method = (MethodDesc)HandleToObject(lookup.runtimeLookup.signature);
+            lookup = default;
+            ComputeRuntimeLookupForSharedGenericToken(kind, ref token,
+                kind == DictionaryEntryKind.DispatchStubAddrSlot ? null : constrainedToken, method, caller, ref lookup);
         }
 
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)

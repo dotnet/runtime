@@ -837,6 +837,8 @@ private:
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
     void CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src);
     void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
+    void EmitPushCallLookup(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                            CORINFO_CALL_INFO* callInfo, CORINFO_LOOKUP& lookup);
     void EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
     void EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
     void EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);

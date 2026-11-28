@@ -1061,6 +1061,15 @@ void interceptor_ICJI::getCallInfo(
     original_ICorJitInfo->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
 }
 
+void interceptor_ICJI::prepareCallLookups(
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CALL_INFO* pCallInfo)
+{
+    original_ICorJitInfo->prepareCallLookups(pResolvedToken, pConstrainedResolvedToken, callerHandle, pCallInfo);
+}
+
 bool interceptor_ICJI::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,

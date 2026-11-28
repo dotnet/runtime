@@ -11417,6 +11417,35 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
     GenTree* next = ind->gtNext;
 
     assert(ind->OperIs(GT_IND, GT_NULLCHECK));
+    if ((ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue()) && m_compiler->opts.OptimizationEnabled() &&
+        ((ind->gtFlags & (GTF_EXCEPT | GTF_IND_VOLATILE | GTF_IND_INITCLASS | GTF_ORDER_SIDEEFF)) == GTF_EXCEPT))
+    {
+        // An unused load may only become a null check here, after early propagation.
+        GenTree* otherAddr = next;
+        while ((otherAddr != nullptr) && otherAddr->OperIs(GT_IL_OFFSET))
+        {
+            otherAddr = otherAddr->gtNext;
+        }
+
+        GenTree* addr = ind->Addr();
+        GenTree* load = (otherAddr != nullptr) ? otherAddr->gtNext : nullptr;
+        if ((load != nullptr) && load->OperIs(GT_IND) && !load->IsUnusedValue() && !load->TypeIs(TYP_STRUCT) &&
+            (load->AsIndir()->Addr() == otherAddr) && (addr == ind->gtPrev) && addr->OperIs(GT_LCL_VAR) &&
+            addr->TypeIs(TYP_REF) && otherAddr->OperIs(GT_LCL_VAR) && NodesAreEquivalentLeaves(addr, otherAddr) &&
+            (((addr->gtFlags | otherAddr->gtFlags) & GTF_ALL_EFFECT) == 0) &&
+            !m_compiler->lvaGetDesc(addr->AsLclVar()->GetLclNum())->IsAddressExposed())
+        {
+            // Let the useful load fault at the original check's IL offset.
+            load->gtFlags &= ~GTF_IND_NONFAULTING;
+            load->gtFlags |= GTF_EXCEPT;
+            JITDUMP("Fold null check [%06u] into adjacent load [%06u]\n", ind->gtTreeID, load->gtTreeID);
+            BlockRange().InsertBefore(addr, BlockRange().Remove(otherAddr, load));
+            BlockRange().Remove(ind);
+            BlockRange().Remove(addr);
+            return otherAddr;
+        }
+    }
+
     // Process struct typed indirs separately unless they are unused;
     // they only appear as the source of a block copy operation or a return node.
     if (!ind->TypeIs(TYP_STRUCT) || ind->IsUnusedValue())

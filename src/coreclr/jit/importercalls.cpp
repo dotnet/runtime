@@ -2,128 +2,697 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "cor.h"
 #include "async.h"
 
-//------------------------------------------------------------------------
-// impGetInstParamArg: compute the hidden instantiation / generic-context argument
-//   for a call whose signature has a type arg (CORINFO_CALLCONV_PARAMTYPE).
-//
-// Arguments:
-//    pResolvedToken                 - resolved token for the call target
-//    callInfo                       - EE supplied info for the call
-//    exactContextHnd                - the exact (method or class) context for the call
-//    exactContextNeedsRuntimeLookup - whether the exact context needs a runtime lookup
-//    clsFlags                       - flags for the class that owns the called method
-//    isReadonlyCall                 - whether this is a "readonly." prefixed call
-//
-// Return Value:
-//    The IR node for the instantiation argument. This may be a null-handle constant
-//    for a "readonly." array Address call. Returns nullptr if the importer must abort
-//    the current method, in which case compDonotInline() is set and the caller should
-//    return TYP_UNDEF.
-//
-// Notes:
-//    This is the shared computation for the hidden "extra arg" described at the
-//    hasTypeArg() handling in impImportCall. It is also used by the wasm LDVIRTFTN
-//    path, which dispatches virtual calls (including the array Address accessor) that
-//    can carry a type arg but is otherwise outside the main hasTypeArg() handling.
-//
-GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                      CORINFO_CALL_INFO*      callInfo,
-                                      CORINFO_CONTEXT_HANDLE  exactContextHnd,
-                                      bool                    exactContextNeedsRuntimeLookup,
-                                      unsigned                clsFlags,
-                                      bool                    isReadonlyCall)
+namespace
 {
-    GenTree* instParam = nullptr;
-    bool     runtimeLookup;
-
-    // Instantiated generic method
-    if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+bool ReadCompressedUnsigned(PCCOR_SIGNATURE& sig, unsigned& size, uint32_t* value)
+{
+    uint32_t bytes;
+    if (size == 0 || FAILED(CorSigUncompressData(sig, size, value, &bytes)))
     {
-        assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+        return false;
+    }
+    sig += bytes;
+    size -= bytes;
+    return true;
+}
 
-        CORINFO_METHOD_HANDLE exactMethodHandle =
-            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+// A missing environment denotes the root. A missing binding inside an inlinee
+// means the expression cannot be translated into the root context.
+bool GetParameterBinding(Compiler* comp, CorElementType kind, unsigned index, const MethodTypeArgument** binding)
+{
+    const bool              method = kind == ELEMENT_TYPE_MVAR;
+    const CORINFO_SIG_INST& inst   = comp->info.compMethodInfo->args.sigInst;
+    if (index >= (method ? inst.methInstCount : inst.classInstCount))
+    {
+        return false;
+    }
+    *binding = nullptr;
+    if (comp->compIsForInlining())
+    {
+        const InlineCandidateInfo* environment = comp->impInlineInfo->inlineCandidateInfo;
+        const MethodTypeArgument*  args        = method ? environment->rootMethodArgs : environment->rootClassArgs;
+        if (args == nullptr)
+        {
+            return false;
+        }
+        *binding = &args[index];
+    }
+    return true;
+}
 
-        if (!exactContextNeedsRuntimeLookup)
+// A call or constructor can have a fixed argument beside an open one.
+bool IsCallTypeOperand(CorInfoTokenKind kind)
+{
+    return (kind == CORINFO_TOKENKIND_Method) || (kind == CORINFO_TOKENKIND_NewObj);
+}
+
+// Read a class/value-type marker followed by its TypeDefOrRef.
+bool ReadNamedTypeToken(PCCOR_SIGNATURE& sig, unsigned& size, mdToken* token)
+{
+    if ((size == 0) || ((*sig != ELEMENT_TYPE_CLASS) && (*sig != ELEMENT_TYPE_VALUETYPE)))
+    {
+        return false;
+    }
+    sig++;
+    size--;
+    uint32_t coded;
+    if (!ReadCompressedUnsigned(sig, size, &coded) || ((coded >> 2) == 0) || ((coded >> 2) > 0x00FFFFFF) ||
+        ((coded & 3) > 1))
+    {
+        return false;
+    }
+    *token = TokenFromRid(coded >> 2, (coded & 1) ? mdtTypeRef : mdtTypeDef);
+    return true;
+}
+
+CORINFO_CLASS_HANDLE ResolveTypeDefinition(Compiler* comp, const CORINFO_RESOLVED_TOKEN& source, mdToken token)
+{
+    CORINFO_RESOLVED_TOKEN definition{};
+    definition.tokenScope   = source.tokenScope;
+    definition.tokenContext = source.tokenContext;
+    definition.token        = token;
+    definition.tokenType    = CORINFO_TOKENKIND_TypeExpressionDefinition;
+    comp->info.compCompHnd->resolveToken(&definition);
+    return definition.hClass;
+}
+
+// Substitute class and method parameters. Only root metadata tokens can be copied
+// verbatim. Ask the EE for the identity of a foreign type definition.
+class InlineTypeSignature
+{
+    Compiler*                     m_comp;
+    const CORINFO_RESOLVED_TOKEN& m_source;
+    BYTE                          m_bytes[MethodTypeArgument::MaxSignatureSize];
+    unsigned                      m_length        = 0;
+    unsigned                      m_depth         = 0;
+    bool                          m_usesParameter = false;
+
+    bool Append(const BYTE* bytes, unsigned count)
+    {
+        if (count > sizeof(m_bytes) - m_length)
         {
-#ifdef FEATURE_READYTORUN
-            if (IsAot())
-            {
-                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-                if (instParam == nullptr)
-                {
-                    assert(compDonotInline());
-                    return nullptr;
-                }
-            }
-            else
-#endif
-            {
-                instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-            }
+            return false;
         }
-        else
-        {
-            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup);
-            if (instParam == nullptr)
-            {
-                assert(compDonotInline());
-                return nullptr;
-            }
-        }
+        memcpy(m_bytes + m_length, bytes, count);
+        m_length += count;
+        return true;
     }
 
-    // otherwise must be an instance method in a generic struct,
-    // a static method in a generic type, or a runtime-generated array method
+    bool AppendNamedType(PCCOR_SIGNATURE& sig, unsigned& size)
+    {
+        PCCOR_SIGNATURE start = sig;
+        mdToken         token;
+        if (!ReadNamedTypeToken(sig, size, &token))
+        {
+            return false;
+        }
+        if (m_source.tokenScope == m_comp->impInlineRoot()->info.compScopeHnd)
+        {
+            return Append(start, (unsigned)(sig - start));
+        }
+        CORINFO_CLASS_HANDLE definition = ResolveTypeDefinition(m_comp, m_source, token);
+        if ((definition == nullptr) || (m_comp->eeIsValueClass(definition) != (*start == ELEMENT_TYPE_VALUETYPE)))
+        {
+            return false;
+        }
+        BYTE          internal = ELEMENT_TYPE_INTERNAL;
+        target_size_t handle   = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(definition));
+        return Append(&internal, 1) && Append(reinterpret_cast<const BYTE*>(&handle), sizeof(handle));
+    }
+
+    bool Read(PCCOR_SIGNATURE& sig, unsigned& size, unsigned depth)
+    {
+        if ((size == 0) || (depth > MethodTypeArgument::MaxDepth))
+        {
+            return false;
+        }
+
+        if ((*sig == ELEMENT_TYPE_CLASS) || (*sig == ELEMENT_TYPE_VALUETYPE))
+        {
+            m_depth = max(m_depth, depth);
+            return AppendNamedType(sig, size);
+        }
+
+        m_depth               = max(m_depth, depth);
+        PCCOR_SIGNATURE start = sig;
+        CorElementType  type  = (CorElementType)*sig++;
+        size--;
+        if ((type == ELEMENT_TYPE_VAR) || (type == ELEMENT_TYPE_MVAR))
+        {
+            m_usesParameter = true;
+            uint32_t                  index;
+            const MethodTypeArgument* binding;
+            if (!ReadCompressedUnsigned(sig, size, &index) || !GetParameterBinding(m_comp, type, index, &binding))
+            {
+                return false;
+            }
+            if (binding == nullptr)
+            {
+                return Append(start, (unsigned)(sig - start));
+            }
+            if (binding->signature != nullptr)
+            {
+                m_depth = max(m_depth, depth + binding->depth);
+                return (m_depth <= MethodTypeArgument::MaxDepth) && Append(binding->signature, binding->signatureSize);
+            }
+            // A bare projection always denotes a method parameter of the root,
+            // even if it was substituted for a class parameter of this inlinee.
+            BYTE     parameter[5] = {ELEMENT_TYPE_MVAR};
+            unsigned bytes        = CorSigCompressData(binding->index, parameter + 1);
+            return Append(parameter, 1 + bytes);
+        }
+
+        if (type == ELEMENT_TYPE_SZARRAY)
+        {
+            return Append(start, 1) && Read(sig, size, depth + 1);
+        }
+        if (((type >= ELEMENT_TYPE_BOOLEAN) && (type <= ELEMENT_TYPE_STRING)) || (type == ELEMENT_TYPE_I) ||
+            (type == ELEMENT_TYPE_U) || (type == ELEMENT_TYPE_OBJECT))
+        {
+            return Append(start, 1);
+        }
+        if ((type != ELEMENT_TYPE_GENERICINST) || !Append(start, 1) || !AppendNamedType(sig, size))
+        {
+            return false;
+        }
+        PCCOR_SIGNATURE arity = sig;
+        uint32_t        count;
+        if (!ReadCompressedUnsigned(sig, size, &count) || (count == 0) || (count > size) ||
+            !Append(arity, (unsigned)(sig - arity)))
+        {
+            return false;
+        }
+
+        for (unsigned i = 0; i < count; i++)
+        {
+            if (!Read(sig, size, depth + 1))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+public:
+    InlineTypeSignature(Compiler* comp, const CORINFO_RESOLVED_TOKEN& source)
+        : m_comp(comp)
+        , m_source(source)
+    {
+    }
+
+    bool Compose(PCCOR_SIGNATURE& sig, unsigned& size, MethodTypeArgument* result, bool vector = false)
+    {
+        if (vector)
+        {
+            m_bytes[m_length++] = ELEMENT_TYPE_SZARRAY;
+        }
+        if (!Read(sig, size, vector ? 1 : 0) || (!m_usesParameter && !IsCallTypeOperand(m_source.tokenType)))
+        {
+            return false;
+        }
+        BYTE* signature = m_comp->getAllocator(CMK_Inlining).allocate<BYTE>(m_length);
+        memcpy(signature, m_bytes, m_length);
+        *result = {0, (unsigned short)m_length, (unsigned short)m_depth, signature};
+        return true;
+    }
+};
+} // namespace
+
+bool MethodTypeArgument::TryRead(Compiler*                     comp,
+                                 const CORINFO_RESOLVED_TOKEN& source,
+                                 PCCOR_SIGNATURE&              sig,
+                                 unsigned&                     size,
+                                 MethodTypeArgument*           result)
+{
+    if ((size >= 2) && ((*sig == ELEMENT_TYPE_MVAR) || ((*sig == ELEMENT_TYPE_VAR) && comp->compIsForInlining())))
+    {
+        CorElementType kind = static_cast<CorElementType>(*sig++);
+        size--;
+        uint32_t                  index;
+        const MethodTypeArgument* binding;
+        if (!ReadCompressedUnsigned(sig, size, &index) || !GetParameterBinding(comp, kind, index, &binding))
+        {
+            return false;
+        }
+        *result = binding == nullptr ? MethodTypeArgument{index, 0, 0, nullptr} : *binding;
+        return true;
+    }
+    if ((size == 0) || (!IsCallTypeOperand(source.tokenType) && (*sig != ELEMENT_TYPE_SZARRAY) &&
+                        (*sig != ELEMENT_TYPE_GENERICINST) && (*sig != ELEMENT_TYPE_VAR)))
+    {
+        return false;
+    }
+    InlineTypeSignature builder(comp, source);
+    return builder.Compose(sig, size, result);
+}
+
+// The IL operand of newarr names its element. The allocator takes the handle
+// of the vector, so include that outer constructor in the same composition.
+bool Compiler::impReadTokenType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
+{
+    PCCOR_SIGNATURE sig  = token.pTypeSpec;
+    unsigned        size = token.cbTypeSpec;
+    if ((sig == nullptr) || (size == 0) || (token.tokenScope != info.compScopeHnd) ||
+        (token.tokenContext != impTokenLookupContextHandle))
+    {
+        return false;
+    }
+    if (token.tokenType == CORINFO_TOKENKIND_Newarr)
+    {
+        InlineTypeSignature builder(this, token);
+        return builder.Compose(sig, size, result, true) && (size == 0);
+    }
+    return MethodTypeArgument::TryRead(this, token, sig, size, result) && (size == 0);
+}
+
+// Compose a constructed type from this inlinee in the root method's context.
+bool Compiler::impReadInlineType(const CORINFO_RESOLVED_TOKEN& token, MethodTypeArgument* result)
+{
+    if (IsAot() || opts.OptimizationDisabled() || (token.pTypeSpec == nullptr) || (token.cbTypeSpec == 0) ||
+        (*token.pTypeSpec != ELEMENT_TYPE_GENERICINST))
+    {
+        return false;
+    }
+
+    if (compIsForInlining())
+    {
+        if (!impInlineInfo->inlineCandidateInfo->HasRootTypeArguments())
+        {
+            return false;
+        }
+    }
+    else if (impRuntimeContextKind() == CORINFO_LOOKUP_NOT_SUPPORTED)
+    {
+        return false;
+    }
+    return impReadTokenType(token, result);
+}
+
+void Compiler::impRecordAllocatedType(unsigned lclNum, const MethodTypeArgument& type)
+{
+    Compiler* root = impInlineRoot();
+    if (root->impLocalTypeExpressions == nullptr)
+    {
+        auto alloc                    = root->getAllocator(CMK_Inlining);
+        root->impLocalTypeExpressions = new (alloc) LocalTypeExpressionMap(alloc);
+    }
+    root->impLocalTypeExpressions->Set(lclNum, type);
+    Metrics.InlineTypeAllocation++;
+}
+
+MethodTypeArgument* Compiler::impLocalTypeExpression(GenTree* value)
+{
+    LocalTypeExpressionMap* types = impInlineRoot()->impLocalTypeExpressions;
+    if ((types != nullptr) && value->OperIs(GT_LCL_VAR) && value->TypeIs(TYP_REF))
+    {
+        unsigned   lclNum = value->AsLclVar()->GetLclNum();
+        LclVarDsc* local  = lvaGetDesc(lclNum);
+        if (local->lvSingleDef && !local->lvHasLdAddrOp && !local->IsAddressExposed())
+        {
+            return types->LookupPointer(lclNum);
+        }
+    }
+    return nullptr;
+}
+
+bool Compiler::impMatchesInlineType(GenTree* value, const CORINFO_RESOLVED_TOKEN& token)
+{
+    MethodTypeArgument* source = impLocalTypeExpression(value);
+    MethodTypeArgument  target;
+    if ((source != nullptr) && impReadInlineType(token, &target) && source->SameExpression(target))
+    {
+        Metrics.InlineTypeImportFold++;
+        return true;
+    }
+    return false;
+}
+
+void Compiler::impRememberTypeCheck(GenTree*                      check,
+                                    GenTree*                      value,
+                                    GenTree*                      handle,
+                                    const CORINFO_RESOLVED_TOKEN& token)
+{
+    MethodTypeArgument target;
+    if (!value->TypeIs(TYP_REF) || !value->OperIs(GT_RET_EXPR, GT_LCL_VAR) || !impReadInlineType(token, &target))
+    {
+        return;
+    }
+    Compiler* root = impInlineRoot();
+    if (root->impTypeChecks == nullptr)
+    {
+        auto alloc          = root->getAllocator(CMK_Inlining);
+        root->impTypeChecks = new (alloc) TypeCheckMap(alloc);
+    }
+    CorInfoHelpFunc helper = check->IsHelperCall() ? check->AsCall()->GetHelperNum() : CORINFO_HELP_UNDEF;
+    root->impTypeChecks->Set(check, {target, handle, helper});
+    Metrics.InlineTypeCheck++;
+}
+
+// Express the actual arguments of a MethodSpec or declaring TypeSpec in the root context.
+MethodTypeArgument* Compiler::impForwardedTypeArgs(const CORINFO_RESOLVED_TOKEN& token,
+                                                   unsigned                      arity,
+                                                   CORINFO_METHOD_HANDLE         declaringMethod)
+{
+    if ((arity == 0) || (compIsForInlining() && !impInlineInfo->inlineCandidateInfo->HasRootTypeArguments()))
+    {
+        return nullptr;
+    }
+
+    PCCOR_SIGNATURE sig;
+    unsigned        size;
+    if (declaringMethod == nullptr)
+    {
+        sig  = token.pMethodSpec;
+        size = token.cbMethodSpec;
+        if ((size < 2) || (sig == nullptr) || (*sig++ != IMAGE_CEE_CS_CALLCONV_GENERICINST))
+        {
+            return nullptr;
+        }
+        size--;
+    }
     else
     {
-        assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
-
-        if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
+        sig  = token.pTypeSpec;
+        size = token.cbTypeSpec;
+        if ((size < 2) || (sig == nullptr) || (*sig++ != ELEMENT_TYPE_GENERICINST))
         {
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
+            return nullptr;
+        }
+        size--;
+
+        // A MemberRef may name a derived type while the body is inherited. Its
+        // TypeSpec then describes different parameters from the inlinee's !n.
+        mdToken definition;
+        if (!ReadNamedTypeToken(sig, size, &definition))
+        {
             return nullptr;
         }
 
-        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
+        CORINFO_CLASS_HANDLE declared = ResolveTypeDefinition(this, token, definition);
+        if ((declared == nullptr) ||
+            (declared != info.compCompHnd->getTypeDefinition(info.compCompHnd->getMethodClass(declaringMethod))))
         {
-            // We indicate "readonly" to the Address operation by using a null
-            // instParam.
-            instParam = gtNewIconNode(0, TYP_REF);
-        }
-        else if (!exactContextNeedsRuntimeLookup)
-        {
-#ifdef FEATURE_READYTORUN
-            if (IsAot())
-            {
-                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-                if (instParam == nullptr)
-                {
-                    assert(compDonotInline());
-                    return nullptr;
-                }
-            }
-            else
-#endif
-            {
-                instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-            }
-        }
-        else
-        {
-            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup);
-            if (instParam == nullptr)
-            {
-                assert(compDonotInline());
-                return nullptr;
-            }
+            return nullptr;
         }
     }
 
-    return instParam;
+    uint32_t count;
+    if (!ReadCompressedUnsigned(sig, size, &count) || (count != arity) || (count > size))
+    {
+        return nullptr;
+    }
+    MethodTypeArgument* args = getAllocator(CMK_Inlining).allocate<MethodTypeArgument>(count);
+    for (unsigned i = 0; i < count; i++)
+    {
+        if (!MethodTypeArgument::TryRead(this, token, sig, size, &args[i]))
+        {
+            return nullptr;
+        }
+    }
+    return size == 0 ? args : nullptr;
+}
+
+// Attach argument bindings only to an inline candidate whose body we have identified.
+void Compiler::impBindInlineTypeArguments(GenTreeCall*                  call,
+                                          const CORINFO_RESOLVED_TOKEN& token,
+                                          const CORINFO_CALL_INFO&      callInfo,
+                                          CORINFO_METHOD_HANDLE         forwardedTarget,
+                                          MethodTypeArgument*           methodArgs,
+                                          MethodTypeArgument*           ownerArgs)
+{
+    if (!call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate() || !callInfo.canForwardTypeArguments ||
+        IsAot() || opts.MinOpts() || (call->gtCallMethHnd != callInfo.hMethod) ||
+        ((forwardedTarget != nullptr) && (forwardedTarget != call->gtCallMethHnd)) ||
+        (impInlineRoot()->impRuntimeContextKind() == CORINFO_LOOKUP_NOT_SUPPORTED) ||
+        (compIsForInlining() && !impInlineInfo->inlineCandidateInfo->HasRootTypeArguments()))
+    {
+        return;
+    }
+    InlineCandidateInfo*    candidate = call->GetSingleInlineCandidateInfo();
+    const CORINFO_SIG_INST& inst      = candidate->methInfo.args.sigInst;
+    if (forwardedTarget == nullptr)
+    {
+        methodArgs = impForwardedTypeArgs(token, inst.methInstCount, nullptr);
+    }
+    if (callInfo.kind == CORINFO_CALL)
+    {
+        if ((forwardedTarget == nullptr) &&
+            !info.compCompHnd->haveSameMethodDefinition(token.hMethod, call->gtCallMethHnd))
+        {
+            return;
+        }
+        if (ownerArgs == nullptr)
+        {
+            ownerArgs = impForwardedTypeArgs(token, inst.classInstCount, call->gtCallMethHnd);
+        }
+    }
+    else
+    {
+        // A resolved GVM keeps the original MethodSpec, but the override can
+        // have an entirely different declaring type from the IL MemberRef.
+        CallArg* arg = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+        if ((arg == nullptr) || !arg->GetNode()->OperIs(GT_RUNTIMELOOKUP))
+        {
+            return;
+        }
+        DeferredHandleLookup* lookup = arg->GetNode()->AsRuntimeLookup()->gtDeferredLookup;
+        if ((lookup == nullptr) || (lookup->kind != DeferredHandleLookup::Kind::DevirtualizedMethodContext) ||
+            (lookup->target.method != call->gtCallMethHnd))
+        {
+            return;
+        }
+        if ((methodArgs == nullptr) || (lookup->target.token->tokenScope != impInlineRoot()->info.compScopeHnd))
+        {
+            return;
+        }
+        if (inst.classInstCount != 0)
+        {
+            // The EE validated the exact override owner for the token's
+            // module. That same module owns the root dictionary here.
+            ownerArgs = getAllocator(CMK_Inlining).allocate<MethodTypeArgument>(inst.classInstCount);
+            BYTE* sig = getAllocator(CMK_Inlining).allocate<BYTE>(inst.classInstCount * (1 + sizeof(target_size_t)));
+            for (unsigned i = 0; i < inst.classInstCount; i++, sig += 1 + sizeof(target_size_t))
+            {
+                CORINFO_CLASS_HANDLE type =
+                    info.compCompHnd->getTypeInstantiationArgument(lookup->target.token->hClass, i);
+                if (type == nullptr)
+                {
+                    return;
+                }
+                target_size_t handle = static_cast<target_size_t>(reinterpret_cast<uintptr_t>(type));
+                sig[0]               = ELEMENT_TYPE_INTERNAL;
+                memcpy(sig + 1, &handle, sizeof(handle));
+                ownerArgs[i] = {0, 1 + sizeof(handle), 0, sig};
+            }
+        }
+    }
+    candidate->rootMethodArgs          = methodArgs;
+    candidate->rootClassArgs           = ownerArgs;
+    candidate->rootInstantiationOffset = compIsForInlining()
+                                             ? impInlineInfo->inlineCandidateInfo->rootInstantiationOffset
+                                             : callInfo.methodInstantiationOffset;
+}
+
+// Compose the dictionary or callable entry of an inlined MethodSpec directly in the root context.
+GenTree* Compiler::impTryRootMethodLookup(const CORINFO_RESOLVED_TOKEN& token,
+                                          const CORINFO_CALL_INFO&      callInfo,
+                                          const MethodTypeArgument*     methodArgs)
+{
+    assert(compIsForInlining() && callInfo.canForwardTypeArguments);
+    const bool entry = callInfo.kind == CORINFO_CALL_CODE_POINTER;
+    const bool method =
+        entry || (((size_t)callInfo.contextHandle & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+    if (method && ((methodArgs == nullptr) || !callInfo.canForwardMethodContext))
+    {
+        return nullptr;
+    }
+
+    // A receiver already supplies a class dictionary and its load checks for null.
+    // Keep it when the alternative is another class dictionary lookup of the same method.
+    if (!entry && method && (impRuntimeContextKind() == CORINFO_LOOKUP_THISOBJ) &&
+        (impInlineRoot()->impRuntimeContextKind() != CORINFO_LOOKUP_METHODPARAM))
+    {
+        return nullptr;
+    }
+
+    MethodTypeArgument owner{};
+    if (((token.pTypeSpec != nullptr) || (callInfo.sig.sigInst.classInstCount != 0)) &&
+        !impReadInlineMemberOwner(token, &owner))
+    {
+        return nullptr;
+    }
+    if (!method)
+    {
+        return owner.signature != nullptr ? impDeferredTypeExpression(owner, token.hClass) : nullptr;
+    }
+
+    unsigned arity                                      = callInfo.sig.sigInst.methInstCount;
+    BYTE     spec[MethodTypeArgument::MaxSignatureSize] = {IMAGE_CEE_CS_CALLCONV_GENERICINST};
+    unsigned size                                       = 1 + CorSigCompressData(arity, spec + 1);
+    for (unsigned i = 0; i < arity; i++)
+    {
+        const MethodTypeArgument& arg          = methodArgs[i];
+        BYTE                      parameter[5] = {ELEMENT_TYPE_MVAR};
+        PCCOR_SIGNATURE           bytes        = arg.signature;
+        unsigned                  length       = arg.signatureSize;
+        if (bytes == nullptr)
+        {
+            bytes  = parameter;
+            length = 1 + CorSigCompressData(arg.index, parameter + 1);
+        }
+        if (length > sizeof(spec) - size)
+        {
+            return nullptr;
+        }
+        memcpy(spec + size, bytes, length);
+        size += length;
+    }
+
+    BYTE* signature = getAllocator(CMK_Inlining).allocate<BYTE>(size);
+    memcpy(signature, spec, size);
+    CORINFO_GENERIC_HANDLE handle =
+        entry ? (CORINFO_GENERIC_HANDLE)callInfo.hMethod
+              : (CORINFO_GENERIC_HANDLE)((size_t)callInfo.contextHandle & ~CORINFO_CONTEXTFLAGS_MASK);
+    return impDeferredMethodExpression(token, owner, signature, size,
+                                       entry ? CORINFO_TOKENKIND_MethodEntryExpression
+                                             : CORINFO_TOKENKIND_MethodExpression,
+                                       handle);
+}
+
+GenTree* Compiler::impDeferredMethodExpression(const CORINFO_RESOLVED_TOKEN& token,
+                                               const MethodTypeArgument&     owner,
+                                               PCCOR_SIGNATURE               methodSpec,
+                                               unsigned                      size,
+                                               CorInfoTokenKind              kind,
+                                               CORINFO_GENERIC_HANDLE        handle)
+{
+    auto* pending             = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->kind             = DeferredHandleLookup::Kind::MethodExpression;
+    pending->methodExpression = new (this, CMK_Inlining)
+        DeferredHandleLookup::MethodExpression{token.hMethod, token.hClass, owner, methodSpec, size, kind};
+    Compiler* root                            = impInlineRoot();
+    GenTree*  tree                            = gtNewRuntimeLookup(handle,
+                                       kind == CORINFO_TOKENKIND_MethodExpression ? CORINFO_HANDLETYPE_METHOD
+                                                                                                              : CORINFO_HANDLETYPE_UNKNOWN,
+                                                                   root->getRuntimeContextTree(root->impRuntimeContextKind()));
+    tree->AsRuntimeLookup()->gtDeferredLookup = pending;
+    return tree;
+}
+
+// Keep the input dictionary on the hidden argument. Morph prepares the lookup
+// only if the argument is still used after inlining.
+GenTree* Compiler::impDeferredCallContext(CORINFO_RESOLVED_TOKEN* token,
+                                          CORINFO_CONTEXT_HANDLE  targetContext,
+                                          CORINFO_METHOD_HANDLE   devirtualizedMethod,
+                                          bool                    callVirt)
+{
+    bool methodContext = ((size_t)targetContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+    assert((devirtualizedMethod == nullptr) || methodContext);
+    CORINFO_RUNTIME_LOOKUP_KIND contextKind = impRuntimeContextKind();
+    if (contextKind == CORINFO_LOOKUP_NOT_SUPPORTED)
+    {
+        return nullptr;
+    }
+
+    auto* pending   = new (this, CMK_Inlining) DeferredHandleLookup{};
+    pending->caller = info.compMethodHnd;
+    if (devirtualizedMethod != nullptr)
+    {
+        assert(token->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod);
+        pending->kind          = DeferredHandleLookup::Kind::DevirtualizedMethodContext;
+        pending->target.method = devirtualizedMethod;
+        pending->target.token  = new (this, CMK_Inlining) CORINFO_RESOLVED_TOKEN(*token);
+    }
+    else
+    {
+        assert(token->tokenType == CORINFO_TOKENKIND_Method);
+        pending->kind        = DeferredHandleLookup::Kind::CallContext;
+        pending->il.context  = token->tokenContext;
+        pending->il.scope    = token->tokenScope;
+        pending->il.callVirt = callVirt;
+        pending->token       = token->token;
+    }
+
+    CORINFO_GENERIC_HANDLE handle = (CORINFO_GENERIC_HANDLE)((size_t)targetContext & ~CORINFO_CONTEXTFLAGS_MASK);
+    GenTree* result = gtNewRuntimeLookup(handle, methodContext ? CORINFO_HANDLETYPE_METHOD : CORINFO_HANDLETYPE_CLASS,
+                                         getRuntimeContextTree(contextKind));
+    result->AsRuntimeLookup()->gtDeferredLookup = pending;
+    return result;
+}
+
+// Ask the EE for the accepted override's instantiation argument in the IL caller's context.
+bool Compiler::getDevirtualizedMethodLookup(CORINFO_RESOLVED_TOKEN* target,
+                                            CORINFO_METHOD_HANDLE   caller,
+                                            CORINFO_METHOD_HANDLE   method,
+                                            CORINFO_CONTEXT_HANDLE  context,
+                                            CORINFO_LOOKUP*         result)
+{
+    CORINFO_CALL_INFO callInfo;
+    info.compCompHnd->getCallInfo(target, nullptr, caller, CORINFO_CALLINFO_ALLOWINSTPARAM, &callInfo);
+    if ((callInfo.kind != CORINFO_CALL) || (callInfo.hMethod != method) || !callInfo.sig.hasTypeArg() ||
+        (callInfo.contextHandle != context))
+    {
+        return false;
+    }
+    if (callInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+        (callInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        info.compCompHnd->prepareCallLookups(target, nullptr, caller, &callInfo);
+    }
+    *result = callInfo.instParamLookup;
+    return !result->lookupKind.needsRuntimeLookup ||
+           (result->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED);
+}
+
+//------------------------------------------------------------------------
+// impGetInstParamArg: compute the hidden instantiation argument from the EE-supplied lookup.
+//
+// Arguments:
+//    pResolvedToken            - resolved call token
+//    pConstrainedResolvedToken - constrained type token, if present
+//    callInfo                  - EE supplied info for the call
+//    clsFlags                  - flags for the class that owns the called method
+//    isReadonlyCall            - whether this is a "readonly." prefixed call
+//
+// Return Value:
+//    The instantiation argument, or nullptr if the importer must abandon an inline attempt.
+//
+GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                      CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                      CORINFO_CALL_INFO*      callInfo,
+                                      unsigned                clsFlags,
+                                      bool                    isReadonlyCall)
+{
+    if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
+    {
+        compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
+        return nullptr;
+    }
+
+    if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
+    {
+        // A null instantiation argument requests readonly array Address semantics.
+        return gtNewIconNode(0, TYP_REF);
+    }
+
+    CORINFO_CONTEXT_HANDLE context       = callInfo->contextHandle;
+    bool                   methodContext = ((SIZE_T)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+    CORINFO_GENERIC_HANDLE handle        = methodContext
+                                               ? (CORINFO_GENERIC_HANDLE)((SIZE_T)context & ~CORINFO_CONTEXTFLAGS_MASK)
+                                               : (CORINFO_GENERIC_HANDLE)eeGetClassFromContext(context);
+    GenTreeFlags           flags         = methodContext ? GTF_ICON_METHOD_HDL : GTF_ICON_CLASS_HDL;
+    GenTree*               result        = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                               &callInfo->instParamLookup, flags, handle);
+    if ((result != nullptr) && callInfo->instParamLookup.lookupKind.needsRuntimeLookup)
+    {
+        result =
+            gtNewRuntimeLookup(handle, methodContext ? CORINFO_HANDLETYPE_METHOD : CORINFO_HANDLETYPE_CLASS, result);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -287,7 +856,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
     const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
-    methodPointerInfo* ldftnInfo = nullptr;
+    MethodTypeArgument*   methodArgs      = nullptr;
+    MethodTypeArgument*   ownerArgs       = nullptr;
+    CORINFO_METHOD_HANDLE forwardedTarget = nullptr;
+    methodPointerInfo*    ldftnInfo       = nullptr;
 
     // Synchronized methods need to call CORINFO_HELP_MON_EXIT at the end. We could
     // do that before tailcalls, but that is probably not the intended
@@ -510,60 +1082,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 if (callInfo->stubLookup.lookupKind.needsRuntimeLookup)
                 {
-                    if (callInfo->stubLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
-                    {
-                        // Runtime does not support inlining of all shapes of runtime lookups
-                        // Inlining has to be aborted in such a case
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
-                        return TYP_UNDEF;
-                    }
-
-                    GenTree* stubAddr = impRuntimeLookupToTree(&callInfo->stubLookup, methHnd);
-
-                    // stubAddr tree may require a new temp.
-                    // If we're inlining, this may trigger the too many locals inline failure.
-                    //
-                    // If so, we need to bail out.
-                    //
-                    if (compDonotInline())
-                    {
-                        return TYP_UNDEF;
-                    }
-
-                    // This is the rough code to set up an indirect stub call
-                    assert(stubAddr != nullptr);
-
-                    // The stubAddr may be a
-                    // complex expression. As it is evaluated after the args,
-                    // it may cause registered args to be spilled. Simply spill it.
-                    //
-                    if (!stubAddr->OperIs(GT_LCL_VAR))
-                    {
-                        unsigned const lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                        if (compDonotInline())
-                        {
-                            return TYP_UNDEF;
-                        }
-
-                        impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
-                        stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
-                    }
-
-                    // Create the actual call node
-
                     assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                            (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                    call = gtNewIndCallNode(stubAddr, callRetTyp, di);
-
-                    call->gtFlags |= stubAddr->gtFlags & GTF_ALL_EFFECT;
+                    // Keep the call symbolic until import-time devirtualization has run.
+                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call->AsCall()->gtStubCallStubAddr = nullptr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
-
-#ifdef TARGET_X86
-                    // No tailcalls allowed for these yet...
-                    canTailCall             = false;
-                    szCanTailCallFailReason = "VirtualCall with runtime lookup";
-#endif
                 }
                 else
                 {
@@ -654,34 +1179,20 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 assert(thisPtr != nullptr);
 
-                GenTree* origThisPtr = thisPtr;
+                call->AsCall()->gtArgs.PushFront(this,
+                                                 NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
 
-                // Clone the (possibly transformed) "this" pointer
-                GenTree* thisPtrCopy;
-                thisPtr =
-                    impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
-
-                // We cloned the "this" pointer, mark it as a single def and set the class for it
-                if (thisPtr->OperIsLocal() && thisPtr->TypeIs(TYP_REF) && (origThisPtr != thisPtr))
+                if (!IsAot() && opts.OptimizationEnabled() && callInfo->exactContextNeedsRuntimeLookup &&
+                    (sig->sigInst.methInstCount != 0) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
                 {
-                    lvaGetDesc(thisPtr->AsLclVarCommon())->lvSingleDef = 1;
-                    lvaSetClass(thisPtr->AsLclVarCommon()->GetLclNum(), origThisPtr);
+                    // Devirtualization needs the receiver and declaration. Build the dispatch
+                    // helper and its token lookups only if the call remains virtual.
+                    call->gtFlags |= GTF_CALL_VIRT_GVM | (thisPtr->gtFlags & GTF_ALL_EFFECT);
                 }
-
-                GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-                if (fptr == nullptr)
+                else if (!impMaterializeVirtualFunctionPointer(call->AsCall(), pResolvedToken, callInfo))
                 {
-                    assert(compDonotInline());
                     return TYP_UNDEF;
                 }
-
-                call->AsCall()
-                    ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
-                call->gtFlags |= thisPtrCopy->gtFlags & GTF_ALL_EFFECT;
-
-                // Now make an indirect call through the function pointer
-                call->AsCall()->gtControlExpr = fptr;
-                call->gtFlags |= fptr->gtFlags & GTF_ALL_EFFECT;
 
                 if (needsFatPointerHandling)
                 {
@@ -717,8 +1228,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                     else
                     {
-                        wasmInstParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd,
-                                                           exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                        wasmInstParam = impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                           clsFlags, isReadonlyCall);
                         if (wasmInstParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -767,7 +1278,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG);
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                GenTree* fptr = impLookupToTree(&callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
+                GenTree* fptr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo,
+                                                    &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
 
                 if (compDonotInline())
                 {
@@ -986,8 +1498,35 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            instParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
-                                           clsFlags, isReadonlyCall);
+            if (((opcode == CEE_CALL) || (opcode == CEE_CALLVIRT)) && callInfo->canForwardTypeArguments &&
+                callInfo->exactContextNeedsRuntimeLookup && (callInfo->kind == CORINFO_CALL) && !IsAot() &&
+                !opts.MinOpts())
+            {
+                methodArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.methInstCount, nullptr);
+                if (methodArgs == nullptr)
+                {
+                    ownerArgs = impForwardedTypeArgs(*pResolvedToken, sig->sigInst.classInstCount, callInfo->hMethod);
+                }
+            }
+
+            if ((methodArgs != nullptr) || (ownerArgs != nullptr))
+            {
+                assert(pConstrainedResolvedToken == nullptr && callInfo->kind == CORINFO_CALL);
+                assert(callInfo->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED);
+                forwardedTarget = callInfo->hMethod;
+                instParam =
+                    compIsForInlining() ? impTryRootMethodLookup(*pResolvedToken, *callInfo, methodArgs) : nullptr;
+                if (instParam == nullptr)
+                {
+                    instParam = impDeferredCallContext(pResolvedToken, callInfo->contextHandle, nullptr,
+                                                       opcode == CEE_CALLVIRT);
+                }
+            }
+            else
+            {
+                instParam =
+                    impGetInstParamArg(pResolvedToken, pConstrainedResolvedToken, callInfo, clsFlags, isReadonlyCall);
+            }
             if (instParam == nullptr)
             {
                 assert(compDonotInline());
@@ -1176,6 +1715,63 @@ DEVIRT:
         }
     }
 
+    if (call->AsCall()->IsPendingGvm())
+    {
+        call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
+        if (!impMaterializeVirtualFunctionPointer(call->AsCall(), pResolvedToken, callInfo))
+        {
+            return TYP_UNDEF;
+        }
+    }
+
+    if ((callInfo != nullptr) && (callInfo->kind == CORINFO_VIRTUALCALL_STUB) &&
+        callInfo->stubLookup.lookupKind.needsRuntimeLookup && call->AsCall()->IsVirtualStub())
+    {
+        // Only surviving interface dispatches need a dictionary slot.
+        GenTree*           stubAddr = nullptr;
+        MethodTypeArgument owner;
+        if (compIsForInlining() && callInfo->canForwardMethodContext &&
+            (impRuntimeContextKind() != CORINFO_LOOKUP_THISOBJ) && impReadInlineMemberOwner(*pResolvedToken, &owner))
+        {
+            assert(pConstrainedResolvedToken == nullptr && pResolvedToken->pMethodSpec == nullptr);
+            stubAddr =
+                impDeferredMethodExpression(*pResolvedToken, owner, nullptr, 0,
+                                            CORINFO_TOKENKIND_DispatchStubExpression, (CORINFO_GENERIC_HANDLE)methHnd);
+        }
+        else
+        {
+            stubAddr = impCallLookupToTree(pResolvedToken, pConstrainedResolvedToken, callInfo, &callInfo->stubLookup,
+                                           GTF_ICON_FTN_ADDR, methHnd);
+        }
+        if (compDonotInline())
+        {
+            return TYP_UNDEF;
+        }
+
+        // Evaluate the lookup before placing the call arguments in registers.
+        if (!stubAddr->OperIs(GT_LCL_VAR))
+        {
+            unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
+            if (compDonotInline())
+            {
+                return TYP_UNDEF;
+            }
+
+            impStoreToTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
+            stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+        }
+
+        call->AsCall()->gtCallType    = CT_INDIRECT;
+        call->AsCall()->gtCallMethHnd = NO_METHOD_HANDLE;
+        call->AsCall()->gtControlExpr = stubAddr;
+        call->gtFlags |= stubAddr->gtFlags & GTF_ALL_EFFECT;
+
+#ifdef TARGET_X86
+        canTailCall             = false;
+        szCanTailCallFailReason = "VirtualCall with runtime lookup";
+#endif
+    }
+
     impConsiderCallProbe(call->AsCall(), rawILOffset);
 
     //-------------------------------------------------------------------------
@@ -1217,6 +1813,8 @@ DEVIRT:
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
+                impBindInlineTypeArguments(call->AsCall(), *pResolvedToken, *callInfo, forwardedTarget, methodArgs,
+                                           ownerArgs);
             }
 
             // append the call node.
@@ -1444,6 +2042,12 @@ DONE:
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
+
+        if (opcode != CEE_CALLI)
+        {
+            impBindInlineTypeArguments(call->AsCall(), *pResolvedToken, *callInfo, forwardedTarget, methodArgs,
+                                       ownerArgs);
+        }
 
         // If the call is virtual, extra information for possible use during late devirt inlining.
         //
@@ -10232,7 +10836,28 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
+    GenTree* deferredInstParam = nullptr;
+    if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+        (dvInfo.instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        // CoreCLR supplies a resolved target token when the body is known but the
+        // exact method instantiation must come from the caller's dictionary.
+        if (!IsAot() && !isLateDevirtualization && derivedSig.hasTypeArg() &&
+            (pDerivedResolvedToken->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod))
+        {
+            deferredInstParam = impDeferredCallContext(pDerivedResolvedToken, exactContext, derivedMethod);
+        }
+
+        if ((deferredInstParam == nullptr) &&
+            !getDevirtualizedMethodLookup(pDerivedResolvedToken, info.compMethodHnd, derivedMethod, exactContext,
+                                          &dvInfo.instParamLookup))
+        {
+            return;
+        }
+    }
+
     DevirtualizedCallInfo dcInfo;
+    dcInfo.deferredInstParam     = deferredInstParam;
     dcInfo.tokenLookupContext    = exactContext;
     dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;
     dcInfo.pResolvedToken        = pDerivedResolvedToken;
@@ -10327,8 +10952,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 
     // Make the updates.
     call->ClearFatPointerCandidate();
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
@@ -10598,6 +11222,10 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                 JITDUMP("Sorry, failed to find unboxed entry point\n");
             }
         }
+    }
+    else if (dcInfo->deferredInstParam != nullptr)
+    {
+        instParam = dcInfo->deferredInstParam;
     }
     else
     {
