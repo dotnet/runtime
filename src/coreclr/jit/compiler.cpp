@@ -4638,6 +4638,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
 
+#if !defined(TARGET_WASM)
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
@@ -4645,6 +4646,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+#endif // !defined(TARGET_WASM)
 
         // Compute dominators and exceptional entry blocks
         //
