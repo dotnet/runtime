@@ -124,10 +124,11 @@ namespace CollectibleThreadStaticShutdownRace
             return new WeakReference(context);
         }
 
-        private static void CollectContext(WeakReference context)
+        private static void CollectContext(WeakReference context, Action? beforeCollect = null)
         {
             for (int i = 0; i < 100 && context.IsAlive; i++)
             {
+                beforeCollect?.Invoke();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
@@ -137,6 +138,7 @@ namespace CollectibleThreadStaticShutdownRace
             // Native LoaderAllocator cleanup must finish before its TLS index can be reused.
             for (int i = 0; i < 5; i++)
             {
+                beforeCollect?.Invoke();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
@@ -163,19 +165,40 @@ namespace CollectibleThreadStaticShutdownRace
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
         public static void CleanupCollectibleThreadStaticsWhileStartingThreads()
         {
+            // Each exited thread leaves a runtime thread record that the finalizer removes later.
+            // Unbounded thread churn can outpace that cleanup on slow configurations such as
+            // GCStress, so give the starter a fixed budget for each collection pass.
+            const int ThreadsPerCollection = 16;
+
             using var stop = new ManualResetEventSlim();
             using var started = new ManualResetEventSlim();
+            using var threadBudget = new SemaphoreSlim(ThreadsPerCollection);
             Thread thread = new Thread(() =>
             {
-                do
+                while (true)
                 {
+                    threadBudget.Wait();
+                    if (stop.IsSet)
+                    {
+                        break;
+                    }
+
                     Thread worker = new Thread(static () => { });
                     worker.Start();
                     worker.Join();
                     started.Set();
                 }
-                while (!stop.IsSet);
             });
+
+            // Only the test thread releases permits, so the budget never exceeds ThreadsPerCollection.
+            Action refillThreadBudget = () =>
+            {
+                int refill = ThreadsPerCollection - threadBudget.CurrentCount;
+                if (refill > 0)
+                {
+                    threadBudget.Release(refill);
+                }
+            };
 
             thread.Start();
             started.Wait();
@@ -190,12 +213,13 @@ namespace CollectibleThreadStaticShutdownRace
                         nameof(ThreadStaticInFlightDataBeforeUnload),
                         nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
 
-                    CollectContext(context);
+                    CollectContext(context, refillThreadBudget);
                 }
             }
             finally
             {
                 stop.Set();
+                threadBudget.Release();
                 thread.Join();
             }
         }
