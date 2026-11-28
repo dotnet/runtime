@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Collections.Frozen
 {
@@ -106,8 +107,9 @@ namespace System.Collections.Frozen
 
         /// <summary>
         /// Gets whether values of type <typeparamref name="TUnsigned"/> are hashed with 32-bit arithmetic: on 32-bit platforms,
-        /// for values of up to 32 bits, as 64-bit multiplications and shifts need helper calls there.
+        /// for values of up to 32 bits, as 32-bit multiplications and shifts are cheaper there than 64-bit ones (see <see cref="GetBucket"/>).
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Hash32<TUnsigned>() => IntPtr.Size == 4 && Unsafe.SizeOf<TUnsigned>() <= sizeof(uint);
 
         /// <summary>Gets the shift of the hash function for the specified base-2 log of the number of buckets.</summary>
@@ -119,12 +121,34 @@ namespace System.Collections.Frozen
             return (Hash32<TUnsigned>() ? 32 : 64) - bucketCountLog2;
         }
 
+        /// <summary>Gets the bucket of the specified value, i.e. the upper bits of the product of the value and the multiplier.</summary>
+        /// <remarks>
+        /// On x86, 64-bit values are hashed with 64-bit arithmetic too, but without 64-bit by 64-bit multiplications or variable
+        /// 64-bit shifts, which need helper calls there: as the shift is greater than 32, the bucket only depends on the upper
+        /// half of the product, which is computed from the halves of the value and of the multiplier, with a 32-bit by 32-bit
+        /// multiplication with a 64-bit result (a single instruction) and two 32-bit ones. The buckets are thus the same as on
+        /// other platforms.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetBucket<TUnsigned>(TUnsigned value, ulong multiplier, int shift)
-            where TUnsigned : unmanaged, IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned> =>
-            Hash32<TUnsigned>() ?
-                (int)((uint.CreateTruncating(value) * (uint)multiplier) >> shift) :
-                (int)((ulong.CreateTruncating(value) * multiplier) >> shift);
+            where TUnsigned : unmanaged, IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
+        {
+            if (Hash32<TUnsigned>())
+            {
+                return (int)((uint.CreateTruncating(value) * (uint)multiplier) >> shift);
+            }
+
+            ulong bits = ulong.CreateTruncating(value);
+            if (IntPtr.Size == 4 && X86Base.IsSupported)
+            {
+                Debug.Assert(shift is > 32 and < 64);
+                uint lowerBits = (uint)bits, lowerMultiplier = (uint)multiplier;
+                uint upperProduct = (uint)(((ulong)lowerBits * lowerMultiplier) >> 32) + lowerBits * (uint)(multiplier >> 32) + (uint)(bits >> 32) * lowerMultiplier;
+                return (int)(upperProduct >> (shift - 32));
+            }
+
+            return (int)((bits * multiplier) >> shift);
+        }
 
         internal sealed class DebuggerProxy<T, TUnsigned>(IEnumerable<T> enumerable) : ImmutableEnumerableDebuggerProxy<T>(enumerable);
     }
@@ -230,13 +254,16 @@ namespace System.Collections.Frozen
             // which measurably slowed down lookups.
             Debug.Assert((uint)bucket < (uint)_bucketStarts.Length);
             Debug.Assert(_buckets.Length == _bucketStarts.Length * Vector128<TUnsigned>.Count);
+
+            // The item is broadcast before the bucket is loaded, so that the load can be part of the comparison below.
+            Vector128<TUnsigned> broadcast = SmallIntegralFrozenSet.CreateVector128<T, TUnsigned>(item);
             Vector128<TUnsigned> slots = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_buckets), (nuint)(uint)bucket * (nuint)Vector128<TUnsigned>.Count);
 
             // The result is computed without branching on whether the value was found (as Vector128.IndexOf would once
             // inlined into a loop), as such a branch is mispredicted half of the time when hits and misses are mixed.
             // There are at most 8 lanes, so with bit 16 set, TrailingZeroCount returns 16 if there's no match, without
             // ever being given 0 (when it isn't a single instruction, i.e. without BMI1, it would then branch on it).
-            uint matches = Vector128.Equals(slots, Vector128.Create(value)).ExtractMostSignificantBits();
+            uint matches = Vector128.Equals(slots, broadcast).ExtractMostSignificantBits();
             int lane = BitOperations.TrailingZeroCount(matches | (1u << 16));
             return (_bucketStarts[bucket] + lane) | -(lane >> 4);
         }

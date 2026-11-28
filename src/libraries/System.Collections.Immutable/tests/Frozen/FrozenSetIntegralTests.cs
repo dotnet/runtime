@@ -154,7 +154,7 @@ namespace System.Collections.Frozen.Tests
             }
 
 #if NET
-            AssertImplementation(frozen, shape);
+            AssertImplementation(frozen);
 #endif
 
             // The set operations rely on each item being found at a distinct index.
@@ -184,10 +184,24 @@ namespace System.Collections.Frozen.Tests
         }
 
 #if NET
-        /// <summary>Validates which implementation is used for the cases where it doesn't depend on hardware acceleration.</summary>
-        private static void AssertImplementation<T>(FrozenSet<T> frozen, Shape shape)
+        /// <summary>
+        /// Gets whether vectors are hardware accelerated, for the implementations that depend on it. (Not checked on Mono, where
+        /// the tests and the library could disagree on it, depending on how each is compiled.)
+        /// </summary>
+        public static bool IsVectorHardwareAccelerated => PlatformDetection.IsNotMonoRuntime && System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated;
+
+        /// <summary>Validates which implementation is used for the cases where it only depends on whether vectors are accelerated.</summary>
+        private static void AssertImplementation<T>(FrozenSet<T> frozen)
         {
             string name = frozen.GetType().Name;
+
+            // Values that fit in a Vector128 are searched with a single vector comparison (whether more of them fit in a
+            // larger vector depends on AVX2/AVX-512, so that isn't checked).
+            if (IsVectorHardwareAccelerated && frozen.Count * System.Runtime.CompilerServices.Unsafe.SizeOf<T>() <= 16)
+            {
+                Assert.StartsWith("SmallIntegralFrozenSet", name);
+                return;
+            }
 
             // The types (and enums with the underlying types) supported by the dense implementations.
             Type type = typeof(T).IsEnum ? Enum.GetUnderlyingType(typeof(T)) : typeof(T);
@@ -199,19 +213,25 @@ namespace System.Collections.Frozen.Tests
 
             long[] values = frozen.Select(v => Convert.ToInt64(v)).ToArray();
             long spread = values.Max() - values.Min();
-            if (spread == values.Length - 1)
-            {
-                Assert.Equal("WithContiguousValues`2", name);
-            }
-            else if (spread >= 64L * values.Length)
+            if (spread >= 64L * values.Length)
             {
                 Assert.DoesNotContain("Dense", frozen.GetType().FullName);
             }
             else if (values.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<T>() > 64)
             {
                 // Values that are dense enough, and that don't fit in any vector.
-                Assert.Equal("WithBitmap`2", name);
+                Assert.Equal(spread == values.Length - 1 ? "WithContiguousValues`2" : "WithBitmap`2", name);
             }
+        }
+
+        [ConditionalFact(typeof(FrozenSet_IntegralValuesTests), nameof(IsVectorHardwareAccelerated))]
+        public void VectorBuckets()
+        {
+            // Sparse values that don't fit in a single vector, up to 64 of them, are stored in a hash table whose buckets are
+            // each searched with a single vector comparison, as long as a hash function that doesn't overflow any bucket is
+            // found, which it is for these values.
+            Assert.StartsWith("VectorBucketsFrozenSet", Enumerable.Range(1, 40).Select(i => i * 1_000_003).ToFrozenSet().GetType().Name);
+            Assert.StartsWith("VectorBucketsFrozenSet", Enumerable.Range(1, 40).Select(i => i * 1_000_003L).ToFrozenSet().GetType().Name);
         }
 #endif
 

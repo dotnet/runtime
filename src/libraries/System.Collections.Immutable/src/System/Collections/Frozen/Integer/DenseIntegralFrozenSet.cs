@@ -27,33 +27,28 @@ namespace System.Collections.Frozen
         private const int LengthToCountFactor = 64;
 
         /// <summary>Creates a set for the specified source, if <typeparamref name="T"/> is supported and its values are dense enough.</summary>
-        /// <param name="source">The values.</param>
-        /// <param name="allowBitmap">
-        /// Whether to use a bitmap if the values are dense but not contiguous. If false, a set is only created if all the values
-        /// between the min and the max are present.
-        /// </param>
-        public static FrozenSet<T>? CreateIfValid<T>(HashSet<T> source, bool allowBitmap)
+        public static FrozenSet<T>? CreateIfValid<T>(HashSet<T> source)
         {
             // Int32 and integer types that fit within Int32. This is to minimize difficulty later validating that
             // inputs are in range of int: we can always cast everything here to Int32 without loss of information.
             return
-                typeof(T) == typeof(byte) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(byte)) ? CreateIfValid<T, byte>(source, allowBitmap) :
-                typeof(T) == typeof(sbyte) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(sbyte)) ? CreateIfValid<T, sbyte>(source, allowBitmap) :
-                typeof(T) == typeof(ushort) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(ushort)) ? CreateIfValid<T, ushort>(source, allowBitmap) :
-                typeof(T) == typeof(short) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(short)) ? CreateIfValid<T, short>(source, allowBitmap) :
-                typeof(T) == typeof(char) ? CreateIfValid<T, char>(source, allowBitmap) :
-                typeof(T) == typeof(int) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(int)) ? CreateIfValid<T, int>(source, allowBitmap) :
+                typeof(T) == typeof(byte) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(byte)) ? CreateIfValid<T, byte>(source) :
+                typeof(T) == typeof(sbyte) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(sbyte)) ? CreateIfValid<T, sbyte>(source) :
+                typeof(T) == typeof(ushort) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(ushort)) ? CreateIfValid<T, ushort>(source) :
+                typeof(T) == typeof(short) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(short)) ? CreateIfValid<T, short>(source) :
+                typeof(T) == typeof(char) ? CreateIfValid<T, char>(source) :
+                typeof(T) == typeof(int) || (typeof(T).IsEnum && typeof(T).GetEnumUnderlyingType() == typeof(int)) ? CreateIfValid<T, int>(source) :
                 null;
         }
 
-        private static FrozenSet<T>? CreateIfValid<T, TUnderlying>(HashSet<T> source, bool allowBitmap)
+        private static FrozenSet<T>? CreateIfValid<T, TUnderlying>(HashSet<T> source)
             where TUnderlying : unmanaged, IBinaryInteger<TUnderlying>
         {
             Debug.Assert(source.Count != 0);
             Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TUnderlying>());
 
             int count = source.Count;
-            long maxAllowedLength = allowBitmap ? Math.Min((long)count * LengthToCountFactor, Array.MaxLength) : count;
+            long maxAllowedLength = Math.Min((long)count * LengthToCountFactor, Array.MaxLength);
 
             // Find the min and max of the values, bailing out as soon as they're known to be too spread out
             // (which for values that aren't dense typically happens after just a few of them).
