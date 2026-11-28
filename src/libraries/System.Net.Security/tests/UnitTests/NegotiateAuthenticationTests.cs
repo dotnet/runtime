@@ -126,6 +126,60 @@ namespace System.Net.Security.Tests
             Assert.NotNull(serverBlob);
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(PolicyEnforcement.Always, false, 0x42, NegotiateAuthenticationStatusCode.UnknownCredentials)]
+        [InlineData(PolicyEnforcement.Always, false, 0x99, NegotiateAuthenticationStatusCode.BadBinding)]
+        [InlineData(PolicyEnforcement.Always, false, null, NegotiateAuthenticationStatusCode.BadBinding)]
+        [InlineData(PolicyEnforcement.WhenSupported, false, 0x42, NegotiateAuthenticationStatusCode.UnknownCredentials)]
+        [InlineData(PolicyEnforcement.WhenSupported, false, 0x99, NegotiateAuthenticationStatusCode.BadBinding)]
+        [InlineData(PolicyEnforcement.Always, true, 0x42, NegotiateAuthenticationStatusCode.BadBinding)]
+        [InlineData(PolicyEnforcement.Always, true, 0x99, NegotiateAuthenticationStatusCode.UnknownCredentials)]
+        [InlineData(PolicyEnforcement.WhenSupported, true, 0x42, NegotiateAuthenticationStatusCode.BadBinding)]
+        [InlineData(PolicyEnforcement.WhenSupported, true, 0x99, NegotiateAuthenticationStatusCode.UnknownCredentials)]
+        public void ServerPolicy_CustomChannelBinding(
+            PolicyEnforcement enforcement, bool explicitBinding, int? clientBindingSeed, NegotiateAuthenticationStatusCode expectedStatus)
+        {
+            using SafeChannelBindingHandle policyBinding = new(ChannelBindingKind.Endpoint);
+            policyBinding.SetCertHash(Array.CreateFilled(32, (byte)0x42));
+            using SafeChannelBindingHandle serverBinding = new(ChannelBindingKind.Endpoint);
+            serverBinding.SetCertHash(Array.CreateFilled(32, (byte)0x99));
+            using SafeChannelBindingHandle clientBinding = new(ChannelBindingKind.Endpoint);
+            clientBinding.SetCertHash(Array.CreateFilled(32, (byte)clientBindingSeed.GetValueOrDefault()));
+
+            // Explicit credentials avoid the local-authentication shortcut that bypasses channel binding checks.
+            // A nonexistent local account lets the exchange reach binding validation without requiring test credentials.
+            NetworkCredential credential = new("cbt-" + Guid.NewGuid().ToString("N").Substring(0, 16), "PLACEHOLDER", Environment.MachineName);
+            using NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
+            {
+                Package = "NTLM",
+                Credential = credential,
+                TargetName = "HTTP/localhost",
+                Binding = clientBindingSeed is not null ? clientBinding : null,
+            });
+            using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
+            {
+                Package = "NTLM",
+                Binding = explicitBinding ? serverBinding : null,
+                Policy = new ExtendedProtectionPolicy(enforcement, policyBinding),
+            });
+
+            byte[]? negotiateBlob = client.GetOutgoingBlob((byte[]?)null, out NegotiateAuthenticationStatusCode statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.NotNull(negotiateBlob);
+
+            byte[]? challengeBlob = server.GetOutgoingBlob(negotiateBlob, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.NotNull(challengeBlob);
+
+            byte[]? authenticateBlob = client.GetOutgoingBlob(challengeBlob, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Completed, statusCode);
+            Assert.NotNull(authenticateBlob);
+
+            server.GetOutgoingBlob(authenticateBlob, out statusCode);
+            Assert.Equal(expectedStatus, statusCode);
+        }
+
         [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmUnavailable))]
         public void Package_Unsupported_NTLM()
         {
