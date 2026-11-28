@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization
@@ -29,8 +28,7 @@ namespace System.Runtime.Serialization
         public void SetItem(int index, DataContract dataContract)
         {
             // Check for unloadability to decide how to store the value
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(dataContract.UnderlyingType.Assembly);
-            if (alc == null || !alc.IsCollectible)
+            if (!dataContract.UnderlyingType.IsCollectible)
             {
                 _contracts[index].strong = dataContract;
             }
@@ -68,10 +66,9 @@ namespace System.Runtime.Serialization
                 return ret;
 
             // Not found. Do the slower work of creating the value in the correct collection.
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
 
-            // Null and non-collectible load contexts use the default table
-            if (alc == null || !alc.IsCollectible)
+            // Non-collectible types use the default table
+            if (!t.IsCollectible)
             {
                 // The create delegate here could be quite expensive. ConcurrentDictionary semantics would let use
                 // do this without a lock and not corrupt the dictionary, but the delegate still might be called multiple

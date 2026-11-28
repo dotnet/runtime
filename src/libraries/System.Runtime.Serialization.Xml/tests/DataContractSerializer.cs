@@ -1207,7 +1207,7 @@ public static partial class DataContractSerializerTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     public static void DCS_TypeInCollectibleALC()
     {
-        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, out var weakRef);
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, makeGenericList: false, out var weakRef);
 
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
         {
@@ -1224,7 +1224,24 @@ public static partial class DataContractSerializerTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     public static void DCS_CollectionTypeInCollectibleALC()
     {
-        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, makeGenericList: false, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "AssemblyDependencyResolver not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    public static void DCS_GenericListOfTypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, makeGenericList: true, out var weakRef);
 
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
         {
@@ -1235,7 +1252,7 @@ public static partial class DataContractSerializerTests
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ExecuteAndUnload(string assemblyfile, string typename, bool makeCollection, out WeakReference wref)
+    private static void ExecuteAndUnload(string assemblyfile, string typename, bool makeCollection, bool makeGenericList, out WeakReference wref)
     {
         var fullPath = Path.GetFullPath(assemblyfile);
         var alc = new TestAssemblyLoadContext("DataContractSerializerTests", true, fullPath);
@@ -1261,6 +1278,13 @@ public static partial class DataContractSerializerTests
             type = array.GetType();
             obj = array;
         }
+        else if (makeGenericList)
+        {
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(type));
+            list.Add(Activator.CreateInstance(type));
+            type = list.GetType();
+            obj = list;
+        }
         else
         {
             obj = Activator.CreateInstance(type);
@@ -1270,7 +1294,7 @@ public static partial class DataContractSerializerTests
         var dcs = new DataContractSerializer(type);
         var rtobj = DataContractSerializerHelper.SerializeAndDeserialize<object>(obj, null, null, () => dcs, true, false);
         Assert.NotNull(rtobj);
-        if (makeCollection)
+        if (makeCollection || makeGenericList)
             Assert.Equal(obj, rtobj);
         else
             Assert.True(rtobj.Equals(obj));
