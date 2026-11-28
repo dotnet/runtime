@@ -123,6 +123,109 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestAsyncStreams_ProcessReuse(bool readError)
+        {
+            using Process process = CreateProcess((string useError) =>
+            {
+                (bool.Parse(useError) ? Console.Error : Console.Out).WriteLine(useError);
+                return RemoteExecutor.SuccessExitCode;
+            }, readError.ToString());
+            process.StartInfo.RedirectStandardOutput = !readError;
+            process.StartInfo.RedirectStandardError = readError;
+            var lines = new List<string>();
+            DataReceivedEventHandler handler = (sender, args) => lines.Add(args.Data);
+            if (readError)
+            {
+                process.ErrorDataReceived += handler;
+            }
+            else
+            {
+                process.OutputDataReceived += handler;
+            }
+
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(process.Start());
+                if (readError)
+                {
+                    process.BeginErrorReadLine();
+                }
+                else
+                {
+                    process.BeginOutputReadLine();
+                }
+                Assert.True(process.WaitForExit(WaitInMS));
+                process.WaitForExit();
+                Assert.Equal(2, lines.Count);
+                Assert.Equal(readError.ToString(), lines[0]);
+                Assert.Null(lines[1]);
+                lines.Clear();
+                process.Close();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestSwitchingStreamReadMode_ProcessReuse(bool readAsyncFirst)
+        {
+            using Process process = CreateProcess(static () =>
+            {
+                Console.WriteLine("output");
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.StartInfo.RedirectStandardOutput = true;
+            var lines = new List<string>();
+            process.OutputDataReceived += (sender, args) => lines.Add(args.Data);
+
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(process.Start());
+                if (readAsyncFirst == (i == 0))
+                {
+                    process.BeginOutputReadLine();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                    process.WaitForExit(); // This ensures async event handlers are finished processing.
+                    Assert.Equal(2, lines.Count);
+                    Assert.Equal("output", lines[0]);
+                    Assert.Null(lines[1]);
+                    lines.Clear();
+                }
+                else
+                {
+                    Assert.Equal("output" + Environment.NewLine, process.StandardOutput.ReadToEnd());
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+                process.Close();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestReadAllText_ProcessReuse()
+        {
+            using Process process = CreateProcess(static () =>
+            {
+                Console.Out.WriteLine("output");
+                Console.Error.WriteLine("error");
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(process.Start());
+                (string standardOutput, string standardError) = process.ReadAllText();
+                Assert.Equal("output" + Environment.NewLine, standardOutput);
+                Assert.Equal("error" + Environment.NewLine, standardError);
+                Assert.True(process.WaitForExit(WaitInMS));
+                process.Close();
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         async public Task TestAsyncOutputStream_CancelOutputRead()
         {
