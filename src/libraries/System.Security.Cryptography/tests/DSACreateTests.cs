@@ -41,6 +41,21 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Android)]
+        [InlineData(1024)]
+        [InlineData(2048)]
+        [InlineData(3072)]
+        public static void GeneratedKeyCanSignAndVerify(int keySizeInBits)
+        {
+            using (DSA dsa = DSA.Create(keySizeInBits))
+            {
+                byte[] data = [1, 2, 3];
+                byte[] signature = dsa.SignData(data, HashAlgorithmName.SHA256);
+                Assert.True(dsa.VerifyData(data, signature, HashAlgorithmName.SHA256));
+            }
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         public static void CreateWithKeysize_BigKey()
