@@ -167,14 +167,15 @@ public class MonoRunner extends Instrumentation
                 Log.i("DOTNET", "Extracting asset to " + fullToPath);
 
                 int count = 0;
-                FileOutputStream fileOutputStream = new FileOutputStream(fullToPath);
-                while ((count = zipInputStream.read(buffer)) != -1) {
-                    fileOutputStream.write(buffer, 0, count);
+                try (FileOutputStream fileOutputStream = new FileOutputStream(fullToPath)) {
+                    while ((count = zipInputStream.read(buffer)) != -1) {
+                        fileOutputStream.write(buffer, 0, count);
+                    }
                 }
                 zipInputStream.closeEntry();
             }
         } catch (IOException e) {
-            Log.e("DOTNET", e.getLocalizedMessage());
+            throw new RuntimeException("Failed to extract assets from " + zipName, e);
         }
     }
 
