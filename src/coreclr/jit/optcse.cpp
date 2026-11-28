@@ -589,9 +589,10 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(vnStore->IsVNConstant(vnLibNorm));
 
         // We don't share small offset constants when they require a reloc
-        // Also, we don't share non-null const gc handles
+        // Also, we don't share non-null const gc handles, except for frozen objects (they never move)
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && (tree->IsIntegralConst(0) || !varTypeIsGC(tree)))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) &&
+            (tree->IsIntegralConst(0) || !varTypeIsGC(tree) || tree->IsIconHandle(GTF_ICON_OBJ_HDL)))
         {
             // Here we make constants that have the same upper bits use the same key
             //
@@ -5094,6 +5095,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     //
     unsigned  cseLclVarNum = m_compiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
     var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
+    // Shared constant deltas are plain integers, even for (frozen) object handles.
+    var_types cseDeltaTyp = varTypeIsGC(cseLclVarTyp) ? TYP_I_IMPL : cseLclVarTyp;
 
     LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(cseLclVarNum);
     if (cseLclVarTyp == TYP_STRUCT)
@@ -5271,7 +5274,15 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             ssize_t  delta    = curValue - dsc->csdConstDefValue;
             if (delta != 0)
             {
-                val = m_compiler->gtNewIconNode(dsc->csdConstDefValue, cseLclVarTyp);
+                if (varTypeIsGC(cseLclVarTyp))
+                {
+                    assert(exp->IsIconHandle(GTF_ICON_OBJ_HDL));
+                    val = m_compiler->gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)dsc->csdConstDefValue);
+                }
+                else
+                {
+                    val = m_compiler->gtNewIconNode(dsc->csdConstDefValue, cseLclVarTyp);
+                }
                 val->gtVNPair.SetBoth(dsc->csdConstDefVN);
             }
         }
@@ -5316,7 +5327,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             ssize_t  delta    = curValue - dsc->csdConstDefValue;
             if (delta != 0)
             {
-                GenTree* deltaNode = m_compiler->gtNewIconNode(delta, cseLclVarTyp);
+                GenTree* deltaNode = m_compiler->gtNewIconNode(delta, cseDeltaTyp);
                 cseUse             = m_compiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
                 cseUse->SetDoNotCSE();
                 cseUse->gtVNPair.SetBoth(currVN);
@@ -5393,7 +5404,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             ssize_t  delta    = curValue - dsc->csdConstDefValue;
             if (delta != 0)
             {
-                GenTree* deltaNode = m_compiler->gtNewIconNode(delta, cseLclVarTyp);
+                GenTree* deltaNode = m_compiler->gtNewIconNode(delta, cseDeltaTyp);
                 cse                = m_compiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cse, deltaNode);
                 cse->SetDoNotCSE();
                 cse->gtVNPair.SetBoth(currVN);
