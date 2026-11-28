@@ -360,6 +360,40 @@ public unsafe class Validate
         BoxedMethodArg(arr);
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    ref struct OverlappingInlineArray
+    {
+        [FieldOffset(0)] public object Reference;
+        [FieldOffset(0)] public MyArray<object> Array;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static OverlappingInlineArray CreateOverlappingInlineArray()
+    {
+        OverlappingInlineArray value = default;
+        for (int i = 0; i < value.Array.Length; i++)
+        {
+            value.Array[i] = new string('a', i + 1);
+        }
+
+        return value;
+    }
+
+    [Fact]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void OverlappingInlineArrayReferencesSurviveGC()
+    {
+        Console.WriteLine($"{nameof(OverlappingInlineArrayReferencesSurviveGC)}...");
+
+        OverlappingInlineArray value = CreateOverlappingInlineArray();
+        GC.Collect(2, GCCollectionMode.Forced, true, true);
+
+        for (int i = 0; i < value.Array.Length; i++)
+        {
+            Assert.Equal(new string('a', i + 1), value.Array[i]);
+        }
+    }
+
     // ====================== GCDescOpt ==========================================================
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]

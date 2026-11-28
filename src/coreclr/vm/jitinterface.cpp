@@ -2301,33 +2301,54 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
         int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
+        MethodTable* pFieldMT = nullptr;
+        CorInfoGCType gcType = TYPE_GC_NONE;
 
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
-            MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+            pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (!pFieldMT->ContainsGCPointers() && !pFieldMT->IsByRefLike())
+                continue;
+
+            gcType = TYPE_GC_OTHER;
         }
         else if (pFD->IsObjRef())
         {
-            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_REF);
+            gcType = TYPE_GC_REF;
         }
         else if (pFD->IsByRef())
         {
-            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_BYREF);
+            gcType = TYPE_GC_BYREF;
+        }
+        else
+        {
+            continue;
+        }
+
+        if (gcType == TYPE_GC_OTHER)
+        {
+            result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+        }
+        else
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, gcType);
         }
 
         if (isInlineArray)
         {
-            if (result > 0)
+            _ASSERTE(pFD->GetOffset() == 0);
+            DWORD totalSize = pMT->GetNumInstanceFieldBytes();
+            DWORD elementSize = pFD->GetSize();
+            for (DWORD offset = elementSize; offset < totalSize; offset += elementSize)
             {
-                _ASSERTE(pFD->GetOffset() == 0);
-                DWORD totalLayoutSize = pMT->GetNumInstanceFieldBytes() / TARGET_POINTER_SIZE;
-                DWORD elementLayoutSize = pFD->GetSize() / TARGET_POINTER_SIZE;
-                DWORD gcPointersInElement = result;
-                for (DWORD offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                // Other fields may already have marked GC slots in any of the elements.
+                if (gcType == TYPE_GC_OTHER)
                 {
-                    memcpy(gcPtrs + offset, gcPtrs, elementLayoutSize);
-                    result += gcPointersInElement;
+                    result += ComputeGCLayout(pFieldMT, gcPtrs + offset / TARGET_POINTER_SIZE);
+                }
+                else
+                {
+                    result += MarkGCField(gcPtrs + offset / TARGET_POINTER_SIZE, gcType);
                 }
             }
 
