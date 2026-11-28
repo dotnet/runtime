@@ -49,7 +49,27 @@ const char* InterpOpName(int op);
 
 extern OPCODE_FORMAT const g_CEEOpArgs[];
 const char* CEEOpName(OPCODE op);
-OPCODE CEEDecodeOpcode(const uint8_t **ip);
+
+// Also updates ip to skip over prefix, if any
+inline OPCODE CEEDecodeOpcode(const uint8_t **pIp)
+{
+    OPCODE res;
+    const uint8_t *ip = *pIp;
+
+    if (*ip == 0xFE)
+    {
+        // Double byte encoding, offset
+        ip++;
+        res = (OPCODE)(*ip + CEE_ARGLIST);
+    }
+    else
+    {
+        res = (OPCODE)*ip;
+    }
+    *pIp = ip;
+    return res;
+}
+
 int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 
 #ifdef TARGET_64BIT
