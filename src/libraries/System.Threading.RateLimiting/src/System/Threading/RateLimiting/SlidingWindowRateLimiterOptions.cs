@@ -11,6 +11,7 @@ namespace System.Threading.RateLimiting
         /// <summary>
         /// Specifies the minimum period between replenishments.
         /// Must be set to a value greater than <see cref="TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
+        /// The internal replenishment timer fires every <see cref="Window" /> divided by <see cref="SegmentsPerWindow" />. When <see cref="AutoReplenishment" /> is <see langword="true" /> and that derived period is less than 1 millisecond, a period of 1 millisecond is used instead, as <see cref="System.Threading.Timer"/> does not support sub-millisecond periods.
         /// </summary>
         public TimeSpan Window { get; set; } = TimeSpan.Zero;
 
