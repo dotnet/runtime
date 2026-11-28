@@ -180,12 +180,20 @@ namespace ILCompiler.DependencyAnalysis
             string wasmSymbolMapPath = format == ReadyToRunContainerFormat.Wasm
                 ? Path.ChangeExtension(_objectFilePath, ".symbols")
                 : null;
+            string auxiliarySymbolMapPath = format == ReadyToRunContainerFormat.Wasm && _nodeFactory.UsesAuxiliaryModules
+                ? WebCilObjectWriter.GetAuxiliarySymbolMapPath(_objectFilePath)
+                : null;
+            string auxiliaryPerfMapPath = null;
 
             try
             {
                 if (wasmSymbolMapPath is not null && File.Exists(wasmSymbolMapPath))
                 {
                     File.Delete(wasmSymbolMapPath);
+                }
+                if (auxiliarySymbolMapPath is not null && File.Exists(auxiliarySymbolMapPath))
+                {
+                    File.Delete(auxiliarySymbolMapPath);
                 }
 
                 var stopwatch = Stopwatch.StartNew();
@@ -211,7 +219,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (objectWriter is WebCilObjectWriter webCilObjectWriter &&
                     (_wasmDebugInfo & WasmDebugInfo.SymbolMap) != 0)
                 {
-                    webCilObjectWriter.EmitSymbolMap(wasmSymbolMapPath);
+                    webCilObjectWriter.EmitSymbolMap(_objectFilePath);
                 }
 
                 if (_outputInfoBuilder is not null)
@@ -263,7 +271,20 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         path = Path.GetDirectoryName(_objectFilePath);
                     }
-                    _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                    string primaryPerfMapPath = _symbolFileBuilder.GetPerfMapFilePath(path, _perfMapFormatVersion, _objectFilePath);
+                    if (auxiliarySymbolMapPath is not null)
+                    {
+                        auxiliaryPerfMapPath = _symbolFileBuilder.GetPerfMapFilePath(path, _perfMapFormatVersion,
+                            WebCilObjectWriter.GetAuxiliaryModulePath(_objectFilePath));
+                        File.Delete(auxiliaryPerfMapPath);
+                    }
+
+                    _symbolFileBuilder.SavePerfMap(primaryPerfMapPath, _perfMapFormatVersion);
+                    if (_outputInfoBuilder.HasAuxiliaryCode)
+                    {
+                        Debug.Assert(auxiliaryPerfMapPath is not null);
+                        _symbolFileBuilder.SavePerfMap(auxiliaryPerfMapPath, _perfMapFormatVersion, auxiliary: true);
+                    }
                 }
 
                 if (_profileFileBuilder != null)
@@ -291,11 +312,14 @@ namespace ILCompiler.DependencyAnalysis
                     {
                     }
 
-                    if (wasmSymbolMapPath is not null)
+                    foreach (string symbolMapPath in new[] { wasmSymbolMapPath, auxiliarySymbolMapPath, auxiliaryPerfMapPath })
                     {
+                        if (symbolMapPath is null)
+                            continue;
+
                         try
                         {
-                            File.Delete(wasmSymbolMapPath);
+                            File.Delete(symbolMapPath);
                         }
                         catch
                         {

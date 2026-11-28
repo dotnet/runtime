@@ -4216,18 +4216,33 @@ namespace Internal.JitInterface
         private Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> _helperCache =
             new Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)>();
 
+#if READYTORUN
+        // Auxiliary callers never call managed helpers directly, so they need their own cache.
+        private Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> _auxiliaryCallerHelperCache =
+            new Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)>();
+
+        private Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> CurrentHelperCache =>
+            _methodCodeNode is { IsAuxiliary: true } ? _auxiliaryCallerHelperCache : _helperCache;
+#else
+        private Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> CurrentHelperCache => _helperCache;
+#endif
+
         internal void ClearHelperCache()
         {
             _helperCache.Clear();
+#if READYTORUN
+            _auxiliaryCallerHelperCache.Clear();
+#endif
         }
 
         private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
-            if (!_helperCache.TryGetValue(ftnNum, out (ISymbolNode EntryPoint, MethodDesc Method) helper))
+            Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> helperCache = CurrentHelperCache;
+            if (!helperCache.TryGetValue(ftnNum, out (ISymbolNode EntryPoint, MethodDesc Method) helper))
             {
                 ISymbolNode entryPoint = GetHelperFtnUncached(ftnNum, out MethodDesc method);
                 helper = (entryPoint, method);
-                _helperCache.Add(ftnNum, helper);
+                helperCache.Add(ftnNum, helper);
             }
 
 #if READYTORUN

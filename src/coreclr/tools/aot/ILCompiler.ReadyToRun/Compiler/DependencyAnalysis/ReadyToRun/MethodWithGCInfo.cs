@@ -170,6 +170,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool IsJitHelper { get; set; }
 
+        /// <summary>
+        /// Whether this method's body is emitted into the auxiliary module. Frozen by the Wasm deferred-call
+        /// finalization before compiled methods are sorted, since it is the leading sort key.
+        /// </summary>
+        public bool IsAuxiliary { get; internal set; }
+
         public List<ISymbolNode> Fixups => _fixups;
 
         internal ReadOnlySpan<Relocation> CodeRelocations => _methodCode?.Relocs;
@@ -659,10 +665,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;
+
+            // Primary bodies precede auxiliary bodies so each module occupies one contiguous
+            // RuntimeFunctions and function-table range.
+            int result = IsAuxiliary.CompareTo(otherNode.IsAuxiliary);
+            if (result != 0)
+            {
+                return result;
+            }
+
             MethodDesc methodLayoutAnchor = GetMethodLayoutAnchor(_method, out int methodLayoutRank);
             MethodDesc otherLayoutAnchor = GetMethodLayoutAnchor(otherNode._method, out int otherLayoutRank);
 
-            int result = comparer.Compare(methodLayoutAnchor, otherLayoutAnchor);
+            result = comparer.Compare(methodLayoutAnchor, otherLayoutAnchor);
             if (result != 0)
             {
                 return result;

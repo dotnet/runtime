@@ -24,6 +24,7 @@ WARNING:   When setting properties based on their current state (for example:
 
     <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
     <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
+    <CrossGen2TestMethodLayout Condition="'$(CrossGen2TestMethodLayout)' == ''">random</CrossGen2TestMethodLayout>
   </PropertyGroup>
 
   <!--
@@ -169,7 +170,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         if [ -z "$DOTNET_GCStress" ] || [ "$DOTNET_GCStress" == "0" ]; then
             echo --verify-type-and-field-layout >> "$__ResponseFile"
         fi
-        echo --method-layout:random >> "$__ResponseFile"
+        echo --method-layout:$(CrossGen2TestMethodLayout) >> "$__ResponseFile"
         if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
             echo --verify-gc-mode-transitions >> "$__ResponseFile"
         fi
@@ -449,7 +450,7 @@ if defined RunCrossGen2 (
     set __VerifyLayout=1
     if defined DOTNET_GCStress if not "!DOTNET_GCStress!"=="0" set __VerifyLayout=
     if defined __VerifyLayout echo --verify-type-and-field-layout>>!__ResponseFile!
-    echo --method-layout:random>>!__ResponseFile!
+    echo --method-layout:$(CrossGen2TestMethodLayout)>>!__ResponseFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
         echo --verify-gc-mode-transitions>>!__ResponseFile!
     )

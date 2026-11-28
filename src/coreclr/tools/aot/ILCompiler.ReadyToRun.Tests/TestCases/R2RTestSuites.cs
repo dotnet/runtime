@@ -128,6 +128,116 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsBrowserWasmTarget))]
+    [InlineData(null)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions(bool? auxiliaryModules)
+    {
+        List<string> additionalArgs = ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath];
+        if (auxiliaryModules.HasValue)
+        {
+            additionalArgs.Add("--auxiliary-modules");
+            if (auxiliaryModules is false)
+            {
+                additionalArgs.Add("false");
+            }
+        }
+
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions),
+            [
+                new(nameof(AuxiliaryModuleMetadataDescribesPrimaryRuntimeFunctions), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = additionalArgs,
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            if (auxiliaryModules is true)
+            {
+                WasmR2RAssert.AssertPrimaryOnlyAuxiliaryMetadata(reader);
+            }
+            else
+            {
+                Assert.False(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.AuxiliaryModuleMetadata));
+            }
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsBrowserWasmTarget))]
+    public void AuxiliaryModuleContainsProfileColdMethodBodies()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModuleContainsProfileColdMethodBodies),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModuleContainsProfileColdMethodBodies),
+            [
+                new(nameof(AuxiliaryModuleContainsProfileColdMethodBodies), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--auxiliary-modules", "--wasm-debug-info=name,symbol-map", "--perfmap", "--perfmap-format-version", "1"],
+                    MibcMethods = [new(input.AssemblyName, "Webcil.WasmWebcilModule", "FixupLeaf")],
+                    OutputFileExtension = ".wasm",
+                    Validate = reader =>
+                    {
+                        WasmR2RAssert.AssertAuxiliaryModule(reader, checkSymbolMaps: true);
+                        WasmR2RAssert.AssertAuxiliaryPerfMaps(reader);
+                    },
+                },
+            ]));
+    }
+
+    /// <summary>
+    /// The interpreter runs auxiliary methods until their module is activated, so
+    /// --strip-il-bodies must keep their IL while still stripping primary-module methods.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsBrowserWasmTarget))]
+    public void AuxiliaryModuleStripILBodiesPreservesAuxiliaryIL()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(AuxiliaryModuleStripILBodiesPreservesAuxiliaryIL),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AuxiliaryModuleStripILBodiesPreservesAuxiliaryIL),
+            [
+                new(nameof(AuxiliaryModuleStripILBodiesPreservesAuxiliaryIL), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--auxiliary-modules"],
+                    MibcMethods = [new(input.AssemblyName, "Webcil.WasmWebcilModule", "FixupLeaf")],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            WasmR2RAssert.AssertAuxiliaryModule(reader);
+
+            string componentFile = Path.Combine(
+                Path.GetDirectoryName(reader.Filename)!,
+                nameof(AuxiliaryModuleStripILBodiesPreservesAuxiliaryIL) + ".wasm");
+
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "WasmWebcilModule", "FixupLeaf", out string diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "WasmWebcilModule", "AddIntegers", out diag), diag);
+        }
+    }
+
     [Theory]
     [InlineData("--two-phase-compilation")]
     [InlineData("--deferred-wasm-calls")]

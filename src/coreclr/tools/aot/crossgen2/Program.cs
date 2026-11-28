@@ -87,6 +87,15 @@ namespace ILCompiler
             {
                 throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
             }
+
+            if (Get(_command.AuxiliaryModules))
+            {
+                if (targetArchitecture != TargetArchitecture.Wasm32 || targetOS != TargetOS.Browser)
+                    throw new CommandLineException(SR.AuxiliaryModulesRequiresBrowserWasmTarget);
+
+                if (Get(_command.MethodLayout) != MethodLayoutAlgorithm.DefaultSort)
+                    throw new CommandLineException(SR.AuxiliaryModulesRequiresDefaultMethodLayout);
+            }
             bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
                 ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
             bool targetIsSingleThreaded = Get(_command.TargetSingleThreaded)
@@ -694,6 +703,7 @@ namespace ILCompiler
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.AuxiliaryModules = Get(_command.AuxiliaryModules);
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
                     nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);

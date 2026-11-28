@@ -592,6 +592,44 @@ public class ReadyToRunLibraryRootProviderTests
         Assert.Same(ignored, Assert.Single(plan.GetMethodsAtLevel(3)));
     }
 
+    [Fact]
+    public void FinalizationPlanExcludesOnlyPrimaryToAuxiliaryEdges()
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc primaryLeaf = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodDesc primaryRoot = context.GetWellKnownType(WellKnownType.Boolean).GetMethod("GetHashCode"u8, null);
+        MethodDesc auxiliaryCallee = context.GetWellKnownType(WellKnownType.Char).GetMethod("GetHashCode"u8, null);
+        MethodDesc auxiliaryCaller = context.GetWellKnownType(WellKnownType.Int64).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo primaryLeafNode = CreateMethodNode(primaryLeaf);
+        MethodWithGCInfo auxiliaryCalleeNode = new(auxiliaryCallee) { IsAuxiliary = true };
+        MethodWithGCInfo auxiliaryCallerNode = new(auxiliaryCaller) { IsAuxiliary = true };
+        MethodWithGCInfo primaryRootNode = new(primaryRoot);
+        SetCalls(auxiliaryCalleeNode, primaryLeafNode);
+        SetCalls(auxiliaryCallerNode, auxiliaryCalleeNode);
+        SetCalls(primaryRootNode, primaryLeafNode, auxiliaryCallerNode);
+        NodeFactory factory = (NodeFactory)RuntimeHelpers.GetUninitializedObject(typeof(NodeFactory));
+
+        DeferredWasmCallFinalizationPlan plan = DeferredWasmCallFinalizationPlan.Create(
+            [primaryLeafNode, primaryRootNode, auxiliaryCalleeNode, auxiliaryCallerNode], factory);
+
+        DeferredWasmCallFinalizationPlan eagerPlan = plan.CreateEagerPlan([primaryRoot]);
+        Assert.Equal(2, eagerPlan.LevelCount);
+        Assert.Same(primaryLeaf, Assert.Single(eagerPlan.GetMethodsAtLevel(0)));
+        Assert.Same(primaryRoot, Assert.Single(eagerPlan.GetMethodsAtLevel(1)));
+        Assert.Contains(auxiliaryCallee, plan.GetMethodsAtLevel(1));
+        Assert.Same(auxiliaryCaller, Assert.Single(plan.GetMethodsAtLevel(2)));
+
+        static void SetCalls(MethodWithGCInfo caller, params MethodWithGCInfo[] callees)
+        {
+            Relocation[] relocations = new Relocation[callees.Length];
+            for (int i = 0; i < callees.Length; i++)
+            {
+                relocations[i] = new Relocation(RelocType.WASM_FUNCTION_INDEX_LEB, 1 + i * 6, callees[i]);
+            }
+            caller.SetCode(new ObjectNode.ObjectData(new byte[1 + callees.Length * 6], relocations, 1, [caller]));
+        }
+    }
+
     private static MethodWithGCInfo CreateMethodNode(MethodDesc method, params MethodDesc[] callees)
     {
         MethodWithGCInfo node = new(method);

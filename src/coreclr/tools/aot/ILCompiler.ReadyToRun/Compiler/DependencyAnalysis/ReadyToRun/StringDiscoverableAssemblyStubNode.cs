@@ -19,6 +19,13 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public abstract class StringDiscoverableAssemblyStubNode : AssemblyStubNode
     {
+        protected StringDiscoverableAssemblyStubNode()
+        {
+            // Wasm thunks have no RuntimeFunctions entry. Lay them out ahead of the compiled-method range,
+            // whose first slot is advertised by the RuntimeFunctions sentinel.
+            CustomSort = int.MinValue;
+        }
+
         /// <summary>
         /// The string key used to look up this stub at runtime via LookupPregeneratedThunkByString.
         /// Must be non-empty and must not contain embedded null characters.

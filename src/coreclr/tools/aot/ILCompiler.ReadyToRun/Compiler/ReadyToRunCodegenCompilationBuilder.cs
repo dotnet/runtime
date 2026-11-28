@@ -327,7 +327,8 @@ namespace ILCompiler
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
-                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
+                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff,
+                outputFile: _outputFile
                 );
 
             factory.CompositeImageSettings = _compositeImageSettings;

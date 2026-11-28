@@ -85,6 +85,8 @@ namespace ILCompiler.ObjectWriter
         private protected virtual bool ShouldDeduplicateFunctionBodies => false;
         private protected abstract string WasmProducerName { get; }
 
+        private protected virtual bool CanIdenticalMethodBodiesBeDeduplicated(ObjectNode left, ObjectNode right) => true;
+
         private readonly struct FoldedFunctionAlias
         {
             public FoldedFunctionAlias(
@@ -172,7 +174,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (ShouldDeduplicateFunctionBodies)
             {
-                _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip);
+                _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip, CanIdenticalMethodBodiesBeDeduplicated);
             }
             base.EmitObject(outputFileStream, nodes, dumper, logger);
 
@@ -575,7 +577,7 @@ namespace ILCompiler.ObjectWriter
             WriteFunctionEntry(signatureIndex);
         }
 
-        private protected void InsertWasmStub(Utf8String name, WasmFunctionBody body)
+        private protected void InsertWasmStub(Utf8String name, WasmFunctionBody body, bool needsTableSlot)
         {
             SectionWriter codeWriter = GetOrCreateSection(ObjectNodeSection.WasmCodeSection);
 
@@ -587,7 +589,8 @@ namespace ILCompiler.ObjectWriter
             codeWriter.EmitData(data);
 
             RegisterFunctionSymbol(name);
-            RegisterTableSlot(name, name);
+            if (needsTableSlot)
+                RegisterTableSlot(name, name);
             RegisterStubIndexAndSignature(body.Signature);
             _wasmStubNames.Add(name);
         }

@@ -303,6 +303,12 @@
   <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
     <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
   </data>
+  <data name="AuxiliaryModulesRequiresBrowserWasmTarget" xml:space="preserve">
+    <value>--auxiliary-modules requires --targetarch wasm together with --targetos browser</value>
+  </data>
+  <data name="AuxiliaryModulesRequiresDefaultMethodLayout" xml:space="preserve">
+    <value>--auxiliary-modules requires the default method layout. Omit --method-layout or use --method-layout DefaultSort.</value>
+  </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
   </data>
@@ -479,6 +485,9 @@
   </data>
   <data name="DisableDeferredWasmCallsOption" xml:space="preserve">
     <value>Disable deferred WebAssembly calls while retaining the selected optimization mode.</value>
+  </data>
+  <data name="AuxiliaryModulesOption" xml:space="preserve">
+    <value>Emit auxiliary module metadata for browser WebAssembly ReadyToRun images.</value>
   </data>
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>

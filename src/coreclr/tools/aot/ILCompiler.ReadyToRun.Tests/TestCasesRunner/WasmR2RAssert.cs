@@ -6,6 +6,7 @@ extern alias crossgen2;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -14,6 +15,7 @@ using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
+using R2RDump;
 using Xunit;
 using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
 using WebcilConstants = crossgen2::Microsoft.NET.WebAssembly.Webcil.WebcilConstants;
@@ -22,6 +24,212 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertPrimaryOnlyAuxiliaryMetadata(ReadyToRunReader reader)
+    {
+        const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
+
+        Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.AuxiliaryModuleMetadata));
+        ReadyToRunSection metadataSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
+        Assert.Equal(AuxiliaryModuleMetadataSection.HeaderSize, metadataSection.Size);
+
+        int metadataOffset = reader.GetOffset(metadataSection.RelativeVirtualAddress);
+        AuxiliaryModuleMetadataSection metadata =
+            new AuxiliaryModuleMetadataSection(reader, metadataOffset, metadataOffset + metadataSection.Size);
+        Assert.Equal(0, metadata.EntryPointsFilenameRva);
+        Assert.Equal(0, metadata.InstanceMethodEntryPointsRva);
+        Assert.Equal(0, metadata.MethodDefEntryPointsInfoRva);
+        Assert.Equal(0u, metadata.EntryPointsModuleActivationStatus);
+        Assert.Empty(metadata.Entries);
+
+        Assert.True(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.RuntimeFunctions));
+        ReadyToRunSection runtimeFunctionsSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        Assert.Equal(0, runtimeFunctionsSection.Size % RuntimeFunctionEntrySize);
+        Assert.Equal(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize, metadata.PrimaryModuleMethodCount);
+    }
+
+    /// <summary>
+    /// Validates a composite image whose profile-cold method bodies were moved into a single auxiliary
+    /// WebAssembly module, and the auxiliary module's ActivateModule export.
+    /// </summary>
+    public static void AssertAuxiliaryModule(ReadyToRunReader reader, bool checkSymbolMaps = false)
+    {
+        const int RuntimeFunctionEntrySize = sizeof(uint) * 2;
+        const byte GlobalGetOpcode = 0x23;
+        const byte I32ConstOpcode = 0x41;
+        const byte I32AddOpcode = 0x6A;
+        const byte EndOpcode = 0x0B;
+
+        ReadyToRunSection metadataSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.AuxiliaryModuleMetadata];
+        int metadataOffset = reader.GetOffset(metadataSection.RelativeVirtualAddress);
+        AuxiliaryModuleMetadataSection metadata =
+            new AuxiliaryModuleMetadataSection(reader, metadataOffset, metadataOffset + metadataSection.Size);
+        AuxiliaryModuleEntry entry = Assert.Single(metadata.Entries);
+
+        ReadyToRunSection runtimeFunctionsSection =
+            reader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+        int primaryMethodCount = metadata.PrimaryModuleMethodCount;
+        Assert.True(primaryMethodCount > 0, "The profiled method should remain in the primary module.");
+        Assert.True(entry.MethodCount > 0, "Profile-cold methods should be moved to the auxiliary module.");
+        Assert.True(entry.RelativeTableBase >= primaryMethodCount);
+        Assert.Equal(runtimeFunctionsSection.Size / RuntimeFunctionEntrySize, primaryMethodCount + entry.MethodCount);
+        Assert.Equal(0u, entry.ActivationStatus);
+
+        ReadOnlySpan<byte> r2rImage = reader.Image;
+        int sentinelOffset = reader.GetOffset(runtimeFunctionsSection.RelativeVirtualAddress) + runtimeFunctionsSection.Size;
+        Assert.Equal(uint.MaxValue, BinaryPrimitives.ReadUInt32LittleEndian(r2rImage[sentinelOffset..]));
+        uint firstMethodSlot = BinaryPrimitives.ReadUInt32LittleEndian(r2rImage[(sentinelOffset + sizeof(uint))..]);
+        Assert.True(firstMethodSlot > 0, "The primary thunks should precede the compiled method slots.");
+        Assert.Equal(firstMethodSlot + (uint)primaryMethodCount, (uint)entry.RelativeTableBase);
+
+        ReadOnlySpan<byte> fileNameBytes = r2rImage[reader.GetOffset(entry.FilenameRva)..];
+        string auxiliaryFileName = Encoding.UTF8.GetString(fileNameBytes[..fileNameBytes.IndexOf((byte)0)]);
+        Assert.Equal(Path.GetFileNameWithoutExtension(reader.Filename) + ".1.wasm", auxiliaryFileName);
+
+        string auxiliaryPath = Path.Combine(Path.GetDirectoryName(reader.Filename)!, auxiliaryFileName);
+        Assert.True(File.Exists(auxiliaryPath), $"Auxiliary module not found: {auxiliaryPath}");
+
+        // The export-only stubs are the first defined functions and do not occupy table slots.
+        ReadOnlySpan<byte> primary = File.ReadAllBytes(reader.Filename);
+        Assert.True(TryGetWasmSectionBounds(primary, WasmSectionKind.Import, out int importOffset, out int importEnd));
+        uint importedFunctions = CountWasmImports(ReadWasmImportSection(primary, ref importOffset, importEnd), WasmImportKind.Function);
+        Dictionary<string, WasmExportIndex> primaryExports = ReadWasmExports(primary);
+        Assert.Equal(importedFunctions, primaryExports["getWebcilSize"].Index);
+        Assert.Equal(importedFunctions + 1, primaryExports["patchWebcilHeader"].Index);
+
+        Assert.True(TryGetWasmSectionBounds(primary, WasmSectionKind.Element, out int offset, out int end));
+        Assert.Equal(1u, ReadWasmUleb32(primary, ref offset, end));
+        Assert.Equal(0u, ReadWasmUleb32(primary, ref offset, end));
+        Assert.Equal(GlobalGetOpcode, ReadWasmByte(primary, ref offset, end));
+        Assert.Equal((uint)WebCilObjectWriter.TableBaseGlobalIndex, ReadWasmUleb32(primary, ref offset, end));
+        Assert.Equal(I32ConstOpcode, ReadWasmByte(primary, ref offset, end));
+        Assert.Equal(0L, ReadWasmSleb33(primary, ref offset, end));
+        Assert.Equal(I32AddOpcode, ReadWasmByte(primary, ref offset, end));
+        Assert.Equal(EndOpcode, ReadWasmByte(primary, ref offset, end));
+        uint count = ReadWasmUleb32(primary, ref offset, end);
+        Assert.Equal((uint)entry.RelativeTableBase, count);
+        Assert.True(TryGetWasmSectionBounds(primary, WasmSectionKind.Code, out int codeOffset, out int codeEnd));
+        uint primaryFunctionCount = ReadWasmUleb32(primary, ref codeOffset, codeEnd);
+        for (uint element = 0; element < count; element++)
+        {
+            Assert.InRange(ReadWasmUleb32(primary, ref offset, end), importedFunctions + 2, importedFunctions + primaryFunctionCount - 1);
+        }
+        Assert.Equal(end, offset);
+
+        ReadOnlySpan<byte> auxiliary = File.ReadAllBytes(auxiliaryPath);
+        Dictionary<string, WasmExportIndex> exports = ReadWasmExports(auxiliary);
+        WasmExportIndex activateModule = Assert.Single(exports, export => export.Key == "ActivateModule").Value;
+        Assert.Single(exports);
+        Assert.Equal(WasmImportKind.Function, activateModule.Kind);
+
+        // A single passive segment holds the auxiliary slots until ActivateModule copies them into the table.
+        Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Element, out offset, out end));
+        Assert.Equal(1u, ReadWasmUleb32(auxiliary, ref offset, end));
+        Assert.Equal(1u, ReadWasmUleb32(auxiliary, ref offset, end));
+        Assert.Equal(0, ReadWasmByte(auxiliary, ref offset, end));
+        Assert.Equal((uint)entry.MethodCount, ReadWasmUleb32(auxiliary, ref offset, end));
+
+        Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Import, out importOffset, out importEnd));
+        uint auxiliaryImportedFunctions = CountWasmImports(ReadWasmImportSection(auxiliary, ref importOffset, importEnd), WasmImportKind.Function);
+
+        Assert.True(TryGetWasmSectionBounds(auxiliary, WasmSectionKind.Code, out offset, out end));
+        uint functionCount = ReadWasmUleb32(auxiliary, ref offset, end);
+        if (checkSymbolMaps)
+        {
+            Assert.True(WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic), diagnostic);
+            Assert.True(WasmSymbolMapHasExpectedFunctionNames(auxiliaryPath, auxiliaryImportedFunctions + functionCount, out diagnostic), diagnostic);
+            string[] primaryMap = File.ReadAllLines(Path.ChangeExtension(reader.Filename, ".symbols"));
+            string[] auxiliaryMap = File.ReadAllLines(Path.ChangeExtension(auxiliaryPath, ".symbols"));
+            AssertSymbolMapMatchesNameSection(primary, primaryMap);
+            AssertSymbolMapMatchesNameSection(auxiliary, auxiliaryMap);
+            Assert.Equal($"{activateModule.Index.ToString(CultureInfo.InvariantCulture)}:ActivateModule", auxiliaryMap[(int)activateModule.Index]);
+        }
+
+        Assert.True(activateModule.Index >= auxiliaryImportedFunctions, "ActivateModule must be defined in the auxiliary module.");
+        uint activationBodyIndex = activateModule.Index - auxiliaryImportedFunctions;
+        Assert.True(activationBodyIndex < functionCount, "ActivateModule must have a body in the auxiliary module.");
+        for (uint i = 0; i < activationBodyIndex; i++)
+        {
+            uint size = ReadWasmUleb32(auxiliary, ref offset, end);
+            Assert.True(size <= end - offset, "Function body extends beyond the Code section.");
+            offset += (int)size;
+        }
+        uint activateSize = ReadWasmUleb32(auxiliary, ref offset, end);
+        Assert.True(activateSize <= end - offset, "ActivateModule body extends beyond the Code section.");
+        int bodyEnd = offset + (int)activateSize;
+        uint localGroupCount = ReadWasmUleb32(auxiliary, ref offset, bodyEnd);
+        for (uint i = 0; i < localGroupCount; i++)
+        {
+            _ = ReadWasmUleb32(auxiliary, ref offset, bodyEnd);
+            SkipWasmValueType(auxiliary, ref offset, bodyEnd);
+        }
+
+        ImmutableArray<byte> instructions = ImmutableArray.Create(auxiliary[offset..bodyEnd]);
+        var disassembler = new WasmDisassembler(instructions, 0, instructions.Length);
+        Assert.Contains("table.init", disassembler.Disassemble(), StringComparison.Ordinal);
+
+        static void AssertSymbolMapMatchesNameSection(ReadOnlySpan<byte> image, string[] map)
+        {
+            Assert.True(TryGetWasmFunctionNameSubsection(image, out int offset, out int end));
+            uint count = ReadWasmUleb32(image, ref offset, end);
+            for (uint i = 0; i < count; i++)
+            {
+                uint index = ReadWasmUleb32(image, ref offset, end);
+                string name = ReadWasmName(image, ref offset, end);
+                Assert.Equal($"{index.ToString(CultureInfo.InvariantCulture)}:{name}", map[(int)index]);
+            }
+        }
+    }
+
+    public static void AssertAuxiliaryPerfMaps(ReadyToRunReader reader)
+    {
+        string primaryPath = reader.Filename;
+        string auxiliaryPath = Path.ChangeExtension(primaryPath, ".1.wasm");
+        AssertPerfMap(primaryPath, "FixupLeaf", "AddIntegers");
+        AssertPerfMap(auxiliaryPath, "AddIntegers", "FixupLeaf");
+
+        static void AssertPerfMap(string modulePath, string expectedMethod, string otherModuleMethod)
+        {
+            string[] entries = File.ReadAllLines(Path.ChangeExtension(modulePath, ".ni.r2rmap"));
+            Assert.DoesNotContain(entries, entry => entry.Contains($"::{otherModuleMethod}(", StringComparison.Ordinal));
+            string[] method = Assert.Single(entries, entry => entry.Contains($"::{expectedMethod}(", StringComparison.Ordinal)).Split(' ', 3);
+            int mapOffset = int.Parse(method[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            int mapLength = int.Parse(method[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
+            byte[] image = File.ReadAllBytes(modulePath);
+            Assert.True(TryGetWasmFunctionNameSubsection(image, out int nameOffset, out int nameEnd));
+            uint nameCount = ReadWasmUleb32(image, ref nameOffset, nameEnd);
+            uint functionIndex = uint.MaxValue;
+            for (uint i = 0; i < nameCount; i++)
+            {
+                uint index = ReadWasmUleb32(image, ref nameOffset, nameEnd);
+                if (ReadWasmName(image, ref nameOffset, nameEnd).EndsWith($"__{expectedMethod}", StringComparison.Ordinal))
+                {
+                    functionIndex = index;
+                    break;
+                }
+            }
+            Assert.NotEqual(uint.MaxValue, functionIndex);
+
+            Assert.True(TryGetWasmSectionBounds(image, WasmSectionKind.Import, out int importOffset, out int importEnd));
+            uint imports = CountWasmImports(ReadWasmImportSection(image, ref importOffset, importEnd), WasmImportKind.Function);
+            Assert.True(TryGetWasmSectionBounds(image, WasmSectionKind.Code, out int offset, out int end));
+            uint functionCount = ReadWasmUleb32(image, ref offset, end);
+            Assert.InRange(functionIndex, imports, imports + functionCount - 1);
+            for (uint i = imports; i < functionIndex; i++)
+            {
+                uint size = ReadWasmUleb32(image, ref offset, end);
+                offset += (int)size;
+            }
+            int entryStart = offset;
+            uint bodySize = ReadWasmUleb32(image, ref offset, end);
+            Assert.Equal(entryStart, mapOffset);
+            Assert.Equal(offset - entryStart + (int)bodySize, mapLength);
+        }
+    }
+
     public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
@@ -89,7 +297,8 @@ internal static class WasmR2RAssert
             Assert.Equal(2u, definedFunctionCount);
         }
 
-        string[] actualFunctionExports = ReadWasmExports(reader)
+        Dictionary<string, WasmExportIndex> exports = ReadWasmExports(reader);
+        string[] actualFunctionExports = exports
             .Where(export => export.Value.Kind == WasmImportKind.Function)
             .Select(export => export.Key)
             .Order(StringComparer.Ordinal)
@@ -115,11 +324,15 @@ internal static class WasmR2RAssert
         AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.TableBaseGlobalIndex);
 
         uint elementCount = ReadWasmUleb32(image, ref offset, end);
-        Assert.True(elementCount >= definedFunctionCount);
+        if (isComponentStub)
+            Assert.Equal(0u, elementCount);
         for (uint slot = 0; slot < elementCount; slot++)
         {
             // There are no imported functions. Multiple table slots may reference one definition.
-            Assert.InRange(ReadWasmUleb32(image, ref offset, end), 0u, definedFunctionCount - 1);
+            uint functionIndex = ReadWasmUleb32(image, ref offset, end);
+            Assert.InRange(functionIndex, 0u, definedFunctionCount - 1);
+            Assert.NotEqual(exports["getWebcilSize"].Index, functionIndex);
+            Assert.NotEqual(exports["patchWebcilHeader"].Index, functionIndex);
         }
         Assert.Equal(end, offset);
 
@@ -133,7 +346,7 @@ internal static class WasmR2RAssert
         Assert.InRange(sizesLength, 8u, (uint)(end - offset));
         uint payloadSize = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset, sizeof(uint)));
         uint tableSize = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset + sizeof(uint), sizeof(uint)));
-        Assert.Equal(elementCount, tableSize);
+        Assert.Equal(Math.Max(1u, elementCount), tableSize);
         offset += checked((int)sizesLength);
 
         Assert.Equal(0u, ReadWasmUleb32(image, ref offset, end)); // active, memory 0
@@ -301,8 +514,8 @@ internal static class WasmR2RAssert
         ReadyToRunMethod secondMethod = methods.Single(method =>
             method.SignatureString.Contains(secondMethodName, StringComparison.Ordinal));
 
-        int firstSlot = firstMethod.EntryPointRuntimeFunctionId;
-        int secondSlot = secondMethod.EntryPointRuntimeFunctionId;
+        int firstSlot = checked((int)reader.WasmMinFunctionTableIndex + firstMethod.EntryPointRuntimeFunctionId);
+        int secondSlot = checked((int)reader.WasmMinFunctionTableIndex + secondMethod.EntryPointRuntimeFunctionId);
         if (firstSlot == secondSlot)
         {
             diagnostic = $"Methods unexpectedly share runtime-function/table slot {firstSlot}.";
@@ -402,8 +615,12 @@ internal static class WasmR2RAssert
         Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(webcilReader);
         uint importedFunctionCount = CountWasmImports(imports, WasmImportKind.Function);
         uint definedFunctionCount = ReadWasmSectionEntryCount(webcilReader, WasmSectionKind.Function);
-        uint expectedCount = importedFunctionCount + definedFunctionCount;
-        string symbolMapPath = Path.ChangeExtension(reader.Filename, ".symbols");
+        return WasmSymbolMapHasExpectedFunctionNames(reader.Filename, importedFunctionCount + definedFunctionCount, out diagnostic);
+    }
+
+    private static bool WasmSymbolMapHasExpectedFunctionNames(string modulePath, uint expectedCount, out string diagnostic)
+    {
+        string symbolMapPath = Path.ChangeExtension(modulePath, ".symbols");
 
         if (!File.Exists(symbolMapPath))
         {
@@ -823,9 +1040,11 @@ internal static class WasmR2RAssert
         return thunkSlots;
     }
 
-    private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader)
+    private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader) =>
+        ReadWasmExports(reader.GetEntireImage().AsSpan());
+
+    private static Dictionary<string, WasmExportIndex> ReadWasmExports(ReadOnlySpan<byte> image)
     {
-        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
         if (!TryGetWasmSectionBounds(image, WasmSectionKind.Export, out int offset, out int sectionEnd))
             throw new BadImageFormatException("WASM image does not contain an export section.");
 

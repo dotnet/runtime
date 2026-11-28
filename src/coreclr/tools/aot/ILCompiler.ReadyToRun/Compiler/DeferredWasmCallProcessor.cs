@@ -16,10 +16,12 @@ using Internal.TypeSystem;
 
 namespace ILCompiler;
 
-internal readonly struct DeferredWasmMethodFinalizationInfo(int level, bool isEager = false)
+internal readonly struct DeferredWasmMethodFinalizationInfo(int level, bool isEager = false, bool isAuxiliary = false)
 {
     public int Level { get; } = level;
     public bool IsEager { get; } = isEager;
+
+    public bool IsAuxiliary { get; } = isAuxiliary;
 }
 
 // #DeferredWasmCallFinalization
@@ -137,18 +139,23 @@ internal sealed class DeferredWasmCallProcessor
             (method, signature), static (key, fallback) => new DeferredWasmCallNode(fallback, key.Signature), import);
     }
 
+    internal static bool IsDirectCallerCandidate(MethodWithGCInfo caller) => !caller.IsAuxiliary;
+
     // Require finalized activation guarantees and bound non-eager activation
     // depth. Eager methods are prepared at module startup instead.
-    internal bool CanUseDirectCall(MethodDesc method, out DeferredWasmMethodFinalizationInfo finalizationInfo)
+    // Direct calls never cross between the primary and auxiliary Wasm modules.
+    internal bool CanUseDirectCall(MethodWithGCInfo caller, MethodDesc callee, out DeferredWasmMethodFinalizationInfo calleeFinalizationInfo)
     {
-        finalizationInfo = default;
+        calleeFinalizationInfo = default;
         return NodeFactory.Target.Architecture == TargetArchitecture.Wasm32 &&
-            _finalizedMethods.TryGetValue(method, out finalizationInfo) &&
-            (finalizationInfo.IsEager || _finalizingEagerMethods ||
-                (!method.IsNoInlining && !method.IsNoOptimization &&
+            _finalizedMethods.TryGetValue(callee, out calleeFinalizationInfo) &&
+            // Direct calls stay within the primary module, so auxiliary bodies are only reached through indirect calls.
+            IsDirectCallerCandidate(caller) && !calleeFinalizationInfo.IsAuxiliary &&
+            (calleeFinalizationInfo.IsEager || _finalizingEagerMethods ||
+                (!callee.IsNoInlining && !callee.IsNoOptimization &&
                     // Include the caller and the level-zero leaf in the activation depth.
-                    (finalizationInfo.Level < DefaultMaxDirectCallActivationDepth - 1 ||
-                        IsDirectCallDepthExempt(method.OwningType))));
+                    (calleeFinalizationInfo.Level < DefaultMaxDirectCallActivationDepth - 1 ||
+                        IsDirectCallDepthExempt(callee.OwningType))));
     }
 
     // Build the post-codegen schedule once. Later quiescence notifications only
@@ -260,7 +267,7 @@ internal sealed class DeferredWasmCallProcessor
                     if (!method.IsEmpty)
                     {
                         finalizedMethods.Add(method.Method);
-                        _finalizedMethods.Add(method.Method, new DeferredWasmMethodFinalizationInfo(level, isEager));
+                        _finalizedMethods.Add(method.Method, new DeferredWasmMethodFinalizationInfo(level, isEager, method.IsAuxiliary));
                         finalizedCount++;
                     }
                 }
@@ -333,7 +340,7 @@ internal sealed class DeferredWasmCallProcessor
         foreach (MethodDesc method in finalizedEagerMethods)
         {
             MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
-            Debug.Assert(!methodNode.IsEmpty);
+            Debug.Assert(!methodNode.IsEmpty && !methodNode.IsAuxiliary);
 
             MethodWithToken methodWithToken = new MethodWithToken(
                 method,
@@ -365,7 +372,12 @@ internal sealed class DeferredWasmCallProcessor
                     MethodDesc target = signature.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (finalizedMethods.Contains(target))
                     {
-                        methodsToVisit.Push(NodeFactory.CompiledMethodNode(target));
+                        MethodWithGCInfo targetNode = NodeFactory.CompiledMethodNode(target);
+                        // The entry can resolve to an interpreter thunk without preparing the auxiliary body.
+                        if (!targetNode.IsAuxiliary)
+                        {
+                            methodsToVisit.Push(targetNode);
+                        }
                     }
                 }
             }

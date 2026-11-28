@@ -128,6 +128,9 @@ namespace ILCompiler.ObjectWriter
 
         private readonly Dictionary<ISymbolDefinitionNode, OutputNode> _nodeSymbolMap = [];
         private readonly Dictionary<ISymbolDefinitionNode, IMethodNode> _methodSymbolMap = [];
+        private Dictionary<OutputNode, (uint Offset, uint Length)> _auxiliaryCodeRanges;
+
+        internal bool HasAuxiliaryCode => _auxiliaryCodeRanges is not null;
 
         private readonly Dictionary<RelocType, int> _relocCounts = [];
 
@@ -170,14 +173,29 @@ namespace ILCompiler.ObjectWriter
         /// pre-shrink entry boundary, so a method node's start and end (which both fall on entry
         /// boundaries) resolve to its real position and length in the emitted module for the perfmap.
         /// </summary>
-        internal void RemapMethodNodeOffsets(int sectionIndex, IReadOnlyDictionary<ulong, ulong> offsetMap)
+        internal void RemapMethodNodeOffsets(int sectionIndex, IReadOnlyDictionary<ulong, ulong> offsetMap,
+            ulong? auxiliaryCodeBoundary, ulong auxiliaryCodeContentFileOffset)
         {
+            if (auxiliaryCodeBoundary.HasValue)
+                _auxiliaryCodeRanges = new();
+
             foreach (OutputNode node in _nodes)
             {
                 if (node.SectionIndex == sectionIndex
                     && offsetMap.TryGetValue(node.Offset, out ulong postStart)
                     && offsetMap.TryGetValue(node.Offset + (ulong)node.Length, out ulong postEnd))
                 {
+                    if (auxiliaryCodeBoundary is ulong boundary && postStart >= boundary)
+                    {
+                        _auxiliaryCodeRanges.Add(node, (checked((uint)(auxiliaryCodeContentFileOffset + (postStart - boundary))),
+                            checked((uint)(postEnd - postStart))));
+
+                        // Keep the node's primary layout empty; the auxiliary layout belongs to a different file.
+                        node.Offset = boundary;
+                        node.Length = 0;
+                        continue;
+                    }
+
                     node.Length = (int)(postEnd - postStart);
                     node.Offset = postStart;
                 }
@@ -201,11 +219,17 @@ namespace ILCompiler.ObjectWriter
             return result;
         }
 
-        public IEnumerable<MethodInfo> EnumerateMethods()
+        public IEnumerable<MethodInfo> EnumerateMethods(bool auxiliary = false)
         {
             TypeNameFormatter typeNameFormatter = TypeString.Instance;
             foreach (KeyValuePair<ISymbolDefinitionNode, IMethodNode> symbolMethodPair in _methodSymbolMap)
             {
+                OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
+                (uint Offset, uint Length) auxiliaryRange = default;
+                bool isAuxiliary = _auxiliaryCodeRanges is not null && _auxiliaryCodeRanges.TryGetValue(node, out auxiliaryRange);
+                if (isAuxiliary != auxiliary)
+                    continue;
+
                 MethodInfo methodInfo = default;
                 if (symbolMethodPair.Value.Method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
@@ -213,10 +237,8 @@ namespace ILCompiler.ObjectWriter
                     methodInfo.AssemblyName = ecmaMethod.Module.Assembly.GetName().Name;
                 }
                 methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
-                OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
-                OutputSection section = _sections[node.SectionIndex];
-                methodInfo.HotRVA = (uint)(section.VirtualAddress + (ulong)node.Offset);
-                methodInfo.HotLength = (uint)node.Length;
+                methodInfo.HotRVA = auxiliary ? auxiliaryRange.Offset : (uint)(_sections[node.SectionIndex].VirtualAddress + node.Offset);
+                methodInfo.HotLength = auxiliary ? auxiliaryRange.Length : (uint)node.Length;
                 methodInfo.ColdRVA = 0;
                 methodInfo.ColdLength = 0;
                 yield return methodInfo;
