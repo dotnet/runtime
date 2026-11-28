@@ -1883,7 +1883,8 @@ ValueNum ValueNumStore::VNForDoubleCon(double cnsVal)
 
 ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
 {
-    return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
+    // Byref constants are stored as host-sized values (see VarTypConv<TYP_BYREF>::Type).
+    return VnForConst(static_cast<size_t>(cnsVal), GetByrefCnsMap(), TYP_BYREF);
 }
 
 #if defined(FEATURE_SIMD)
@@ -4716,7 +4717,7 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
             memcpy(bytes, &int64, sizeof(int64));
             break;
         case TYP_BYREF:
-            nuint = ConstantValue<target_size_t>(arg0VN);
+            nuint = static_cast<target_size_t>(ConstantValue<size_t>(arg0VN));
             memcpy(bytes, &nuint, sizeof(nuint));
             break;
         case TYP_REF:
