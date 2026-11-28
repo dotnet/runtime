@@ -1101,6 +1101,20 @@ protected:
         }
     }
 
+    //-------------------------------------------------------------------------
+    // genReportSameRegGCStore: In fully interruptible code the emitter learns register GC liveness only
+    // from instructions, so when a non-GC value becomes a GC local in the same register (elided move),
+    // start a new IG with codegen's current GC info. Must be called after the store's liveness update.
+    //
+    void genReportSameRegGCStore(var_types targetType, GenTree* data, regNumber dataReg, regNumber targetReg)
+    {
+        if (GetInterruptible() && (targetReg != REG_NA) && (dataReg == targetReg) && varTypeIsGC(targetType) &&
+            !varTypeIsGC(data))
+        {
+            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+        }
+    }
+
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);

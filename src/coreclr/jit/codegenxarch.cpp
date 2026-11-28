@@ -5161,6 +5161,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);
+        genReportSameRegGCStore(targetType, op1, op1->isUsedFromReg() ? op1->GetRegNum() : REG_NA, targetReg);
     }
 }
 

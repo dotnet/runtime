@@ -1260,6 +1260,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 inst_Mov(targetType, targetReg, dataReg, true, emitActualTypeSize(targetType));
             }
             genProduceReg(lclNode);
+            genReportSameRegGCStore(targetType, data, dataReg, targetReg);
         }
     }
 }
