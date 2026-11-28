@@ -436,9 +436,8 @@ namespace Internal.JitInterface
                 }
             }
 
-            // We better come up with the same method that getCallInfo came up with, with the only difference being
-            // that our targetMethod is RuntimeDetermined.
-            Debug.Assert(expectedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            // When no constraint remains, agree with getCallInfo apart from the runtime-determined context.
+            Debug.Assert(constrainedType != null || expectedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
             DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, constrainedType, isLdvirtftn);
@@ -1242,7 +1241,7 @@ namespace Internal.JitInterface
                     }
                 }
 
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution, out bool usesDeclaredStaticDefault);
                 if (directMethod != null && !forceUseRuntimeLookup && directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                 {
                     TypeDesc runtimeConstraint = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
@@ -1273,7 +1272,19 @@ namespace Internal.JitInterface
                 else if (method.Signature.IsStatic)
                 {
                     Debug.Assert(method.OwningType.IsInterface);
-                    exactType = constrainedType;
+                    if (usesDeclaredStaticDefault && exactType == method.OwningType &&
+                        (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0 &&
+                        (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0 &&
+                        pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
+                        MethodBeingCompiled.GetSharedRuntimeFormMethodTarget().HasStaticInterfaceConstraint(constrainedType,
+                            (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken)))
+                    {
+                        constrainedType = null;
+                    }
+                    else
+                    {
+                        exactType = constrainedType;
+                    }
                 }
                 else if (constrainedType.IsValueType)
                 {

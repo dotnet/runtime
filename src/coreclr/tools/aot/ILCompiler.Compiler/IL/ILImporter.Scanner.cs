@@ -730,6 +730,7 @@ namespace Internal.IL
             MethodDesc runtimeDeterminedTarget = null;
 
             MethodDesc methodAfterConstraintResolution = method;
+            bool callDeclaredDefault = false;
             if (_constrained != null)
             {
                 // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
@@ -754,7 +755,7 @@ namespace Internal.IL
                     }
                 }
 
-                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution, out bool usesDeclaredStaticDefault);
                 if (directMethod != null && !forceUseRuntimeLookup && directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                 {
                     runtimeDeterminedTarget = _constrained.TryGetRuntimeDeterminedConstrainedMethod(directMethod, runtimeDeterminedMethod.Instantiation);
@@ -781,7 +782,10 @@ namespace Internal.IL
                 else if (method.Signature.IsStatic)
                 {
                     Debug.Assert(method.OwningType.IsInterface);
-                    exactType = constrained;
+                    callDeclaredDefault = usesDeclaredStaticDefault && opcode == ILOpcode.call && !_constrained.IsRuntimeDeterminedSubtype &&
+                        _methodIL.OwningMethod.HasStaticInterfaceConstraint(_constrained, runtimeDeterminedMethod);
+                    if (!callDeclaredDefault)
+                        exactType = constrained;
                 }
                 else if (constrained.IsValueType)
                 {
@@ -810,7 +814,7 @@ namespace Internal.IL
 
             if (targetMethod.Signature.IsStatic)
             {
-                if (_constrained != null && (!resolvedConstraint || forceUseRuntimeLookup))
+                if (_constrained != null && !callDeclaredDefault && (!resolvedConstraint || forceUseRuntimeLookup))
                 {
                     // Constrained call to static virtual interface method we didn't resolve statically
                     Debug.Assert(targetMethod.IsVirtual && targetMethod.OwningType.IsInterface);
