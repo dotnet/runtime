@@ -25,14 +25,16 @@ inline WasmValueType& operator++(WasmValueType& type)
     return type = static_cast<WasmValueType>(static_cast<unsigned>(type) + 1);
 }
 
-regNumber     MakeWasmReg(unsigned index, var_types type);
-regNumber     MakeWasmReg(unsigned index, WasmValueType type);
+regNumber     MakeWasmReg(unsigned index, var_types type, bool relative = false);
+regNumber     MakeWasmReg(unsigned index, WasmValueType type, bool relative = false);
+regNumber     ResolveRegOffset(regNumber reg, unsigned offset);
 WasmValueType TypeToWasmValueType(var_types type);
 WasmValueType ActualTypeToWasmValueType(var_types type);
 const char*   WasmValueTypeName(WasmValueType type);
 unsigned      UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
 unsigned      WasmRegToIndex(regNumber reg);
 WasmValueType WasmRegToType(regNumber reg);
+bool          genIsRelativeReg(regNumber reg);
 bool          genIsValidReg(regNumber reg);
 bool          genIsValidIntReg(regNumber reg);
 bool          genIsValidIntOrFakeReg(regNumber reg);
