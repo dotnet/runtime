@@ -31,6 +31,12 @@ static uint32_t g_NextTLSSlot = 1;
 static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
 static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
 
+#ifdef TARGET_64BIT
+// See the comment on ThreadLocalData::runtimeThreadLocals: keep libcoreclr's TLS footprint stable.
+static_assert(sizeof(ThreadLocalData) == 96 + sizeof(RuntimeThreadLocals), "Changing the size of ThreadLocalData changes the size of libcoreclr's TLS segment");
+static_assert(offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) % 8 == 0, "ExtendedDirectThreadLocalTLSData must be able to hold 8-byte aligned data");
+#endif
+
 static CrstStatic g_TLSCrst;
 static Volatile<bool> g_hasRetiredTLSIndices = false;
 
@@ -342,6 +348,9 @@ void InitializeThreadStaticData()
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
     CoreLibBinder::GetClass(CLASS__DIRECTONTHREADLOCALDATA);
     CoreLibBinder::GetClass(CLASS__THREADID);
+#ifdef FEATURE_MANAGED_ALLOC_HELPERS
+    CoreLibBinder::GetClass(CLASS__ALLOCHELPERS);
+#endif
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_COOPGC);
 }
 
@@ -759,7 +768,11 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     {
         bool usedDirectOnThreadLocalDataPath = false;
 
-        if (!gcStatic && (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID) || pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
+        bool isAllocHelpers = false;
+#ifdef FEATURE_MANAGED_ALLOC_HELPERS
+        isAllocHelpers = (pMT == CoreLibBinder::GetExistingClass(CLASS__ALLOCHELPERS));
+#endif
+        if (!gcStatic && (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID) || pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA) || isAllocHelpers || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
         {
             if (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
             {
@@ -769,6 +782,14 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
             else if (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID))
             {
                 newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, managedThreadId) - OFFSETOF__CORINFO_Array__data);
+                usedDirectOnThreadLocalDataPath = true;
+            }
+            else if (isAllocHelpers)
+            {
+                // AllocHelpers.t_allocContext (its only thread static) is the first field of the thread's
+                // ee_alloc_context, which is embedded in ThreadLocalData.
+                static_assert(offsetof(RuntimeThreadLocals, alloc_context) == 0 && offsetof(ee_alloc_context, m_CombinedLimit) == 0);
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, runtimeThreadLocals) - OFFSETOF__CORINFO_Array__data);
                 usedDirectOnThreadLocalDataPath = true;
             }
             else

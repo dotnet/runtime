@@ -2324,7 +2324,7 @@ VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 };
 
 // dynamic helpers to Binder ID mapping - See definition of DynamicCorInfoHelpFunc.
-static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
+static BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
 {
 #define JITHELPER(code, pfnHelper, binderId)
 #define DYNAMICJITHELPER(code, pfnHelper, binderId) (pfnHelper != NULL) ? (BinderMethodID)METHOD__NIL : (BinderMethodID)binderId, // If pre-compiled code is provided for a jit helper, prefer that over the IL implementation
@@ -2377,6 +2377,19 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
     hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
+}
+
+// Switch a dynamic helper from its native implementation to an IL implementation in CoreLib.
+// Must be called during startup, before the helper has been handed out.
+void SetJitHelperToILImplementation(DynamicCorInfoHelpFunc ftnNum, BinderMethodID binderId)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
+    _ASSERTE(binderId != METHOD__NIL);
+
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)NULL;
+    hlpDynamicToBinderMap[ftnNum] = binderId;
 }
 
 VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];

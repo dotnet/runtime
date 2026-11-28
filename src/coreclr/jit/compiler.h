@@ -6402,6 +6402,8 @@ public:
     PhaseStatus fgMorphArrayOps();
 
     void fgSetOptions();
+    bool compMustBePartiallyInterruptible();
+    int8_t m_mustBePartiallyInterruptible = -1; // lazily computed by compMustBePartiallyInterruptible
 
 #ifdef DEBUG
     void fgPreExpandQmarkChecks(GenTree* expr);

@@ -120,10 +120,10 @@
 #ifdef FEATURE_EMULATED_TLS
         call    C_FUNC(GetThreadEEAllocContext)
 #else
-        INLINE_GET_TLS_VAR t_runtime_thread_locals
+        INLINE_GET_TLS_VAR t_ThreadStatics
 
-        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
-                lea     rax, [rax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+        .ifnc OFFSETOF__ThreadLocalData__ee_alloc_context, 0
+                lea     rax, [rax + OFFSETOF__ThreadLocalData__ee_alloc_context]
         .endif
 #endif
 .endm

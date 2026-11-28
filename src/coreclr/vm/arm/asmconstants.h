@@ -112,8 +112,10 @@ ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPre
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
 
-#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+// Offset of the thread's ee_alloc_context within ThreadLocalData (t_ThreadStatics)
+#define               OFFSETOF__ThreadLocalData__ee_alloc_context 0x20
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalData__ee_alloc_context == offsetof(ThreadLocalData, runtimeThreadLocals) +
+                                                                     offsetof(RuntimeThreadLocals, alloc_context));
 
 #define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +

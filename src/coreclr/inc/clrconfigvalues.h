@@ -283,6 +283,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces Min
 
 // *Some* relocs are just opportunistic optimizations and can be non-deterministic - it might produce
 // noise for jit-diff like tools.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ManagedAllocHelpers, W("ManagedAllocHelpers"), 0, "Use the managed (System.Private.CoreLib AllocHelpers) allocation fast paths instead of the native ones")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitEnableOptionalRelocs, W("JitEnableOptionalRelocs"), 1, "Allow optional relocs")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary jit to use")
 CONFIG_STRING_INFO(INTERNAL_JitPath, W("JitPath"), "Full path to primary jit to use")

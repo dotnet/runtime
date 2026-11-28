@@ -2297,7 +2297,7 @@ void Thread::PerformPreemptiveGC()
         GCX_COOP();
         m_bGCStressing = TRUE;
 
-        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
+        GCHeapUtilities::GetGCHeap()->StressHeap(&GetRuntimeThreadLocals().alloc_context.m_GCAllocContext);
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;

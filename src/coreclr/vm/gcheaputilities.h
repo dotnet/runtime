@@ -128,6 +128,16 @@ struct ee_alloc_context
     static thread_local PerThreadRandom t_random;
 };
 
+// Per-thread runtime data that lives as long as the OS thread. With FEATURE_MULTITHREADING it is embedded in
+// ThreadLocalData (t_ThreadStatics, see threadstatics.h) so that managed code can reach the allocation context
+// at a fixed offset from the thread statics base; otherwise it is the t_runtime_thread_locals thread local.
+struct RuntimeThreadLocals
+{
+    // on MP systems, each thread has its own allocation chunk so we can avoid
+    // lock prefixes and expensive MP cache snooping stuff
+    ee_alloc_context alloc_context;
+};
+
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);

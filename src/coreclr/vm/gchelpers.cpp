@@ -45,7 +45,7 @@ EXTERN_C ee_alloc_context* GetThreadEEAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    return &t_runtime_thread_locals.alloc_context;
+    return &GetRuntimeThreadLocals().alloc_context;
 }
 
 // Allocate an object on the GC heap.

@@ -410,14 +410,15 @@ public:
     const PortableTailCallFrame* GetFrame() { return m_frame; }
 };
 
-// This struct contains data that lives as long as the current OS thread.
-struct RuntimeThreadLocals
-{
-    // on MP systems, each thread has its own allocation chunk so we can avoid
-    // lock prefixes and expensive MP cache snooping stuff
-    ee_alloc_context alloc_context;
-};
-
+// RuntimeThreadLocals (see gcheaputilities.h) contains data that lives as long as the current OS thread.
+#ifdef FEATURE_MULTITHREADING
+#ifndef DACCESS_COMPILE
+// Embedded in ThreadLocalData so that it shares the TLS block (and the TLS access) with the managed thread statics.
+inline RuntimeThreadLocals& GetRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; return t_ThreadStatics.runtimeThreadLocals; }
+#else
+RuntimeThreadLocals& GetRuntimeThreadLocals(); // Not available in the DAC; declared for headers shared with it.
+#endif // !DACCESS_COMPILE
+#else // FEATURE_MULTITHREADING
 #ifdef _MSC_VER
 // use selectany to avoid initialization de-optimization issues in the compiler
 __declspec(selectany)
@@ -425,6 +426,8 @@ __declspec(selectany)
 extern
 #endif
 PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
+inline RuntimeThreadLocals& GetRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; return t_runtime_thread_locals; }
+#endif // FEATURE_MULTITHREADING
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
@@ -931,7 +934,9 @@ public:
     PTR_RuntimeThreadLocals        m_pRuntimeThreadLocals;
 
 public:
-    inline void InitRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; m_pRuntimeThreadLocals = PTR_RuntimeThreadLocals(&t_runtime_thread_locals); }
+#ifndef DACCESS_COMPILE
+    inline void InitRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; m_pRuntimeThreadLocals = PTR_RuntimeThreadLocals(&GetRuntimeThreadLocals()); }
+#endif // !DACCESS_COMPILE
 
     inline ee_alloc_context* GetEEAllocContext()
     {

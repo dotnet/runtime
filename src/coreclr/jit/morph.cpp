@@ -14523,6 +14523,30 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
  *  Make some decisions about the kind of code to generate.
  */
 
+//------------------------------------------------------------------------
+// compMustBePartiallyInterruptible: Returns true if the method being compiled must never
+//    be made fully interruptible.
+//
+// Notes:
+//    The managed allocation helpers (System.Runtime.CompilerServices.AllocHelpers) bump the
+//    allocation pointer of the thread's allocation context and then store the MethodTable of
+//    the new object. A GC must not observe the thread between these two steps. These helpers
+//    contain no calls/loops in that region, so as long as they are partially interruptible the
+//    only places where the thread can be stopped for GC are the call sites and the return
+//    address (hijack).
+//
+bool Compiler::compMustBePartiallyInterruptible()
+{
+    if (m_mustBePartiallyInterruptible < 0)
+    {
+        m_mustBePartiallyInterruptible =
+            !compIsForInlining() && ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0) &&
+            (lookupNamedIntrinsic(info.compMethodHnd) == NI_System_Runtime_CompilerServices_AllocHelpers);
+    }
+
+    return m_mustBePartiallyInterruptible != 0;
+}
+
 void Compiler::fgSetOptions()
 {
 #if defined(TARGET_WASMARCH)
@@ -14530,17 +14554,18 @@ void Compiler::fgSetOptions()
     optMethodFlags |= OMF_NEEDS_GCPOLLS;
     assert(!GetInterruptible());
 #else
+    const bool mustBePartiallyInterruptible = compMustBePartiallyInterruptible();
 
 #ifdef DEBUG
     /* Should we force fully interruptible code ? */
-    if (JitConfig.JitFullyInt() || compStressCompile(STRESS_GENERIC_VARN, 30))
+    if (!mustBePartiallyInterruptible && (JitConfig.JitFullyInt() || compStressCompile(STRESS_GENERIC_VARN, 30)))
     {
         noway_assert(!codeGen->isGCTypeFixed());
         SetInterruptible(true);
     }
 #endif
 
-    if (opts.compDbgCode)
+    if (opts.compDbgCode && !mustBePartiallyInterruptible)
     {
         assert(!codeGen->isGCTypeFixed());
         SetInterruptible(true); // debugging is easier this way ...

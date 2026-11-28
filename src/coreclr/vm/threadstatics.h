@@ -45,6 +45,8 @@
 #error Thread static storage is only supported in builds with FEATURE_MULTITHREADING.
 #endif // !FEATURE_MULTITHREADING
 
+#include "gcheaputilities.h"
+
 class Thread;
 
 // [cDAC] [Thread]: Contract depends on the values of NonCollectible, Collectible, and DirectOnThreadLocalData.
@@ -96,6 +98,13 @@ struct ThreadLocalData
     PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
     uint32_t managedThreadId;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
+    // The runtime's per-thread data (the allocation context). Embedded here, in the region referenceable by
+    // TLSIndexType::DirectOnThreadLocalData, so that the managed allocation helpers (AllocHelpers.t_allocContext,
+    // FEATURE_MANAGED_ALLOC_HELPERS) reach it at a fixed offset from the thread statics base, and so that the runtime
+    // needs a single TLS variable. Note: on linux, growing libcoreclr's TLS segment can push it out of glibc's static
+    // TLS surplus for dlopen'ed libraries, which makes the TLSDESC resolver dynamic and silently disables the JIT's
+    // inlined thread-static access (CanJITOptimizeTLSAccess); merging the two TLS variables keeps the size unchanged.
+    RuntimeThreadLocals runtimeThreadLocals;
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 

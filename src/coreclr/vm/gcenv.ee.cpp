@@ -496,7 +496,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
+    return &GetRuntimeThreadLocals().alloc_context.m_GCAllocContext;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)

@@ -4197,6 +4197,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
 #else
 
         JITDUMP("Marking method as fully interruptible\n");
+        noway_assert(!compMustBePartiallyInterruptible());
         SetInterruptible(true);
 
 #endif // defined(TARGET_WASMARCH)
@@ -4245,7 +4246,9 @@ public:
 
         if (m_numSuccs == 0)
         {
-            if (block->endsWithTailCallOrJmp(comp, true))
+            // The allocation helpers only tail call their [NoInlining] slow paths, which make a regular
+            // call (a GC safe point), so their tail calls cannot form a loop without GC safe point.
+            if (block->endsWithTailCallOrJmp(comp, true) && !comp->compMustBePartiallyInterruptible())
             {
                 // This tail call might combine with other tail calls to form a
                 // loop. Add a pseudo successor back to the entry to model
