@@ -30,6 +30,13 @@ internal sealed partial class LowLevelLifoSemaphore
                     return true;
                 }
             }
+
+            // Give runnable producers a chance to post work between capped spins. Check for a signal
+            // before yielding and park once the spin budget is spent.
+            if (OperatingSystem.IsLinux() && spinsRemaining > 0 && iteration > Backoff.MaxExponentialBackoffBits && (iteration & 1) == 0)
+            {
+                Thread.UninterruptibleSleep0();
+            }
         }
 
         return WaitNoSpin(timeoutMs);
