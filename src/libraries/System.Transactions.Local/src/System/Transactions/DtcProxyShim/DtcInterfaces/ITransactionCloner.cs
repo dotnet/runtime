@@ -12,7 +12,7 @@ internal partial interface ITransactionCloner
 {
     void Commit(
         [MarshalAs(UnmanagedType.Bool)] bool fRetainingt,
-        OletxXacttc grfTC,
+        Interop.Xolehlp.OletxXacttc grfTC,
         uint grfRM);
 
     void Abort(
