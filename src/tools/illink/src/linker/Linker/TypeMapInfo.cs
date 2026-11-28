@@ -142,13 +142,18 @@ namespace Mono.Linker
         {
             List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new();
 
-            AddRecursiveInterfaces(type, [], firstImplementationChain, context);
+            AddRecursiveInterfaces(type, [], firstImplementationChain, new HashSet<TypeReference>(new TypeReferenceEqualityComparer(context)), context);
             Debug.Assert(firstImplementationChain.All(kvp => context.Resolve(kvp.Item1) == context.Resolve(kvp.Item2.Last().InterfaceType)));
 
             return firstImplementationChain;
 
-            static void AddRecursiveInterfaces(TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, LinkContext Context)
+            static void AddRecursiveInterfaces(TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, HashSet<TypeReference> expanded, LinkContext Context)
             {
+                // Interfaces list every interface they inherit, so the same interface is reached through many paths.
+                // Its first expansion already added everything below it, with the first (kept) chains.
+                if (!expanded.Add(typeRef))
+                    return;
+
                 var type = Context.TryResolve(typeRef);
                 // If we can't resolve the interface type we can't find recursive interfaces
                 if (type is null)
@@ -167,7 +172,7 @@ namespace Mono.Linker
                 foreach (var iface in type.Interfaces)
                 {
                     var ifaceDirectlyOnType = iface.InterfaceType.InflateFrom(typeRef as IGenericInstance);
-                    AddRecursiveInterfaces(ifaceDirectlyOnType, pathToType.Append(iface), firstImplementationChain, Context);
+                    AddRecursiveInterfaces(ifaceDirectlyOnType, pathToType.Append(iface), firstImplementationChain, expanded, Context);
                 }
             }
         }
@@ -338,7 +343,7 @@ namespace Mono.Linker
         /// <param name="implOfInterface">
         /// The InterfaceImplementation on <paramref name="type"/> that points to the DeclaringType of <paramref name="interfaceMethod"/>.
         /// </param>
-        void FindAndAddDefaultInterfaceImplementations(TypeDefinition typeThatImplementsInterface, TypeDefinition typeThatMayHaveDIM, MethodDefinition interfaceMethodToBeImplemented, InterfaceImplementation originalInterfaceImpl)
+        void FindAndAddDefaultInterfaceImplementations(TypeDefinition typeThatImplementsInterface, TypeDefinition typeThatMayHaveDIM, MethodDefinition interfaceMethodToBeImplemented, InterfaceImplementation originalInterfaceImpl, HashSet<TypeDefinition>? visitedInterfaces = null)
         {
             // Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
             // interface method in question.
@@ -347,6 +352,12 @@ namespace Mono.Linker
             {
                 var potentialImplInterface = context.TryResolve(interfaceImpl.InterfaceType);
                 if (potentialImplInterface == null)
+                    continue;
+
+                // Interfaces list every interface they inherit, so the same interface is reachable through many
+                // paths; searching it once is enough, as the outcome doesn't depend on the path.
+                visitedInterfaces ??= new HashSet<TypeDefinition>();
+                if (!visitedInterfaces.Add(potentialImplInterface))
                     continue;
 
                 bool foundImpl = false;
@@ -385,7 +396,7 @@ namespace Mono.Linker
                 // this interface requires could still provide it.
                 if (!foundImpl)
                 {
-                    FindAndAddDefaultInterfaceImplementations(typeThatImplementsInterface, potentialImplInterface, interfaceMethodToBeImplemented, originalInterfaceImpl);
+                    FindAndAddDefaultInterfaceImplementations(typeThatImplementsInterface, potentialImplInterface, interfaceMethodToBeImplemented, originalInterfaceImpl, visitedInterfaces);
                 }
             }
         }

@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
         protected override string TestSuiteName => "Inheritance.Interfaces.RecursiveInterfaces";
 
         [Fact]
+        public Task DeepInterfaceHierarchy()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task GenericInterfaceImplementedRecursively()
         {
             return RunTest(allowMissingWarnings: true);
