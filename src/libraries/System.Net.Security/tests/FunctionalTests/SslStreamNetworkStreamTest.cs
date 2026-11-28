@@ -553,18 +553,24 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
         [SkipOnPlatform(TestPlatforms.Android, "SslStream Renegotiate is not supported in SslStream on Android")]
-        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
+        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate, bool coalesceApplicationData)
         {
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
-            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-            using (client)
-            using (server)
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (ManualChunkingStream chunkingStream = new(clientStream, false))
+            using (DelegateDelegatingStream transport = new(chunkingStream))
+            using (SslStream client = new(transport))
+            using (SslStream server = new(serverStream))
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
@@ -601,12 +607,33 @@ namespace System.Net.Security.Tests
                 await TestHelper.PingPong(client, server);
                 Assert.Null(server.RemoteCertificate);
 
+                TaskCompletionSource flightBuffered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                transport.ReadAsyncMemoryFunc = (memory, token) =>
+                {
+                    if (chunkingStream.PendingWriteLength > 0)
+                    {
+                        flightBuffered.TrySetResult();
+                    }
+
+                    return chunkingStream.ReadAsync(memory, token);
+                };
+                chunkingStream.SetWriteChunking(coalesceApplicationData);
+
                 // Client needs to be reading for renegotiation to happen.
                 byte[] buffer = new byte[TestHelper.s_ping.Length];
                 ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
 
                 negotiateClientCertificateCalled = true;
-                await server.NegotiateClientCertificateAsync(cts.Token);
+                Task negotiation = server.NegotiateClientCertificateAsync(cts.Token);
+                if (coalesceApplicationData)
+                {
+                    await flightBuffered.Task.WaitAsync(cts.Token);
+                    await client.WriteAsync(TestHelper.s_ping, cts.Token);
+                    await chunkingStream.CommitWriteAsync(chunkingStream.PendingWriteLength);
+                    chunkingStream.SetWriteChunking(false);
+                }
+
+                await negotiation;
                 if (sendClientCertificate)
                 {
                     Assert.NotNull(server.RemoteCertificate);
@@ -615,6 +642,13 @@ namespace System.Net.Security.Tests
                 {
                     Assert.Null(server.RemoteCertificate);
                 }
+                if (coalesceApplicationData)
+                {
+                    byte[] received = new byte[TestHelper.s_ping.Length];
+                    await server.ReadExactlyAsync(received, cts.Token);
+                    Assert.Equal(TestHelper.s_ping, received);
+                }
+
                 // Finish the client's read
                 await server.WriteAsync(TestHelper.s_ping, cts.Token);
                 await t;
@@ -623,6 +657,54 @@ namespace System.Net.Security.Tests
                 await TestHelper.PingPong(server, client, cts.Token);
 
                 server.RemoteCertificate?.Dispose();
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Interrupted_Throws(bool closeConnection)
+        {
+            using CancellationTokenSource cts = new(TestConfiguration.PassingTestTimeout);
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    {
+                        TargetHost = Guid.NewGuid().ToString("N"),
+                        EnabledSslProtocols = SslProtocols.Tls13,
+                        LocalCertificateSelectionCallback = (sender, host, certificates, remote, issuers) => clientCertificate,
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate
+                    }, cts.Token),
+                    server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = serverCertificate,
+                        EnabledSslProtocols = SslProtocols.Tls13,
+                        RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true
+                    }, cts.Token));
+                await TestHelper.PingPong(client, server, cts.Token);
+                Assert.Null(server.RemoteCertificate);
+
+                Task negotiation = server.NegotiateClientCertificateAsync(cts.Token);
+                if (closeConnection)
+                {
+                    await client.ShutdownAsync().WaitAsync(cts.Token);
+                }
+                else
+                {
+                    await client.WriteAsync(new byte[] { 42 }, cts.Token);
+                }
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => negotiation);
+                Assert.False(server.IsAuthenticated);
+                await Assert.ThrowsAsync<AuthenticationException>(() => server.ReadAsync(new byte[1], cts.Token).AsTask());
+                await Assert.ThrowsAsync<AuthenticationException>(() => server.WriteAsync(new byte[1], cts.Token).AsTask());
             }
         }
 
