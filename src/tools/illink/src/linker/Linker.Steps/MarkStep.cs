@@ -492,7 +492,7 @@ namespace Mono.Linker.Steps
                         break;
                     case ExportedType exportedType:
                         Annotations.SetProcessed(exportedType);
-                        // No additional processing is done for exported types.
+                        MarkingHelpers.MarkExportedTypeTarget(exportedType, pending.Value);
                         break;
                     default:
                         throw new NotImplementedException(pending.GetType().ToString());
@@ -503,6 +503,12 @@ namespace Mono.Linker.Steps
             {
                 marked = true;
                 ApplyPreserveInfo(type);
+            }
+
+            foreach (var type in Annotations.GetPendingPreservedMembers())
+            {
+                marked = true;
+                ApplyPreservedMembers(type);
             }
 
             foreach (var (method, origin) in Annotations.DrainPendingReflectionVisibleMethods())
@@ -2341,6 +2347,7 @@ namespace Mono.Linker.Steps
             DoAdditionalTypeProcessing(type, typeOrigin);
 
             ApplyPreserveInfo(type);
+            ApplyPreservedMembers(type);
             ApplyPreserveMethods(type, typeOrigin);
 
             return type;
@@ -3065,9 +3072,15 @@ namespace Mono.Linker.Steps
                         break;
                 }
             }
+        }
+
+        void ApplyPreservedMembers(TypeDefinition type)
+        {
+            Annotations.ClearPendingPreservedMembers(type);
 
             if (Annotations.TryGetPreservedMembers(type, out TypePreserveMembers members))
             {
+                var typeOrigin = new MessageOrigin(type);
                 var di = new DependencyInfo(DependencyKind.TypePreserve, type);
 
                 if (type.HasMethods)
