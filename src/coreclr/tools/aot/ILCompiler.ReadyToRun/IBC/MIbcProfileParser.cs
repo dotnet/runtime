@@ -557,12 +557,12 @@ namespace ILCompiler.IBC
                                 // If the method being loaded didn't have meaningful input, skip
                                 methodProfileData.Add(new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData));
                             }
-                            state = MibcGroupParseState.LookingForNextMethod;
-                            exclusiveWeight = 0;
-                            weights = null;
-                            instrumentationDataLongs = null;
-                            pgoSchemaData = null;
                         }
+                        state = MibcGroupParseState.LookingForNextMethod;
+                        exclusiveWeight = 0;
+                        weights = null;
+                        instrumentationDataLongs = null;
+                        pgoSchemaData = null;
                         methodInProgress = null;
                         break;
                     default:
