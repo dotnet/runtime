@@ -790,14 +790,10 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     break;
                 }
 
-#if !FEATURE_FIXED_OUT_ARGS
-                if (!prevArg.AbiInfo.HasAnyRegisterSegment())
+                if (IsArgEvaluatedBefore(prevArg, arg))
                 {
-                    // All stack args are already evaluated and placed in order
-                    // in this case.
                     continue;
                 }
-#endif
 
                 if ((prevArg.GetEarlyNode() == nullptr) || prevArg.m_needTmp)
                 {
@@ -858,6 +854,20 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         {
             if (canEvalToTemp)
             {
+#if defined(TARGET_WASM)
+                // Wasm pushes arguments onto the operand stack in order, so an argument containing a call
+                // can be evaluated in place, after the preceding arguments. Values on the operand stack are
+                // not reported to the GC, so this is only safe if none of the preceding arguments can be a
+                // GC reference.
+                if (m_hasStackArgs || !CanEvaluateWasmCallArgInPlace(&arg))
+                {
+                    SetNeedsTemp(&arg);
+                }
+                else
+                {
+                    JITDUMP("Evaluating call-containing arg [%06u] in place\n", Compiler::dspTreeID(argx));
+                }
+#else
                 if (argCount > 1) // If this is not the only argument
                 {
                     SetNeedsTemp(&arg);
@@ -867,6 +877,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // Spill all arguments that are floating point calls
                     SetNeedsTemp(&arg);
                 }
+#endif // TARGET_WASM
             }
 
             // All previous arguments may need to be evaluated into temps
@@ -877,14 +888,10 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     break;
                 }
 
-#if !FEATURE_FIXED_OUT_ARGS
-                if (!prevArg.AbiInfo.HasAnyRegisterSegment())
+                if (IsArgEvaluatedBefore(prevArg, arg))
                 {
-                    // All stack args are already evaluated and placed in order
-                    // in this case.
                     continue;
                 }
-#endif
 
                 // For all previous arguments, if they have any GTF_ALL_EFFECT
                 //  we require that they be evaluated into a temp
@@ -943,14 +950,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                             break;
                         }
 
-#if !FEATURE_FIXED_OUT_ARGS
-                        if (!prevArg.AbiInfo.HasAnyRegisterSegment())
+                        if (IsArgEvaluatedBefore(prevArg, arg))
                         {
-                            // All stack args are already evaluated and placed in order
-                            // in this case.
                             continue;
                         }
-#endif
+
                         // Invariant here is that all nodes that were not
                         // already evaluated into temps and that throw can only
                         // be throwing the same single exception as the
@@ -1016,7 +1020,31 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             {
                 if (hasStackArgsWeCareAbout)
                 {
-#if !FEATURE_FIXED_OUT_ARGS
+#if defined(TARGET_WASM)
+                    // GT_LCLHEAP must be evaluated before the stack pointer argument is pushed.
+                    // Evaluating it into a temp moves it ahead of all arguments that are not in
+                    // temps, so preceding arguments with side effects must move with it.
+                    //
+                    if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
+                    {
+                        SetNeedsTemp(&arg);
+
+                        for (CallArg& prevArg : Args())
+                        {
+                            if (&prevArg == &arg)
+                            {
+                                break;
+                            }
+
+                            if ((prevArg.GetEarlyNode() != nullptr) &&
+                                ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
+                            {
+                                SetNeedsTemp(&prevArg);
+                            }
+                        }
+                        continue;
+                    }
+#elif !FEATURE_FIXED_OUT_ARGS
                     // On x86 we previously recorded a stack depth of zero when
                     // morphing the register arguments of any GT_IND with a GTF_IND_RNGCHK flag
                     // Thus we can not reorder the argument after any stack based argument.
@@ -1595,6 +1623,76 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
     arg->m_needTmp = true;
     m_needsTemps   = true;
 }
+
+//------------------------------------------------------------------------------
+// IsArgEvaluatedBefore: Check whether a preceding argument is evaluated before
+//   an argument, given the temps decided so far, so that the two cannot be
+//   reordered.
+//
+// Arguments:
+//    prevArg - An argument preceding "arg"
+//    arg     - The argument
+//
+// Return Value:
+//    True if "prevArg" is evaluated before "arg".
+//
+// Notes:
+//    On targets that push arguments (x86), stack arguments are evaluated and
+//    pushed in order, before the temps for later arguments and before all
+//    register arguments.
+//    Wasm pushes all arguments onto the operand stack in order and does not
+//    sort them, so an argument that is not evaluated into a temp is evaluated
+//    after the preceding arguments.
+//
+bool CallArgs::IsArgEvaluatedBefore(CallArg& prevArg, CallArg& arg)
+{
+#if defined(TARGET_WASM)
+    return !arg.m_needTmp;
+#elif !FEATURE_FIXED_OUT_ARGS
+    return !prevArg.AbiInfo.HasAnyRegisterSegment();
+#else
+    return false;
+#endif
+}
+
+#if defined(TARGET_WASM)
+//------------------------------------------------------------------------------
+// CanEvaluateWasmCallArgInPlace: Check whether an argument containing a call
+//   can be evaluated in place, rather than into a temp.
+//
+// Arguments:
+//    arg - The argument containing a call
+//
+// Return Value:
+//    True if no preceding argument can leave a GC reference on the Wasm
+//    operand stack while the call in "arg" executes.
+//
+bool CallArgs::CanEvaluateWasmCallArgInPlace(CallArg* arg)
+{
+    for (CallArg& prevArg : Args())
+    {
+        if (&prevArg == arg)
+        {
+            return true;
+        }
+
+        GenTree* const prevNode = prevArg.GetEarlyNode();
+
+        if ((prevNode == nullptr) || !prevNode->IsValue())
+        {
+            return false;
+        }
+
+        // Addresses of locals refer to the shadow stack frame and need not be reported.
+        if (!varTypeIsArithmetic(prevNode) && !prevNode->OperIs(GT_LCL_ADDR))
+        {
+            return false;
+        }
+    }
+
+    unreached();
+}
+#endif // TARGET_WASM
 
 //------------------------------------------------------------------------------
 // fgMakeTemp: Make a temp variable and store 'value' into it.
