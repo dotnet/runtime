@@ -1063,10 +1063,11 @@ namespace System
 
             if ((integerBitsOfPrecision >= requiredBitsOfPrecision) || (fractionalDigitsPresent == 0))
             {
+                // A zero discarded tail implies any retained fractional part ends in a nonzero digit.
                 return ConvertBigIntegerToFloatingPointBits<TFloat>(
                     ref integerValue,
                     integerBitsOfPrecision,
-                    fractionalDigitsPresent != 0
+                    number.HasNonZeroTail || fractionalDigitsPresent != 0
                 );
             }
 
@@ -1100,7 +1101,7 @@ namespace System
                 return ConvertBigIntegerToFloatingPointBits<TFloat>(
                     ref integerValue,
                     integerBitsOfPrecision,
-                    fractionalDigitsPresent != 0
+                    number.HasNonZeroTail
                 );
             }
 

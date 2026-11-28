@@ -1700,6 +1700,19 @@ namespace System
             throw new OverflowException(SR.Overflow_Decimal);
         }
 
+        internal static void TrimTrailingFractionalZeros(ref NumberBuffer number)
+        {
+            int fractionalStart = Math.Max(number.Scale, 0);
+            int digitsCount = number.DigitsCount;
+
+            if (!number.HasNonZeroTail && fractionalStart < digitsCount && number.Digits[digitsCount - 1] == '0')
+            {
+                digitsCount = fractionalStart + number.Digits.Slice(fractionalStart, digitsCount - fractionalStart).LastIndexOfAnyExcept((byte)'0') + 1;
+                number.DigitsCount = digitsCount;
+                number.Digits[digitsCount] = 0;
+            }
+        }
+
         internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
