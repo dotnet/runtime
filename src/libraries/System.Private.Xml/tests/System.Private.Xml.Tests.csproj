@@ -424,6 +424,7 @@
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\GetExpectedParticles.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\Initialize_EndValidation.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\PropertiesTests.cs" />
+    <Compile Include="XmlSchema\XmlSchemaValidatorApi\XmlSchemaValidatorEventSenderTests.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateAttribute.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateAttribute_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateElement.cs" />

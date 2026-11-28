@@ -1226,7 +1226,7 @@ namespace System.Xml.Schema
                         }
                         if (!contextElementDecl.ContentValidator.CompleteValidation(_context))
                         {
-                            CompleteValidationError(_context, _eventHandler, _nsResolver, _sourceUriString, _positionInfo.LineNumber, _positionInfo.LinePosition, _schemaSet);
+                            CompleteValidationError(_context, _eventHandler, _validationEventSender, _sourceUriString, _positionInfo.LineNumber, _positionInfo.LinePosition, _schemaSet);
                             _context.Validity = XmlSchemaValidity.Invalid;
                         }
                     }
