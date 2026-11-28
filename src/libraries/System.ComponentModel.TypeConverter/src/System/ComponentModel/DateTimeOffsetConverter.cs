@@ -135,8 +135,8 @@ namespace System.ComponentModel
                 {
                     // Special case for empty DateTimeOffset
                     return new InstanceDescriptor(
-                        typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(long) }),
-                        new object[] { dto.Ticks }
+                        typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(long), typeof(TimeSpan) }),
+                        new object[] { dto.Ticks, dto.Offset }
                     );
                 }
 
