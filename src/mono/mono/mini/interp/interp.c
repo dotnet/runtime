@@ -994,6 +994,7 @@ stackval_to_data_sign_ext (MonoType *type, stackval *val, void *data, gboolean p
 			*p = (mono_i)((gint8)val->data.i);
 			break;
 		}
+		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1: {
 			mono_u *p = (mono_u*)data;
 			*p = (mono_u)((guint8)val->data.i);
@@ -1004,6 +1005,7 @@ stackval_to_data_sign_ext (MonoType *type, stackval *val, void *data, gboolean p
 			*p = (mono_i)((gint16)val->data.i);
 			break;
 		}
+		case MONO_TYPE_CHAR:
 		case MONO_TYPE_U2: {
 			mono_u *p = (mono_u*)data;
 			*p = (mono_u)((guint16)val->data.i);
