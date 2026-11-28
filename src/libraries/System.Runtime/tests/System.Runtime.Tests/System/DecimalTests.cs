@@ -1183,18 +1183,7 @@ namespace System.Tests
             yield return new object[] { 79228162514264337567774146561m, 10m, 1m };
             yield return new object[] { 79228162514264337567774146560m, 10m, 0m };
             yield return new object[] { 79228162514264337567774146559m, 10m, 9m };
-        }
 
-        [Theory]
-        [MemberData(nameof(Remainder_Valid_TestData))]
-        public static void Remainder(decimal d1, decimal d2, decimal expected)
-        {
-            Assert.Equal(expected, d1 % d2);
-            Assert.Equal(expected, decimal.Remainder(d1, d2));
-        }
-
-        public static IEnumerable<object[]> Remainder_Valid_TestDataV2()
-        {
             yield return new object[] { decimal.MaxValue, 0.1m, 0.0m };
             yield return new object[] { decimal.MaxValue, 7.081881059m, 3.702941036m };
             yield return new object[] { decimal.MaxValue, 2004094637636.6280382536104438m, 1980741879937.1051521151154118m };
@@ -1206,16 +1195,20 @@ namespace System.Tests
             yield return new object[] { 1667m, 325.66574961026426932314500573m, 38.67125194867865338427497135m };
             yield return new object[] { 1667m, 0.00000000013630700224712809m, 0.00000000002527942770321278m };
             yield return new object[] { 60596869520933069.9m, 8063773.1275438997671m, 5700076.9722872002614m };
+
+            yield return new object[] { 4294967295m, 1m, 0m };
+            yield return new object[] { 4294967295m, 1.0000000000000000000000000000m, 0.0000000000000000000000000000m };
+            yield return new object[] { 4294967296m, 0.1428571428571428571428571429m, 0.1428571428571428558543669541m };
+            yield return new object[] { decimal.MaxValue, 1.0000000000000000000000000000m, 0.0000000000000000000000000000m };
         }
 
         [Theory]
-        [MemberData(nameof(Remainder_Valid_TestDataV2))]
-        public static void RemainderV2(decimal d1, decimal d2, decimal expected)
+        [MemberData(nameof(Remainder_Valid_TestData))]
+        public static void Remainder(decimal d1, decimal d2, decimal expected)
         {
             Assert.Equal(expected, d1 % d2);
             Assert.Equal(expected, decimal.Remainder(d1, d2));
         }
-
 
         public static IEnumerable<object[]> Remainder_Invalid_TestData()
         {
