@@ -14,7 +14,7 @@ namespace Internal.IL.Stubs
         {
             var otherMethod = (StructMarshallingThunk)other;
 
-            int result = ThunkType - otherMethod.ThunkType;
+            int result = (int)ThunkType - (int)otherMethod.ThunkType;
             if (result != 0)
                 return result;
 
