@@ -5734,9 +5734,8 @@ void Compiler::generatePatchpointInfo()
 #ifdef TARGET_ARM64
         if (lvaLocalIsOnUnknownSizeFrame(varNum))
         {
-            // The UnknownSizeFrame starts at the end of the original frame.
-            // All addressing is relative to this location locals with unknown size.
-            int unkSizeFrameOffset = -codeGen->genTotalFrameSize();
+            // genUnknownSizeFrame places its base above the fixed frame's outgoing argument area.
+            int unkSizeFrameOffset = -codeGen->genTotalFrameSize() + (int)lvaOutgoingArgSpaceSize;
 
             stackOffset = unkSizeFrameOffset + unkSizeFrame.GetExactOffset(varDsc, getRuntimeVectorTByteLength());
         }
