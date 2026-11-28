@@ -3313,11 +3313,16 @@ namespace System.Tests
             { new DateTime(2011, 3, 27, 2, 0, 0), "Europe/Moscow", true },
         };
 
-        [Theory]
+        [ConditionalTheory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [MemberData(nameof(InvalidTimeTestData))]
         public static void IsInvalidTimeTestOnLinux(DateTime testTime, string timeZoneId, bool expectedIsInvalid)
         {
+            if (timeZoneId == "Pacific/Kiritimati" && OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                throw new SkipTestException("Kiritimati time zone data may be outdated on Android API levels below 29.");
+            }
+
             TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
             Assert.Equal(expectedIsInvalid, timeZone.IsInvalidTime(testTime));
         }
