@@ -52,6 +52,14 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void*)
     return false;
 }
 
+#ifdef TARGET_ARM64
+bool ExecutableAllocator::IsInPreferredPageRelativeRange(void*)
+{
+    LIMITED_METHOD_CONTRACT;
+    return false;
+}
+#endif
+
 void* ExecutableAllocator::Reserve(size_t size)
 {
     LIMITED_METHOD_CONTRACT;
@@ -258,8 +266,8 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
 {
 #if USE_LAZY_PREFERRED_RANGE
 
-#ifdef _DEBUG
-    // If GetForceRelocs is enabled we don't constrain the pMinAddr
+#if defined(_DEBUG) && (!defined(TARGET_ARM64) || defined(FEATURE_PORTABLE_ENTRYPOINTS))
+    // Normally ForceRelocs skips preferred placement. ARM64 uses this range for its near/far heap stress.
     if (PEDecoder::GetForceRelocs())
         return;
 #endif
@@ -269,6 +277,10 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
     // to coreclr.dll.  This avoids having to create jump stubs for calls to
     // helpers and R2R images loaded close to coreclr.dll.
     //
+    // Windows arm64 keeps the existing radius. BL reaches 128 MiB, while ADRP can
+    // span the nearly 4 GiB between the endpoints. Code allocated past one end can
+    // lose reach to data near the other. Measure how much of the range arm64 workloads
+    // use before changing its size.
     SIZE_T reach = 0x7FFF0000u;
 
     // We will choose the preferred code region based on the address of coreclr.dll. The JIT helpers
@@ -325,6 +337,39 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
     LIMITED_METHOD_CONTRACT;
     return g_preferredRangeMin <= (BYTE *)p && (BYTE *)p < g_preferredRangeMax;
 }
+
+#ifdef TARGET_ARM64
+#ifdef _DEBUG
+void ExecutableAllocator::GetStressCodeRange(bool preferFarHeap, const BYTE*& lo, const BYTE*& hi)
+{
+    LIMITED_METHOD_CONTRACT;
+    lo = g_preferredRangeMin;
+    hi = g_preferredRangeMax;
+    if (preferFarHeap && lo < hi)
+    {
+        // An approved target may itself be up to 4 GiB outside the preferred range.
+        const UINT_PTR gap = 8ull << 30;
+        const UINT_PTR size = 1ull << 30;
+        UINT_PTR start = (UINT_PTR)lo > gap + size ? (UINT_PTR)lo - gap - size : (UINT_PTR)hi + gap;
+        lo = (BYTE*)start;
+        hi = (BYTE*)(start + size);
+    }
+}
+#endif
+
+bool ExecutableAllocator::IsInPreferredPageRelativeRange(void* target)
+{
+    LIMITED_METHOD_CONTRACT;
+    if (g_preferredRangeMin >= g_preferredRangeMax)
+        return false;
+
+    // ADRP always uses 4 KiB pages, including on hosts with larger OS pages.
+    INT64 page = (INT64)((UINT_PTR)target >> 12);
+    INT64 first = (INT64)((UINT_PTR)g_preferredRangeMin >> 12);
+    INT64 last = (INT64)(((UINT_PTR)g_preferredRangeMax - 1) >> 12);
+    return FitsInArm64PageDelta(page - last) && FitsInArm64PageDelta(page - first);
+}
+#endif
 
 ExecutableAllocator* ExecutableAllocator::Instance() noexcept
 {

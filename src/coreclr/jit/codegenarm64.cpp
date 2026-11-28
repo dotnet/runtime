@@ -1600,6 +1600,26 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     }
 }
 
+// MOVZ supplies zero halfwords and MOVN supplies all-ones halfwords for free.
+struct MoveWideFill
+{
+    unsigned zeros;
+    unsigned ones;
+};
+
+static MoveWideFill countMoveWideFill(ssize_t value, emitAttr size)
+{
+    MoveWideFill fill = {};
+    unsigned     bits = (size == EA_8BYTE) ? 64 : 32;
+    for (unsigned shift = 0; shift < bits; shift += 16)
+    {
+        uint16_t halfword = static_cast<uint16_t>(static_cast<uint64_t>(value) >> shift);
+        fill.zeros += halfword == 0;
+        fill.ones += halfword == UINT16_MAX;
+    }
+    return fill;
+}
+
 //  move an immediate value into an integer register
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,
@@ -1609,15 +1629,19 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
-    if (!m_compiler->opts.compReloc)
+    if (!m_compiler->opts.compReloc && !EA_IS_RELOC(size))
     {
-        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
+        // Strip the GC flags so a move wide chain stays untyped, a register holding a
+        // partial address must never be scanned as a reference. A caller that tagged the
+        // attr deliberately takes the reloc path below, where only the trailing ADD
+        // carries the GC type.
+        size = EA_SIZE(size);
     }
 
     if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
-        GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+        GetEmitter()->emitPageRelativeAddress(size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else if (imm == 0)
     {
@@ -1643,22 +1667,15 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // with ones
 
             // Determine whether movn or movz will require the fewest instructions to populate the immediate
-            int preferMovn = 0;
-
-            for (int i = (immSize == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
-            {
-                if (uint16_t(imm >> i) == 0xffff)
-                    ++preferMovn; // a single movk 0xffff could be skipped if movn was used
-                else if (uint16_t(imm >> i) == 0x0000)
-                    --preferMovn; // a single movk 0 could be skipped if movz was used
-            }
+            MoveWideFill fill       = countMoveWideFill(imm, immSize);
+            bool         preferMovn = fill.ones > fill.zeros;
 
             // Select the first instruction.  Any additional instruction will use movk
-            instruction ins = (preferMovn > 0) ? INS_movn : INS_movz;
+            instruction ins = preferMovn ? INS_movn : INS_movz;
 
             // Initial movz or movn will fill the remaining bytes with the skipVal
             // This can allow skipping filling a halfword
-            uint16_t skipVal = (preferMovn > 0) ? 0xffff : 0;
+            uint16_t skipVal = preferMovn ? 0xffff : 0;
 
             unsigned bits = (immSize == EA_8BYTE) ? 64 : 32;
 
@@ -1725,6 +1742,18 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 {
                     // no need to generate because we generate it as part of GT_CALL
                     break;
+                }
+            }
+            else if (con->IsIconHandle() && con->TypeIs(targetType) &&
+                     ((targetType == TYP_REF) || (targetType == TYP_I_IMPL)) &&
+                     !emitter::emitIns_valid_imm_for_mov(cnsVal, EA_8BYTE))
+            {
+                // ADRP + ADD wins only if the absolute address takes at least three instructions.
+                MoveWideFill fill = countMoveWideFill(cnsVal, EA_8BYTE);
+                if ((fill.zeros < 2) && (fill.ones < 2) && con->AddrNeedsReloc(m_compiler))
+                {
+                    // Tag the attr and fall through to the same reloc materialization AOT uses.
+                    attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
                 }
             }
 
@@ -4661,9 +4690,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         if (m_compiler->opts.compReloc)
         {
             // adrp + add with relocations will be emitted
-            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTargetReg,
-                                       (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
-                                           DEBUGARG(GTF_ICON_METHOD_HDL));
+            GetEmitter()->emitPageRelativeAddress(EA_PTR_DSP_RELOC, callTargetReg,
+                                                  (ssize_t)pAddr DEBUGARG((size_t)m_compiler->eeFindHelper(helper))
+                                                      DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {

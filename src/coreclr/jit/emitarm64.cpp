@@ -9047,37 +9047,16 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
     appendToCurIG(addId);
 }
 
-// This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction  ins,
-                           emitAttr     attr,
-                           regNumber    ireg,
-                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+// Emit the untracked page address shared by relocatable handle loads and address materialization.
+void emitter::emitIns_Adrp(regNumber reg, ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    assert(EA_IS_RELOC(attr));
-    emitAttr      size    = EA_SIZE(attr);
-    insFormat     fmt     = IF_DI_1E;
-    bool          needAdd = false;
-    instrDescJmp* id      = emitNewInstrJmp();
-
-    switch (ins)
-    {
-        case INS_adrp:
-            // This computes page address.
-            // page offset is needed using add.
-            needAdd = true;
-            break;
-        case INS_adr:
-            break;
-        default:
-            unreached();
-    }
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
+    instrDescJmp* id = emitNewInstrJmp();
+    id->idIns(INS_adrp);
+    id->idInsFmt(IF_DI_1E);
     id->idInsOpt(INS_OPTS_NONE);
-    id->idOpSize(size);
+    id->idOpSize(EA_PTRSIZE);
     id->idAddr()->iiaAddr = (BYTE*)addr;
-    id->idReg1(ireg);
+    id->idReg1(reg);
     id->idSetIsDspReloc();
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
@@ -9086,26 +9065,30 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     dispIns(id);
     appendToCurIG(id);
+}
 
-    if (needAdd)
-    {
-        // add reg, reg, imm
-        ins           = INS_add;
-        fmt           = IF_DI_2A;
-        instrDesc* id = emitNewInstr(attr);
-        assert(id->idIsReloc());
+// Materialize a relocatable address with ADRP and ADD.
+void emitter::emitPageRelativeAddress(emitAttr     attr,
+                                      regNumber    ireg,
+                                      ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+{
+    assert(EA_IS_RELOC(attr));
+    emitIns_Adrp(ireg, addr DEBUGARG(targetHandle) DEBUGARG(gtFlags));
 
-        id->idIns(ins);
-        id->idInsFmt(fmt);
-        id->idInsOpt(INS_OPTS_NONE);
-        id->idOpSize(size);
-        id->idAddr()->iiaAddr = (BYTE*)addr;
-        id->idReg1(ireg);
-        id->idReg2(ireg);
+    // The ADD completes the address and carries the result's GC type.
+    instrDesc* id = emitNewInstr(attr);
+    id->idSetIsDspReloc();
 
-        dispIns(id);
-        appendToCurIG(id);
-    }
+    id->idIns(INS_add);
+    id->idInsFmt(IF_DI_2A);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idOpSize(EA_SIZE(attr));
+    id->idAddr()->iiaAddr = (BYTE*)addr;
+    id->idReg1(ireg);
+    id->idReg2(ireg);
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
@@ -15046,6 +15029,17 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
+        if (addr->IsIconHandle() && !addr->IsIconHandle(GTF_ICON_TLS_HDL))
+        {
+            assert(ins == INS_ldr && EA_SIZE(attr) == EA_PTRSIZE && !EA_IS_BYREF(attr));
+            GenTreeIntCon* cell = addr->AsIntCon();
+            ssize_t        sym  = cell->IconValue();
+            assert(((size_t)sym % TARGET_POINTER_SIZE) == 0);
+            emitIns_Adrp(dataReg, sym DEBUGARG(cell->GetTargetHandle()) DEBUGARG(cell->gtFlags));
+            emitPageOffsetLoad(attr, dataReg, (void*)sym);
+            return;
+        }
+
         assert(addr->OperIs(GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
 
         int   offset = 0;
@@ -18198,19 +18192,23 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
     // Drop the "add"; the preceding "adrp" already put the page base of 'sym' into reg1.
     emitRemoveLastInstruction();
 
-    // Emit "ldr reg1, [reg1]" carrying a PAGEOFFSET_12L relocation against 'sym'. The instruction
-    // encodes a zero offset; the relocation deposits the scaled :lo12: page offset of 'sym'.
+    emitPageOffsetLoad(attr, reg1, sym);
+    return true;
+}
+
+void emitter::emitPageOffsetLoad(emitAttr attr, regNumber reg, void* sym)
+{
+    // The relocation supplies the scaled page offset for this load.
     instrDesc* id = emitNewInstrSC(attr, (ssize_t)sym);
     id->idIns(INS_ldr);
     id->idInsFmt(IF_LS_2A);
     id->idInsOpt(INS_OPTS_NONE);
-    id->idReg1(reg1);
-    id->idReg2(reg1);
+    id->idReg1(reg);
+    id->idReg2(reg);
     id->idSetIsDspReloc();
 
     dispIns(id);
     appendToCurIG(id);
-    return true;
 }
 
 #if defined(FEATURE_SIMD)

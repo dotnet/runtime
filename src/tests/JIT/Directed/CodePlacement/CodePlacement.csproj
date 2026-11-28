@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64' or '$(RuntimeFlavor)' != 'coreclr' or '$(Configuration)' == 'Release' or '$(TargetsMobile)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CodePlacement.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>

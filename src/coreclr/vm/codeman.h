@@ -451,6 +451,9 @@ class CodeHeapRequestInfo final
     bool         m_isCollectible;
     bool         m_isInterpreted;
     bool         m_isOptimizedCode;
+#ifdef _DEBUG
+    bool         m_hasRequiredRange;
+#endif
 
 public:
     CodeHeapRequestInfo(MethodDesc* pMD);
@@ -462,11 +465,19 @@ public:
     bool   IsDynamicDomain()                    { return m_isDynamicDomain;    }
     void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
 
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    void SetStressCodeRange(bool preferFarHeap);
+    void ClearStressCodeRange() { m_loAddr = m_hiAddr = nullptr; }
+#endif
     const BYTE* GetLoAddr()                     { return m_loAddr;             }
     const BYTE* GetHiAddr()                     { return m_hiAddr;             }
 
     // Requests for specific memory ranges return NULL instead of throwing OutOfMemoryException if the request cannot be satisfied.
     bool   IsSpecificMemoryRangeRequested()     { return m_loAddr != NULL || m_hiAddr != NULL; }
+
+#ifdef _DEBUG
+    bool   HasRequiredRange() const             { return m_hasRequiredRange;   }
+#endif
 
     bool   IsCollectible()                      { return m_isCollectible;      }
 

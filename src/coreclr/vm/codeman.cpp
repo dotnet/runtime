@@ -2582,8 +2582,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         if (loAddr != NULL || hiAddr != NULL)
         {
 #ifdef _DEBUG
-            // Always exercise the fallback path in the caller when forced relocs are turned on
-            if (PEDecoder::GetForceRelocs())
+            if (pInfo->HasRequiredRange() && PEDecoder::GetForceRelocs())
                 return NULL;
 #endif
             pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(reserveSize, loAddr, hiAddr);
@@ -2678,6 +2677,14 @@ void * LoaderCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD
     return p;
 }
 
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+void CodeHeapRequestInfo::SetStressCodeRange(bool preferFarHeap)
+{
+    LIMITED_METHOD_CONTRACT;
+    ExecutableAllocator::GetStressCodeRange(preferFarHeap, m_loAddr, m_hiAddr);
+}
+#endif
+
 CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD)
     : CodeHeapRequestInfo{ pMD, NULL, NULL, NULL }
 {
@@ -2701,6 +2708,10 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllo
     , m_isCollectible{ false }
     , m_isInterpreted{ false }
     , m_isOptimizedCode{ false }
+#ifdef _DEBUG
+    // The jump-stub caller requires its range. A range set later for placement stress is only a preference.
+    , m_hasRequiredRange{ loAddr != nullptr || hiAddr != nullptr }
+#endif
 {
     CONTRACTL
     {
@@ -3108,6 +3119,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     else
 #endif // FEATURE_INTERPRETER
     {
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        if (PEDecoder::GetForceRelocs() && !requestInfo.IsDynamicDomain())
+        {
+            // Mix near and far methods in the same loader. Retries and instantiations of a
+            // method stay in the same range, so a run of far methods can reuse the estimate.
+            requestInfo.SetStressCodeRange((RidFromToken(pMD->GetMemberDef()) & 1) != 0);
+        }
+#endif
         requestInfo.SetReserveForJumpStubs(reserveForJumpStubs);
 
         realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos);
@@ -3145,6 +3164,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
 
         *ppCodeHeap = NULL;
         TADDR pCode = (TADDR) AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), totalSize, alignment, ppCodeHeap);
+#if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        if (pCode == 0 && requestInfo.IsSpecificMemoryRangeRequested())
+        {
+            // Stress placement is best effort. The requested range may be full.
+            requestInfo.ClearStressCodeRange();
+            pCode = (TADDR)AllocCodeWorker(&requestInfo, sizeof(TCodeHeader), totalSize, alignment, ppCodeHeap);
+        }
+#endif
         _ASSERTE(*ppCodeHeap);
         _ASSERTE(IS_ALIGNED(pCode, alignment));
 

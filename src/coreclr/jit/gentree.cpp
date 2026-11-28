@@ -20924,6 +20924,29 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
     }
 }
 
+#elif defined(TARGET_ARM64)
+// Returns true if this absolute address can be materialized or addressed with an ADRP
+// page relative pair.
+bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
+{
+    return AddrNeedsReloc(comp);
+}
+
+// Returns true if this icon value should be encoded page relatively, recording a
+// relocation with the VM.
+bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
+{
+    if (comp->opts.compReloc)
+    {
+        // Under AOT every handle is a symbol in the image and reach is the linker's problem.
+        return IsIconHandle();
+    }
+
+    // At runtime the hint says whether the target page stays reachable from anywhere in
+    // the preferred code range, the fixup time check and retry in the VM cover the rare miss.
+    return IsIconHandle() && (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::ARM64_PAGEBASE_REL21);
+}
+
 #elif defined(TARGET_X86)
 // Returns true if this absolute address fits within the base of an addr mode.
 // On x86 all addresses are 4-bytes and can be directly encoded in an addr mode.
