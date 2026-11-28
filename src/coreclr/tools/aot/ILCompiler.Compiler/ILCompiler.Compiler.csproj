@@ -51,6 +51,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Mangling.cs" Link="IL\Stubs\AsyncResumptionStub.Mangling.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\AsyncMethodIL.cs" Link="IL\AsyncMethodIL.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
       <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>

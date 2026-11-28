@@ -2362,6 +2362,98 @@ public unsafe class StackWalkTests
         Assert.Equal(shadowFrameAddr, context.FramePointer.Value);
     }
 
+    // On wasm64 (memory64 + table64) the R2R shadow frame stores its identity as a UINT_PTR at offset 0
+    // and the function-local virtual IP in the second pointer-sized slot (WASM_STACKFRAME_VIRTUALIP_OFFSET
+    // is TARGET_POINTER_SIZE), and virtual IPs start at (1 << 63) | 1 (ExecutionManager::WasmInitialVirtualIP).
+    // The shadow frame and the PortableEntryPoint are above 4 GiB, so a 32-bit read of any of them is wrong.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UpdateContextFromFrame_Wasm64R2RInlinedCallFrame_DerivesVirtualIPFromCallSiteSP(bool coreLibIdentity)
+    {
+        MockTarget.Architecture wasm64Arch = new() { IsLittleEndian = true, Is64Bit = true };
+        const uint FunctionTableIndex = 5;
+        const ulong Wasm64InitialVirtualIP = 0x8000_0000_0000_0001;
+        const uint FunctionBeginAddress = 0x100;
+        const uint LocalVirtualIPHalf = 3;
+        const ulong HighMemory = 0x1_0000_0000;
+
+        ulong shadowFrameAddr = 0;
+        MockInlinedCallFrame? icf = null;
+        TestPlaceholderTarget target = CreateTarget(
+            wasm64Arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder => icf = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 1, datum: 0, callSiteSP: 0, calleeSavedFP: 0xBAD0),
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                MockMemorySpace.BumpAllocator highAllocator = targetBuilder.MemoryBuilder.CreateAllocator(HighMemory + 0x0010_0000, HighMemory + 0x0010_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, Wasm64InitialVirtualIP, FunctionBeginAddress);
+                // CoreLib identities are ~(runtimeFunctionIndex << 1) at pointer width.
+                ulong frameIdentity = coreLibIdentity
+                    ? ~0ul
+                    : AddWasmPortableEntryPointAddress(targetBuilder, highAllocator, FunctionTableIndex);
+
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                MockMemorySpace.HeapFragment shadowFrame = highAllocator.Allocate(16, "R2RShadowFrame");
+                helpers.WritePointer(shadowFrame.Data.AsSpan(0, helpers.PointerSize), frameIdentity);
+                helpers.Write(shadowFrame.Data.AsSpan(helpers.PointerSize, sizeof(uint)), LocalVirtualIPHalf);
+                shadowFrameAddr = shadowFrame.Address;
+                icf!.CallSiteSP = shadowFrameAddr;
+            });
+
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(icf!.Address);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(shadowFrameAddr, context.StackPointer.Value);
+        Assert.Equal(Wasm64InitialVirtualIP + FunctionBeginAddress + LocalVirtualIPHalf * 2, context.InstructionPointer.Value);
+        Assert.Equal(shadowFrameAddr, context.FramePointer.Value);
+    }
+
+    // The wasm64 native T_CONTEXT (src/coreclr/pal/inc/pal.h) is a ULONG ContextFlags followed by four
+    // ULONG_PTR slots: InterpreterWalkFramePointer @8, InterpreterSP @16, InterpreterFP @24, InterpreterIP @32.
+    [Fact]
+    public void GetContextForPlatform_Wasm64_MirrorsNativeLayoutAndRoundTripsRegisters()
+    {
+        MockTarget.Architecture wasm64Arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget target = CreateTarget(
+            wasm64Arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm);
+
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        Assert.Equal(40u, context.Size);
+
+        const ulong WalkFramePointer = 0x1_0004_9000;
+        const ulong StackPointer = 0x1_0004_1000;
+        const ulong FramePointer = 0x1_0004_3000;
+        const ulong InstructionPointer = 0x8000_0000_0000_2001;
+        Assert.True(context.TrySetRegister("interpreterwalkframepointer", new TargetNUInt(WalkFramePointer)));
+        context.StackPointer = new TargetPointer(StackPointer);
+        context.FramePointer = new TargetPointer(FramePointer);
+        context.InstructionPointer = new TargetCodePointer(InstructionPointer);
+        context.RawContextFlags = 0x8000000; // CONTEXT_EXCEPTION_ACTIVE
+
+        ReadOnlySpan<byte> bytes = context.GetBytes();
+        Assert.Equal(40, bytes.Length);
+        Assert.Equal(0x8000000u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes));
+        Assert.Equal(WalkFramePointer, System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..]));
+        Assert.Equal(StackPointer, System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes[16..]));
+        Assert.Equal(FramePointer, System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes[24..]));
+        Assert.Equal(InstructionPointer, System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes[32..]));
+
+        IPlatformAgnosticContext copy = IPlatformAgnosticContext.GetContextForPlatform(target);
+        copy.FillFromBuffer(bytes.ToArray());
+        Assert.True(copy.TryReadRegister("interpreterwalkframepointer", out TargetNUInt walkFp));
+        Assert.Equal(WalkFramePointer, walkFp.Value);
+        Assert.Equal(StackPointer, copy.StackPointer.Value);
+        Assert.Equal(FramePointer, copy.FramePointer.Value);
+        Assert.Equal(InstructionPointer, copy.InstructionPointer.Value);
+    }
+
     // A WASM walk seeded from the Frame chain must terminate when an active InlinedCallFrame does
     // not lead to managed code: either an R2R marker whose shadow frame yields no virtual IP, or a
     // return address outside any code range. WASM advertises the Debugger contract with a null
@@ -2978,6 +3070,12 @@ public unsafe class StackWalkTests
         TestPlaceholderTarget.Builder targetBuilder,
         MockMemorySpace.BumpAllocator allocator,
         uint functionTableIndex)
+        => checked((uint)AddWasmPortableEntryPointAddress(targetBuilder, allocator, functionTableIndex));
+
+    private static ulong AddWasmPortableEntryPointAddress(
+        TestPlaceholderTarget.Builder targetBuilder,
+        MockMemorySpace.BumpAllocator allocator,
+        uint functionTableIndex)
     {
         TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
         TargetTestHelpers.LayoutResult layout = helpers.LayoutFields([
@@ -2995,7 +3093,7 @@ public unsafe class StackWalkTests
         {
             [DataType.PortableEntryPoint] = new() { Fields = layout.Fields, Size = layout.Stride },
         });
-        return checked((uint)portableEntryPoint.Address);
+        return portableEntryPoint.Address;
     }
 
     // WASM advertises the Debugger contract, but the in-process debugger is not built there, so

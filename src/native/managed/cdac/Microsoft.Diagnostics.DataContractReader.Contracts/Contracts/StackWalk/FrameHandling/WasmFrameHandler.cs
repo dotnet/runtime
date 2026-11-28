@@ -23,14 +23,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 ///
 /// Hijack frames are a debugger / GC-suspension concept that is not yet supported on WASM.
 /// </remarks>
-internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext> contextHolder)
+internal sealed class WasmFrameHandler<TContext>(Target target, ContextHolder<TContext> contextHolder)
     : BaseFrameHandler(target, contextHolder), IPlatformFrameHandler
+    where TContext : unmanaged, IPlatformContext
 {
     // INLINED_PINVOKE_FROM_R2R from src/coreclr/vm/frames.h. An R2R inlined P/Invoke has no native
     // return address on WASM, so the runtime stores this marker and derives IP/SP from CallSiteSP.
     private const ulong InlinedPInvokeFromR2R = 1;
 
-    private readonly ContextHolder<WasmContext> _holder = contextHolder;
+    private readonly ContextHolder<TContext> _holder = contextHolder;
 
     public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
@@ -74,7 +75,7 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
     // so the base handler would leave FP stale.
     public override void HandleSoftwareExceptionFrame(SoftwareExceptionFrame softwareExceptionFrame)
     {
-        ContextHolder<WasmContext> saved = new();
+        ContextHolder<TContext> saved = new();
         saved.ReadFromAddress(_target, softwareExceptionFrame.TargetContext);
 
         _holder.Context.InstructionPointer = saved.Context.InstructionPointer;

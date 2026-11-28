@@ -84,8 +84,6 @@ else()
   check_function_exists(kqueue HAVE_KQUEUE)
 endif()
 
-check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
-check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
 check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
 
@@ -136,14 +134,6 @@ cmake_push_check_state()
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
 cmake_pop_check_state()
-
-check_cxx_source_compiles("
-#include <pthread_np.h>
-int main(int argc, char **argv) {
-  cpuset_t cpuSet;
-
-  return 0;
-}" HAVE_CPUSET_T)
 
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)

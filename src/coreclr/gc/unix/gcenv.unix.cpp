@@ -1049,6 +1049,27 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 #endif // HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 }
 
+bool GCToOSInterface::ResetThreadAffinity()
+{
+#if HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
+    uint32_t cpusToAllocate = std::max(g_configuredCpuCount, (uint32_t)CPU_SETSIZE);
+    size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
+    cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
+    if (pCpuSet == nullptr)
+    {
+        return false;
+    }
+
+    bool success = sched_getaffinity(getpid(), cpuSetSize, pCpuSet) == 0 &&
+                   sched_setaffinity(0, cpuSetSize, pCpuSet) == 0;
+    CPU_FREE(pCpuSet);
+    return success;
+#else
+    // This platform did not reset inherited affinity in the PAL.
+    return true;
+#endif
+}
+
 // Boosts the calling thread's thread priority to a level higher than the default
 // for new threads.
 // Parameters:

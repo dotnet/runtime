@@ -910,6 +910,11 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     }
 }
 
+bool GCToOSInterface::ResetThreadAffinity()
+{
+    return true;
+}
+
 // Boosts the calling thread's thread priority to a level higher than the default
 // for new threads.
 // Parameters:

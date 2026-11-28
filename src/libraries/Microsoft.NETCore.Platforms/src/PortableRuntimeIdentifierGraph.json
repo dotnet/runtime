@@ -58,6 +58,12 @@
         "unix-arm64"
       ]
     },
+    "freebsd-ppc64le": {
+      "#import": [
+        "freebsd",
+        "unix-ppc64le"
+      ]
+    },
     "freebsd-x64": {
       "#import": [
         "freebsd",
