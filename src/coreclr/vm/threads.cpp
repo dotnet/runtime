@@ -81,6 +81,12 @@ TailCallTls::TailCallTls()
 PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 #endif
 
+#if (defined(TARGET_ARM64) && defined(TARGET_UNIX) && !defined(TARGET_APPLE)) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+// Offset of t_runtime_thread_locals from the thread pointer when it lives in static TLS (the same for every
+// thread), 0 otherwise. Lets the allocation helpers skip the TLS access call (see INLINE_GET_ALLOC_CONTEXT_BASE).
+extern "C" size_t g_runtimeThreadLocalsTlsOffset = 0;
+#endif
+
 Thread* STDCALL GetThreadHelper()
 {
     return GetThreadNULLOk();
@@ -1290,6 +1296,24 @@ void InitThreadManager()
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 #endif // !FEATURE_PORTABLE_HELPERS
+
+#if ((defined(TARGET_ARM64) && defined(TARGET_UNIX) && !defined(TARGET_APPLE)) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)) && \
+    !defined(TARGET_ANDROID) && !defined(FEATURE_EMULATED_TLS)
+    // CanJITOptimizeTLSAccess() is true only when the runtime's thread locals are in static TLS, which is what
+    // makes their thread pointer relative offset the same for all threads.
+    if (CanJITOptimizeTLSAccess())
+    {
+        uint8_t* tp;
+#if defined(TARGET_ARM64)
+        __asm__("mrs %0, tpidr_el0" : "=r"(tp));
+#elif defined(TARGET_LOONGARCH64)
+        __asm__("move %0, $tp" : "=r"(tp));
+#else
+        __asm__("mv %0, tp" : "=r"(tp));
+#endif
+        g_runtimeThreadLocalsTlsOffset = (size_t)((uint8_t*)&t_runtime_thread_locals - tp);
+    }
+#endif
 
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);

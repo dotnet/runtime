@@ -1037,11 +1037,11 @@ static bool IsValidTLSResolver()
     // and verify if that is as expected.
     uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
     int ip = 0;
-    if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f))
+    if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f) || (resolverAddress[ip] == 0xd503245f))
     {
         // nop might not be present in older resolver, so skip it.
 
-        // nop or hint 32
+        // nop, hint 32 (bti) or hint 34 (bti c, glibc built with branch protection)
         ip++;
     }
 
