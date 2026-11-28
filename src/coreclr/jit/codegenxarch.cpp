@@ -6316,8 +6316,16 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     }
     else if (lea->HasIndex())
     {
-        GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), REG_NA, lea->Index()->GetRegNum(), lea->gtScale,
-                                    lea->Offset());
+        regNumber indexReg = lea->Index()->GetRegNum();
+        if (lea->gtScale == 2)
+        {
+            // Prefer 'lea [reg + reg]' over 'lea [reg * 2]' as the later forces the 32-bit displacement
+            GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), indexReg, indexReg, 1, lea->Offset());
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), REG_NA, indexReg, lea->gtScale, lea->Offset());
+        }
     }
 
     genProduceReg(lea);
