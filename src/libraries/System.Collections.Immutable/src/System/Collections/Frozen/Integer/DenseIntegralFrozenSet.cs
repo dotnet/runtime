@@ -22,7 +22,7 @@ namespace System.Collections.Frozen
         /// needs a whole value slot per possible key, the bitmap only needs a single bit per possible value (stored
         /// as 8-byte words covering 32 values each). With a value of 64, the bitmap thus needs at most 16 bytes per
         /// item, which is no more than the bucket table alone of the hashing-based implementations (at least two
-        /// 8-byte buckets per item).
+        /// 8-byte buckets per item, up to millions of items).
         /// </remarks>
         private const int LengthToCountFactor = 64;
 
@@ -193,6 +193,9 @@ namespace System.Collections.Frozen
 
             internal WithBitmap(T[] items, BitmapWord[] words, int min) : base(EqualityComparer<T>.Default)
             {
+                // The lookups rely on there being at least one word.
+                Debug.Assert(words.Length > 0);
+
                 _items = items;
                 _words = words;
                 _min = min;
@@ -217,8 +220,9 @@ namespace System.Collections.Frozen
 
                 // Values outside of the bitmap look at the first word, without any of its bits. The word index is thus always
                 // within the bitmap, so the word can be read without a bounds check.
-                Debug.Assert(words.Length > 0);
-                ref BitmapWord word = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(words), (int)((offset >> 5) & (uint)inRange));
+                uint wordIndex = (offset >> 5) & (uint)inRange;
+                Debug.Assert(wordIndex < (uint)words.Length);
+                ref BitmapWord word = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(words), (int)wordIndex);
 
                 // The bits of the word up to and including the value's bit, moved to the top (shifts of 32-bit values only use
                 // the lower 5 bits of the count, i.e. 31 minus the offset within the word): the value is present if and only if

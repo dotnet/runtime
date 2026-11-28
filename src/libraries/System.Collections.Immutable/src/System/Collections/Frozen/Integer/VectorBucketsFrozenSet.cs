@@ -171,13 +171,14 @@ namespace System.Collections.Frozen
 
         internal VectorBucketsFrozenSet(TUnsigned[] values, byte[] bucketCounts, ulong multiplier) : base(EqualityComparer<T>.Default)
         {
-            Debug.Assert(BitOperations.IsPow2(bucketCounts.Length));
+            Debug.Assert(bucketCounts.Length >= 2 && BitOperations.IsPow2(bucketCounts.Length));
 
             int bucketCapacity = Vector128<TUnsigned>.Count;
 
             // The lookups read the buckets without bounds checks, which is safe as long as every hash is less than the number
-            // of buckets. Deriving the shift from the number of buckets here guarantees that: it leaves only Log2(bucketCounts.Length)
-            // bits of the hash, and _bucketStarts and _buckets are allocated below for bucketCounts.Length buckets.
+            // of buckets. Deriving the shift from the number of buckets (a power of 2, and at least 2 so that the shift is less
+            // than the number of bits hashed) here guarantees that: it leaves only Log2(bucketCounts.Length) bits of the hash,
+            // and _bucketStarts and _buckets are allocated below for bucketCounts.Length buckets.
             _multiplier = multiplier;
             _shift = VectorBucketsFrozenSet.GetShift<TUnsigned>(BitOperations.Log2((uint)bucketCounts.Length));
             _bucketStarts = new byte[bucketCounts.Length];
@@ -233,9 +234,11 @@ namespace System.Collections.Frozen
 
             // The result is computed without branching on whether the value was found (as Vector128.IndexOf would once
             // inlined into a loop), as such a branch is mispredicted half of the time when hits and misses are mixed.
+            // There are at most 8 lanes, so with bit 16 set, TrailingZeroCount returns 16 if there's no match, without
+            // ever being given 0 (when it isn't a single instruction, i.e. without BMI1, it would then branch on it).
             uint matches = Vector128.Equals(slots, Vector128.Create(value)).ExtractMostSignificantBits();
-            int lane = BitOperations.TrailingZeroCount(matches); // 32 if there's no match
-            return (_bucketStarts[bucket] + lane) | -(lane >> 5);
+            int lane = BitOperations.TrailingZeroCount(matches | (1u << 16));
+            return (_bucketStarts[bucket] + lane) | -(lane >> 4);
         }
 
         internal struct GSW : IGenericSpecializedWrapper

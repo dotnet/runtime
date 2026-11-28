@@ -121,25 +121,46 @@ namespace System.Collections.Frozen
             TUnsigned value = Unsafe.BitCast<T, TUnsigned>(item);
 
             // The result is computed without branching on whether the value was found (as IndexOf would once inlined into
-            // a loop), as such a branch is mispredicted half of the time when hits and misses are mixed. When there's no
-            // match, TrailingZeroCount returns the number of bits of the mask (32 or 64), which the shift turns into -1.
+            // a loop), as such a branch is mispredicted half of the time when hits and misses are mixed. The index of the
+            // first match is computed with TrailingZeroCount, which is never given 0 when it isn't a single instruction
+            // (without BMI1, or for 64-bit values on 32-bit platforms), as it would then branch on it.
             if (typeof(TVector) == typeof(Vector128<TUnsigned>))
             {
+                // There are at most 16 lanes, so with bit 16 set, TrailingZeroCount returns 16 if there's no match.
                 uint matches = Vector128.Equals(Unsafe.BitCast<TVector, Vector128<TUnsigned>>(_vector), Vector128.Create(value)).ExtractMostSignificantBits();
-                int index = BitOperations.TrailingZeroCount(matches);
-                return index | -(index >> 5);
+                int index = BitOperations.TrailingZeroCount(matches | (1u << 16));
+                return index | -(index >> 4);
             }
 
             if (typeof(TVector) == typeof(Vector256<TUnsigned>))
             {
+                // Vector256 is only used when accelerated, i.e. with AVX2, so TrailingZeroCount is a single instruction.
                 uint matches = Vector256.Equals(Unsafe.BitCast<TVector, Vector256<TUnsigned>>(_vector), Vector256.Create(value)).ExtractMostSignificantBits();
-                int index = BitOperations.TrailingZeroCount(matches);
+                int index = BitOperations.TrailingZeroCount(matches); // 32 if there's no match
                 return index | -(index >> 5);
             }
 
             Debug.Assert(typeof(TVector) == typeof(Vector512<TUnsigned>));
             ulong matches512 = Vector512.Equals(Unsafe.BitCast<TVector, Vector512<TUnsigned>>(_vector), Vector512.Create(value)).ExtractMostSignificantBits();
-            int index512 = BitOperations.TrailingZeroCount(matches512);
+            int index512;
+            if (Vector512<TUnsigned>.Count <= 32)
+            {
+                index512 = BitOperations.TrailingZeroCount((uint)matches512); // 32 if there's no match
+                return index512 | -(index512 >> 5);
+            }
+
+            if (IntPtr.Size == 8)
+            {
+                index512 = BitOperations.TrailingZeroCount(matches512); // 64 if there's no match
+            }
+            else
+            {
+                // On 32-bit platforms, the halves are counted separately, the upper one only counting if the lower one is 0.
+                int lower = BitOperations.TrailingZeroCount((uint)matches512);
+                int upper = BitOperations.TrailingZeroCount((uint)(matches512 >> 32));
+                index512 = lower + (upper & -(lower >> 5)); // 64 if there's no match
+            }
+
             return index512 | -(index512 >> 6);
         }
 

@@ -31,9 +31,9 @@ namespace System.Collections.Frozen.Tests
             ContiguousFromZero,
             /// <summary>All values from -count / 2 to count / 2, i.e. wrapping around for unsigned types.</summary>
             ContiguousAroundZero,
-            /// <summary>All values up to the max value of the type.</summary>
+            /// <summary>All values up to the max value of the signed type of the same size (i.e. around the middle of the range for unsigned types).</summary>
             ContiguousToMax,
-            /// <summary>All values from the min value of the type.</summary>
+            /// <summary>All values from the min value of the signed type of the same size (i.e. around the middle of the range for unsigned types).</summary>
             ContiguousFromMin,
             /// <summary>All values up to -1, i.e. up to the max value for unsigned types.</summary>
             ContiguousToMinusOne,
@@ -45,7 +45,7 @@ namespace System.Collections.Frozen.Tests
             LargerGaps,
             /// <summary>Random values across the whole range of the type.</summary>
             Random,
-            /// <summary>Values close to the min and to the max of the type.</summary>
+            /// <summary>Values close to the min and to the max of the signed type of the same size.</summary>
             Extremes,
         }
 
