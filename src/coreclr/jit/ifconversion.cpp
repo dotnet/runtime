@@ -51,6 +51,7 @@ private:
     bool IfConvertCheckFlow();
     bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
     bool IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenStore, IfConvertOperation* foundOperation);
+    bool MayBeLoopCarried();
 
     GenTree* TryOptimizeSelect(GenTreeConditional* select);
     GenTree* TrySelectToCnsOpCond(GenTreeConditional* select);
@@ -351,6 +352,163 @@ void OptIfConversionDsc::IfConvertDump()
 #endif
 
 //-----------------------------------------------------------------------------
+// MayBeLoopCarried
+//
+// Cheap check whether the selected value (or a local computed from it in the
+// blocks following the select) may feed the condition of this select on the
+// next loop iteration, or is used as an address.
+//
+// Returns:
+//   true if a branch is likely preferable to a select inside a loop.
+//
+bool OptIfConversionDsc::MayBeLoopCarried()
+{
+    assert(m_mainOper == GT_STORE_LCL_VAR);
+
+    if (m_finalBlock == nullptr)
+    {
+        return true;
+    }
+
+    const unsigned maxLcls = 8;
+    static_assert(maxLcls <= 32);
+    unsigned lcls[maxLcls];
+    unsigned lclCount = 0;
+
+    auto trackLcl = [&](unsigned lclNum) {
+        if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed() || (lclCount == maxLcls))
+        {
+            return false;
+        }
+        lcls[lclCount++] = lclNum;
+        return true;
+    };
+
+    auto findLcl = [&](GenTree* node) -> int {
+        unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* dsc    = m_compiler->lvaGetDesc(lclNum);
+        for (unsigned i = 0; i < lclCount; i++)
+        {
+            if ((lcls[i] == lclNum) || (dsc->lvIsStructField && (lcls[i] == dsc->lvParentLcl)))
+            {
+                return static_cast<int>(i);
+            }
+        }
+        return -1;
+    };
+
+    auto readsTracked = [&](GenTree* tree) {
+        for (unsigned i = 0; i < lclCount; i++)
+        {
+            if (m_compiler->gtTreeHasLocalRead(tree, lcls[i]))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if (!trackLcl(m_thenOperation.node->AsLclVar()->GetLclNum()))
+    {
+        return true;
+    }
+
+    // Collect the blocks following the final block, staying within the loop when
+    // the weights allow to tell.
+    const unsigned maxBlocks = 8;
+    BasicBlock*    blocks[maxBlocks];
+    unsigned       blockCount = 0;
+    blocks[blockCount++]      = m_finalBlock;
+    const bool useWeights     = m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05;
+    for (unsigned b = 0; b < blockCount; b++)
+    {
+        for (BasicBlock* const succ : blocks[b]->Succs())
+        {
+            if ((succ == m_startBlock) || (useWeights && (succ->getBBWeight(m_compiler) <= BB_UNITY_WEIGHT * 1.05)))
+            {
+                continue;
+            }
+            bool visited = false;
+            for (unsigned i = 0; !visited && (i < blockCount); i++)
+            {
+                visited = blocks[i] == succ;
+            }
+            if (!visited)
+            {
+                if (blockCount == maxBlocks)
+                {
+                    break;
+                }
+                blocks[blockCount++] = succ;
+            }
+        }
+    }
+
+    // Track locals computed from the selected value until a fixpoint is reached.
+    // Give up if a tracked value is used as an address: a branch lets the CPU
+    // speculate past that load.
+    unsigned scannedCount;
+    do
+    {
+        scannedCount = lclCount;
+        for (unsigned b = 0; b < blockCount; b++)
+        {
+            for (Statement* const stmt : blocks[b]->Statements())
+            {
+                for (GenTree* const node : stmt->TreeList())
+                {
+                    if (node->OperIsIndirOrArrMetaData())
+                    {
+                        if (readsTracked(node->GetIndirOrArrMetaDataAddr()))
+                        {
+                            JITDUMP("MayBeLoopCarried: address use [%06u]\n", m_compiler->dspTreeID(node));
+                            return true;
+                        }
+                    }
+                    else if (node->OperIsLocalStore() && (findLcl(node) < 0) && readsTracked(node->Data()))
+                    {
+                        if (!trackLcl(node->AsLclVarCommon()->GetLclNum()))
+                        {
+                            JITDUMP("MayBeLoopCarried: too many locals or AE\n");
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    } while (scannedCount != lclCount);
+
+    // Check whether any tracked local is live into the JTRUE block.
+    unsigned definedMask = 0;
+    for (Statement* const stmt : m_startBlock->Statements())
+    {
+        for (GenTree* const node : stmt->TreeList())
+        {
+            if (!node->OperIsAnyLocal())
+            {
+                continue;
+            }
+            int index = findLcl(node);
+            if (index < 0)
+            {
+                continue;
+            }
+            if (node->OperIs(GT_STORE_LCL_VAR) && (node->AsLclVar()->GetLclNum() == lcls[index]))
+            {
+                definedMask |= 1u << index;
+            }
+            else if ((definedMask & (1u << index)) == 0)
+            {
+                JITDUMP("MayBeLoopCarried: V%02u live into JTRUE block\n", lcls[index]);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // optIfConvert
 //
 // Find blocks representing simple if statements represented by conditional jumps
@@ -552,29 +710,29 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-    if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    if ((m_mainOper == GT_STORE_LCL_VAR) &&
+        !m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
-        // Don't optimise the block if it is inside a loop. Loop-carried
-        // dependencies can cause significant stalls if if-converted.
+        // Don't optimise the block if it is inside a loop and the select may be part of
+        // a loop-carried dependency: such dependencies can cause significant stalls.
         // Detect via the block weight as that will be high when inside a loop.
-
-        if (m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05)
+        bool inLoop = m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05;
+        if (!inLoop)
         {
-            JITDUMP("Skipping if-conversion inside loop (via weight)\n");
-            return false;
+            // We may be inside an unnatural loop, so do the expensive check.
+            Compiler::ReachabilityResult reachability =
+                m_compiler->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
+            if (reachability == Compiler::ReachabilityResult::BudgetExceeded)
+            {
+                JITDUMP("Skipping if-conversion since we ran out of reachability budget\n");
+                return false;
+            }
+            inLoop = reachability == Compiler::ReachabilityResult::Reachable;
         }
 
-        // We may be inside an unnatural loop, so do the expensive check.
-        Compiler::ReachabilityResult reachability =
-            m_compiler->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
-        if (reachability == Compiler::ReachabilityResult::Reachable)
+        if (inLoop && MayBeLoopCarried())
         {
-            JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
-            return false;
-        }
-        else if (reachability == Compiler::ReachabilityResult::BudgetExceeded)
-        {
-            JITDUMP("Skipping if-conversion since we ran out of reachability budget\n");
+            JITDUMP("Skipping if-conversion inside loop\n");
             return false;
         }
     }
