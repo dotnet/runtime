@@ -24,6 +24,7 @@
   <ItemGroup>
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />
+    <Compile Include="ConditionalTypeReferences.cs" />
     <Compile Include="DependencyInjectionPattern.cs" />
     <Compile Include="ILLinkDescriptor.cs" />
     <Compile Include="ILLinkLinkAttributes.cs" />
