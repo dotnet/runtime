@@ -297,24 +297,6 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     return value;
 }
 
-// Return the local underlying an address of the form lcl or lcl + constant.
-static GenTreeLclVar* GetNullCheckBase(GenTree* addr, ssize_t* offset = nullptr)
-{
-    ssize_t displacement = 0;
-    if (addr->OperIs(GT_ADD) && !addr->gtOverflow() && addr->gtGetOp2()->IsCnsIntOrI() &&
-        !addr->gtGetOp2()->IsIconHandle())
-    {
-        displacement = addr->gtGetOp2()->AsIntCon()->IconValue();
-        addr         = addr->gtGetOp1();
-    }
-
-    if (offset != nullptr)
-    {
-        *offset = displacement;
-    }
-    return addr->OperIs(GT_LCL_VAR) ? addr->AsLclVar() : nullptr;
-}
-
 //----------------------------------------------------------------
 // optFoldNullChecks: Try to find a GT_NULLCHECK node that can be folded into the indirection node mark it for removal
 // if possible.
@@ -360,7 +342,10 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
             nullCheckParent->gtFlags &= ~GTF_DONT_CSE;
         }
 
-        nullCheckMap->Remove(GetNullCheckBase(nullCheckTree->gtGetOp1())->GetLclNum());
+        GenTree*       base = nullCheckTree->AsIndir()->Addr();
+        target_ssize_t offset;
+        gtPeelOffsets(&base, &offset);
+        nullCheckMap->Remove(base->AsLclVar()->GetLclNum());
 
         // Re-morph the statement.
         Statement* curStmt = compCurStmt;
@@ -373,10 +358,12 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 
     if (tree->OperIs(GT_NULLCHECK))
     {
-        GenTreeLclVar* base = GetNullCheckBase(tree->gtGetOp1());
-        if (base != nullptr)
+        GenTree*       base = tree->AsIndir()->Addr();
+        target_ssize_t offset;
+        gtPeelOffsets(&base, &offset);
+        if (base->OperIs(GT_LCL_VAR))
         {
-            nullCheckMap->Set(base->GetLclNum(), tree, LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
+            nullCheckMap->Set(base->AsLclVar()->GetLclNum(), tree, LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
         }
     }
 
@@ -412,15 +399,16 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree*       addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
-    ssize_t        offsetValue;
-    GenTreeLclVar* lclVarNode = GetNullCheckBase(addr, &offsetValue);
-    if (lclVarNode == nullptr)
+    GenTree*       base = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
+    target_ssize_t offsetValue;
+    gtPeelOffsets(&base, &offsetValue);
+    if (!base->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
 
-    const unsigned ssaNum = lclVarNode->GetSsaNum();
+    GenTreeLclVar* lclVarNode = base->AsLclVar();
+    const unsigned ssaNum     = lclVarNode->GetSsaNum();
     if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
     {
         return nullptr;
@@ -433,12 +421,14 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
     {
         GenTree*       nullCheckAddr = nullCheckTree->AsIndir()->Addr();
-        ssize_t        checkOffset;
-        GenTreeLclVar* checkBase = GetNullCheckBase(nullCheckAddr, &checkOffset);
+        GenTree*       checkBase     = nullCheckAddr;
+        target_ssize_t checkOffset;
+        gtPeelOffsets(&checkBase, &checkOffset);
 
         // For a derived address, the load or store must access the exact offset we checked.
-        if ((checkBase == nullptr) || (checkBase->GetLclNum() != lclNum) || (checkBase->GetSsaNum() != ssaNum) ||
-            (nullCheckAddr->OperIs(GT_ADD) && (!tree->OperIs(GT_IND, GT_STOREIND) || (checkOffset != offsetValue))))
+        if (!checkBase->OperIs(GT_LCL_VAR) || (checkBase->AsLclVar()->GetLclNum() != lclNum) ||
+            (checkBase->AsLclVar()->GetSsaNum() != ssaNum) ||
+            ((checkBase != nullCheckAddr) && (!tree->OperIs(GT_IND, GT_STOREIND) || (checkOffset != offsetValue))))
         {
             nullCheckTree = nullptr;
         }
