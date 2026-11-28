@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,7 @@ namespace System.Collections.Frozen
         private const int MaxSlotsPerItem = 8;
 
         /// <summary>The odd multipliers tried, in order, as hash functions.</summary>
+        /// <remarks>When values are hashed with 32-bit arithmetic, only the lower 32 bits of the multipliers are used, which are odd too.</remarks>
         private static ReadOnlySpan<ulong> Multipliers =>
         [
             0x9E3779B97F4A7C15, 0xBF58476D1CE4E5B9, 0x94D049BB133111EB, 0xD6E8FEB86659FD93,
@@ -33,9 +35,10 @@ namespace System.Collections.Frozen
                 source.Count <= Constants.MaxItemsInVectorBucketsFrozenCollection &&
                 Constants.IsIntegralOrEnum<T>())
             {
+                // Single-byte values aren't handled: there are at most 256 of them, so if they don't all fit in a single
+                // vector, they're always dense enough for DenseIntegralFrozenSet.
                 switch (Unsafe.SizeOf<T>())
                 {
-                    case sizeof(byte): return CreateIfValid<T, byte>(source);
                     case sizeof(ushort): return CreateIfValid<T, ushort>(source);
                     case sizeof(uint): return CreateIfValid<T, uint>(source);
                     case sizeof(ulong): return CreateIfValid<T, ulong>(source);
@@ -60,9 +63,9 @@ namespace System.Collections.Frozen
                 values[i++] = Unsafe.BitCast<T, TUnsigned>(item);
             }
 
-            // Start with a 50% load factor (and at least 2 buckets, so that the shift below is never 64), and double
-            // the number of buckets until a multiplier is found that doesn't overflow any bucket, giving up once there
-            // would be more than MaxSlotsPerItem slots per item.
+            // Start with a 50% load factor (and at least 2 buckets, so that the shift is less than the number of bits
+            // hashed), and double the number of buckets until a multiplier is found that doesn't overflow any bucket,
+            // giving up once there would be more than MaxSlotsPerItem slots per item.
             int bucketCountLog2 = 1;
             while ((bucketCapacity << bucketCountLog2) < 2 * count)
             {
@@ -72,12 +75,12 @@ namespace System.Collections.Frozen
             for (; (bucketCapacity << bucketCountLog2) <= Math.Max(count * MaxSlotsPerItem, 2 * bucketCapacity); bucketCountLog2++)
             {
                 byte[] bucketCounts = new byte[1 << bucketCountLog2];
-                int shift = 64 - bucketCountLog2;
+                int shift = GetShift<TUnsigned>(bucketCountLog2);
                 foreach (ulong multiplier in Multipliers)
                 {
                     if (TryCountBucketItems(values, multiplier, shift, bucketCounts, bucketCapacity))
                     {
-                        return new VectorBucketsFrozenSet<T, TUnsigned>(values, bucketCounts, multiplier, shift);
+                        return new VectorBucketsFrozenSet<T, TUnsigned>(values, bucketCounts, multiplier);
                     }
                 }
             }
@@ -101,10 +104,29 @@ namespace System.Collections.Frozen
             return true;
         }
 
+        /// <summary>
+        /// Gets whether values of type <typeparamref name="TUnsigned"/> are hashed with 32-bit arithmetic: on 32-bit platforms,
+        /// for values of up to 32 bits, as 64-bit multiplications and shifts need helper calls there.
+        /// </summary>
+        private static bool Hash32<TUnsigned>() => IntPtr.Size == 4 && Unsafe.SizeOf<TUnsigned>() <= sizeof(uint);
+
+        /// <summary>Gets the shift of the hash function for the specified base-2 log of the number of buckets.</summary>
+        /// <remarks>It leaves exactly <paramref name="bucketCountLog2"/> bits of the hash, so that every bucket index is in range.</remarks>
+        internal static int GetShift<TUnsigned>(int bucketCountLog2)
+            where TUnsigned : unmanaged, IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
+        {
+            Debug.Assert(bucketCountLog2 is > 0 and < 32);
+            return (Hash32<TUnsigned>() ? 32 : 64) - bucketCountLog2;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetBucket<TUnsigned>(TUnsigned value, ulong multiplier, int shift)
             where TUnsigned : unmanaged, IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned> =>
-            (int)((ulong.CreateTruncating(value) * multiplier) >> shift);
+            Hash32<TUnsigned>() ?
+                (int)((uint.CreateTruncating(value) * (uint)multiplier) >> shift) :
+                (int)((ulong.CreateTruncating(value) * multiplier) >> shift);
+
+        internal sealed class DebuggerProxy<T, TUnsigned>(IEnumerable<T> enumerable) : ImmutableEnumerableDebuggerProxy<T>(enumerable);
     }
 
     /// <summary>
@@ -117,10 +139,13 @@ namespace System.Collections.Frozen
     /// Each bucket holds a <see cref="Vector128{T}"/> worth of values, e.g. 4 values for <see cref="int"/>. As the set
     /// is immutable, the number of buckets and the hash function are chosen at construction such that no bucket overflows,
     /// so a lookup never needs to look at more than one bucket: it's a multiplication, a shift, and a single vector
-    /// comparison, without any data-dependent loop.
+    /// comparison, without any data-dependent loop or branch.
     /// For the types supported, equality as defined by <see cref="EqualityComparer{T}.Default"/> is bitwise equality, so
-    /// values are stored and compared as the unsigned integer type of the same size.
+    /// values are stored and compared as the unsigned integer type of the same size, which they're reinterpreted as with
+    /// <see cref="Unsafe.BitCast{TFrom, TTo}"/>: both types are integers (or enums) without references, and of the same
+    /// size, which <see cref="Unsafe.BitCast{TFrom, TTo}"/> validates too.
     /// </remarks>
+    [DebuggerTypeProxy(typeof(VectorBucketsFrozenSet.DebuggerProxy<,>))]
     internal sealed class VectorBucketsFrozenSet<T, TUnsigned> : FrozenSetInternalBase<T, VectorBucketsFrozenSet<T, TUnsigned>.GSW>
         where TUnsigned : unmanaged, IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
     {
@@ -141,15 +166,20 @@ namespace System.Collections.Frozen
         /// <summary>The multiplier of the multiplicative hash function.</summary>
         private readonly ulong _multiplier;
 
-        /// <summary>The shift of the multiplicative hash function: 64 minus the base-2 log of the number of buckets.</summary>
+        /// <summary>The shift of the multiplicative hash function, which leaves as many bits as needed to index the buckets.</summary>
         private readonly int _shift;
 
-        internal VectorBucketsFrozenSet(TUnsigned[] values, byte[] bucketCounts, ulong multiplier, int shift) : base(EqualityComparer<T>.Default)
+        internal VectorBucketsFrozenSet(TUnsigned[] values, byte[] bucketCounts, ulong multiplier) : base(EqualityComparer<T>.Default)
         {
+            Debug.Assert(BitOperations.IsPow2(bucketCounts.Length));
+
             int bucketCapacity = Vector128<TUnsigned>.Count;
 
+            // The lookups read the buckets without bounds checks, which is safe as long as every hash is less than the number
+            // of buckets. Deriving the shift from the number of buckets here guarantees that: it leaves only Log2(bucketCounts.Length)
+            // bits of the hash, and _bucketStarts and _buckets are allocated below for bucketCounts.Length buckets.
             _multiplier = multiplier;
-            _shift = shift;
+            _shift = VectorBucketsFrozenSet.GetShift<TUnsigned>(BitOperations.Log2((uint)bucketCounts.Length));
             _bucketStarts = new byte[bucketCounts.Length];
             int start = 0;
             for (int bucket = 0; bucket < bucketCounts.Length; bucket++)
@@ -165,7 +195,7 @@ namespace System.Collections.Frozen
             int[] bucketFills = new int[bucketCounts.Length];
             foreach (TUnsigned value in values)
             {
-                int bucket = VectorBucketsFrozenSet.GetBucket(value, multiplier, shift);
+                int bucket = VectorBucketsFrozenSet.GetBucket(value, multiplier, _shift);
                 _items[_bucketStarts[bucket] + bucketFills[bucket]++] = Unsafe.BitCast<TUnsigned, T>(value);
             }
 
@@ -195,17 +225,17 @@ namespace System.Collections.Frozen
             TUnsigned value = Unsafe.BitCast<T, TUnsigned>(item);
             int bucket = VectorBucketsFrozenSet.GetBucket(value, _multiplier, _shift);
 
-            // The bucket is always in range, as the shift leaves only as many bits as needed to index the buckets, so the
-            // vector can be loaded without bounds checks (which measurably slowed down lookups).
+            // The bucket is always in range (see the constructor), so the vector can be loaded without bounds checks,
+            // which measurably slowed down lookups.
             Debug.Assert((uint)bucket < (uint)_bucketStarts.Length);
             Debug.Assert(_buckets.Length == _bucketStarts.Length * Vector128<TUnsigned>.Count);
             Vector128<TUnsigned> slots = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_buckets), (nuint)(uint)bucket * (nuint)Vector128<TUnsigned>.Count);
 
-            // This is branch-free with respect to whether the value is found, so that the generated code doesn't depend
-            // on whether hits or misses were more frequent when the method was profiled by dynamic PGO.
-            int lane = Vector128.IndexOf(slots, value);
-            int index = _bucketStarts[bucket] + lane;
-            return lane >= 0 ? index : -1;
+            // The result is computed without branching on whether the value was found (as Vector128.IndexOf would once
+            // inlined into a loop), as such a branch is mispredicted half of the time when hits and misses are mixed.
+            uint matches = Vector128.Equals(slots, Vector128.Create(value)).ExtractMostSignificantBits();
+            int lane = BitOperations.TrailingZeroCount(matches); // 32 if there's no match
+            return (_bucketStarts[bucket] + lane) | -(lane >> 5);
         }
 
         internal struct GSW : IGenericSpecializedWrapper

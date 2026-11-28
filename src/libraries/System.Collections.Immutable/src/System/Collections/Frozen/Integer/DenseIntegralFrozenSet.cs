@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
@@ -18,7 +20,7 @@ namespace System.Collections.Frozen
         /// This is dialable. The larger this value, the more likely this implementation will be used,
         /// and the more memory will be consumed by the bitmap. Unlike <see cref="DenseIntegralFrozenDictionary"/>, which
         /// needs a whole value slot per possible key, the bitmap only needs a single bit per possible value (stored
-        /// as 16-byte words covering 64 values each). With a value of 64, the bitmap thus needs at most 16 bytes per
+        /// as 8-byte words covering 32 values each). With a value of 64, the bitmap thus needs at most 16 bytes per
         /// item, which is no more than the bucket table alone of the hashing-based implementations (at least two
         /// 8-byte buckets per item).
         /// </remarks>
@@ -92,23 +94,25 @@ namespace System.Collections.Frozen
             }
 
             // Some of the values in the range are missing. Store a bitmap of which values are present, and
-            // for every 64-bit word of the bitmap, the number of values present in all previous words, such
+            // for every 32-bit word of the bitmap, the number of values present in all previous words, such
             // that a value's index (its rank among the values in the set) can be computed from its word.
+            // The words are 32-bit rather than 64-bit so that lookups don't need helper calls for 64-bit shifts
+            // on 32-bit platforms, which doesn't use more memory as the rank is 32-bit anyway.
             source.CopyTo(items);
-            var words = new BitmapWord[(int)((length + 63) / 64)];
+            var words = new BitmapWord[(int)((length + 31) / 32)];
             foreach (T item in items)
             {
                 int offset = ToInt32<T, TUnderlying>(item) - min;
-                words[offset >> 6].Bits |= 1UL << offset;
+                words[offset >> 5].Bits |= 1u << offset;
             }
 
             int rank = 0;
             for (int i = 0; i < words.Length; i++)
             {
                 words[i].Rank = rank;
-                for (ulong bits = words[i].Bits; bits != 0; bits &= bits - 1)
+                for (uint bits = words[i].Bits; bits != 0; bits &= bits - 1)
                 {
-                    items[rank++] = FromInt32<T, TUnderlying>(min + (i * 64) + BitOperations.TrailingZeroCount(bits));
+                    items[rank++] = FromInt32<T, TUnderlying>(min + (i * 32) + BitOperations.TrailingZeroCount(bits));
                 }
             }
             Debug.Assert(rank == count);
@@ -116,6 +120,8 @@ namespace System.Collections.Frozen
             return new WithBitmap<T, TUnderlying>(items, words, min);
         }
 
+        // T is either TUnderlying or an enum whose underlying type is TUnderlying, so it can be reinterpreted as TUnderlying
+        // with Unsafe.BitCast (which also validates that both have the same size), and back.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ToInt32<T, TUnderlying>(T value) where TUnderlying : unmanaged, IBinaryInteger<TUnderlying> =>
             int.CreateTruncating(Unsafe.BitCast<T, TUnderlying>(value));
@@ -129,21 +135,24 @@ namespace System.Collections.Frozen
         /// <summary>A word of the bitmap along with the number of bits set in all preceding words.</summary>
         private struct BitmapWord
         {
-            public ulong Bits;
+            public uint Bits;
             public int Rank;
         }
 
         /// <summary>Implementation used when all values between the min and the max are present.</summary>
+        [DebuggerTypeProxy(typeof(DebuggerProxy<,>))]
         private sealed class WithContiguousValues<T, TUnderlying> : FrozenSetInternalBase<T, WithContiguousValues<T, TUnderlying>.GSW>
             where TUnderlying : unmanaged, IBinaryInteger<TUnderlying>
         {
             private readonly T[] _items;
             private readonly int _min;
+            private readonly uint _maxIndex;
 
             internal WithContiguousValues(T[] items, int min) : base(EqualityComparer<T>.Default)
             {
                 _items = items;
                 _min = min;
+                _maxIndex = (uint)items.Length - 1;
             }
 
             private protected override T[] ItemsCore => _items;
@@ -153,8 +162,12 @@ namespace System.Collections.Frozen
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private protected override int FindItemIndex(T item)
             {
-                int index = ToInt32<T, TUnderlying>(item) - _min;
-                return (uint)index < (uint)_items.Length ? index : -1;
+                // Values below the min wrap around to a large unsigned index. The result is computed without branching on whether
+                // the value was found, as such a branch is mispredicted half of the time when hits and misses are mixed: as the max
+                // index is less than 2^31, the index is out of range if and only if either it or the max index minus it (which then
+                // wraps around) has its top bit set.
+                uint index = (uint)(ToInt32<T, TUnderlying>(item) - _min);
+                return (int)index | ((int)(index | (_maxIndex - index)) >> 31);
             }
 
             internal struct GSW : IGenericSpecializedWrapper
@@ -170,6 +183,7 @@ namespace System.Collections.Frozen
         }
 
         /// <summary>Implementation used when only some of the values between the min and the max are present.</summary>
+        [DebuggerTypeProxy(typeof(DebuggerProxy<,>))]
         private sealed class WithBitmap<T, TUnderlying> : FrozenSetInternalBase<T, WithBitmap<T, TUnderlying>.GSW>
             where TUnderlying : unmanaged, IBinaryInteger<TUnderlying>
         {
@@ -192,22 +206,26 @@ namespace System.Collections.Frozen
             private protected override int FindItemIndex(T item)
             {
                 // Values below the min wrap around to a large unsigned offset, and values above the max land past the
-                // last word (or on unset bits of the last word), so a single bounds check rules out everything outside the range.
+                // last word (or on unset bits of the last word). The result is computed without branching on whether the
+                // value was found (or is in range at all), as such a branch is mispredicted half of the time when hits and
+                // misses are mixed.
                 uint offset = (uint)(ToInt32<T, TUnderlying>(item) - _min);
                 BitmapWord[] words = _words;
-                uint wordIndex = offset >> 6;
-                if (wordIndex < (uint)words.Length)
-                {
-                    // This is branch-free with respect to whether the value is found, so that the generated code doesn't depend
-                    // on whether hits or misses were more frequent when the method was profiled by dynamic PGO.
-                    ref BitmapWord word = ref words[wordIndex];
-                    ulong bits = word.Bits;
-                    ulong bit = 1UL << (int)offset;
-                    int index = word.Rank + BitOperations.PopCount(bits & (bit - 1));
-                    return (bits & bit) != 0 ? index : -1;
-                }
 
-                return -1;
+                // -1 if the offset is within the bitmap, 0 otherwise (the word index is less than 2^27, so this doesn't overflow).
+                int inRange = ((int)(offset >> 5) - words.Length) >> 31;
+
+                // Values outside of the bitmap look at the first word, without any of its bits. The word index is thus always
+                // within the bitmap, so the word can be read without a bounds check.
+                Debug.Assert(words.Length > 0);
+                ref BitmapWord word = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(words), (int)((offset >> 5) & (uint)inRange));
+
+                // The bits of the word up to and including the value's bit, moved to the top (shifts of 32-bit values only use
+                // the lower 5 bits of the count, i.e. 31 minus the offset within the word): the value is present if and only if
+                // the top bit is set, and its index is then the rank of the word plus the number of bits set before its own.
+                uint bitsUpToValue = (word.Bits & (uint)inRange) << (int)~offset;
+                int found = (int)bitsUpToValue >> 31; // -1 if found, 0 otherwise
+                return (word.Rank + BitOperations.PopCount(bitsUpToValue) - 1) | ~found;
             }
 
             internal struct GSW : IGenericSpecializedWrapper
@@ -221,5 +239,7 @@ namespace System.Collections.Frozen
                 public Enumerator GetEnumerator() => _set.GetEnumerator();
             }
         }
+
+        private sealed class DebuggerProxy<T, TUnderlying>(IEnumerable<T> enumerable) : ImmutableEnumerableDebuggerProxy<T>(enumerable);
     }
 }
