@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                     sink.Add(node, "Implementation of the generic virtual method");
             }
 #if !READYTORUN
-            if (!_method.OwningType.IsInterface)
+            if (!_method.OwningType.IsInterface || _method.Signature.IsStatic)
             {
                 sink.Add(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
             }
@@ -80,6 +80,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeDesc methodOwningType = _method.OwningType;
             bool methodIsShared = _method.IsSharedByGenericInstantiations;
+            bool allowInterfaceTargets = false;
+#if !READYTORUN
+            allowInterfaceTargets = _method.Signature.IsStatic;
+#endif
 
             TypeSystemContext context = _method.Context;
 
@@ -101,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
                 TypeDesc potentialOverrideType = typeNode.Type;
-                if (!potentialOverrideType.IsDefType || potentialOverrideType.IsInterface)
+                if (!potentialOverrideType.IsDefType || (potentialOverrideType.IsInterface && !allowInterfaceTargets))
                     continue;
 
                 // If method is canonical, don't allow using it with non-canonical types - we can wait until
