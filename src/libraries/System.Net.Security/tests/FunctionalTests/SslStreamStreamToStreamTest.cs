@@ -302,6 +302,49 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SslStream_TransportEofWithoutCloseNotify_ThrowsIOException(bool sendData, bool serverSends)
+        {
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (var client = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var server = new SslStream(serverStream, false))
+            {
+                await DoHandshake(client, server);
+                SslStream sender = serverSends ? server : client;
+                SslStream receiver = serverSends ? client : server;
+                Stream senderTransport = serverSends ? serverStream : clientStream;
+                byte[] buffer = new byte[1];
+
+                if (sendData)
+                {
+                    await WriteAsync(sender, new byte[] { 42, 43 }, 0, 2).WaitAsync(TestConfiguration.PassingTestTimeout);
+                    Assert.Equal(1, await ReadAsync(receiver, buffer, 0, 1).WaitAsync(TestConfiguration.PassingTestTimeout));
+                    Assert.Equal(42, buffer[0]);
+                    Assert.Equal(0, await ReadAsync(receiver, buffer, 0, 0).WaitAsync(TestConfiguration.PassingTestTimeout));
+                }
+
+                senderTransport.Dispose();
+
+                if (sendData)
+                {
+                    Assert.Equal(1, await ReadAsync(receiver, buffer, 0, 1).WaitAsync(TestConfiguration.PassingTestTimeout));
+                    Assert.Equal(43, buffer[0]);
+                }
+
+                for (int i = 0; i < 2; i++)
+                {
+                    await Assert.ThrowsAsync<IOException>(() => ReadAsync(receiver, buffer, 0, 1))
+                        .WaitAsync(TestConfiguration.PassingTestTimeout);
+                }
+            }
+        }
+
         [ConditionalFact]
         public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
         {

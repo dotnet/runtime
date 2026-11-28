@@ -22,6 +22,32 @@ namespace System.Net.Security.Tests
 
         protected virtual SslProtocols GetSslProtocols() => SslProtocols.None;
 
+        protected override void CloseWriteStream(Stream stream)
+        {
+            ((SslStream)stream).ShutdownAsync().GetAwaiter().GetResult();
+            stream.Dispose();
+        }
+
+        protected override async ValueTask CloseWriteStreamAsync(Stream stream)
+        {
+            await ((SslStream)stream).ShutdownAsync().ConfigureAwait(false);
+            await stream.DisposeAsync().ConfigureAwait(false);
+        }
+
+        [Fact]
+        public async Task Read_TransportEofWithoutCloseNotify_Throws()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+            await writeable.WriteAsync(new byte[] { 42 });
+            byte[] buffer = new byte[1];
+            Assert.Equal(1, await readable.ReadAsync(buffer));
+            Assert.Equal(42, buffer[0]);
+            await writeable.DisposeAsync();
+            await Assert.ThrowsAsync<IOException>(() => readable.ReadAsync(buffer).AsTask())
+                .WaitAsync(TestConfiguration.PassingTestTimeout);
+        }
+
         protected override async Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen = false)
         {
             using X509Certificate2 cert = Test.Common.Configuration.Certificates.GetServerCertificate();

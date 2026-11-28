@@ -6526,6 +6526,27 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
         protected override Version UseVersion => HttpVersion.Version11;
 
+        [Fact]
+        public async Task CloseDelimitedHttpsResponse_TransportEofWithoutCloseNotify_Throws()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient(CreateHttpClientHandler(allowAllCertificates: true));
+                    using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                    await Assert.ThrowsAsync<HttpRequestException>(() => response.Content.ReadAsStringAsync());
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nhello");
+                    });
+                },
+                new LoopbackServer.Options { UseSsl = true });
+        }
+
 #if DEBUG
         [Theory]
         [InlineData(true)]
