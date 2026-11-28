@@ -263,12 +263,15 @@ namespace System.Xml
 
         public bool TryGetGuid(out Guid guid)
         {
-            byte[] buffer = new byte[guidLength];
-            if (!TryGetGuid(buffer, 0))
+            if (!IsGuid)
             {
                 guid = Guid.Empty;
                 return false;
             }
+
+            Span<byte> buffer = stackalloc byte[guidLength];
+            BinaryPrimitives.WriteInt64LittleEndian(buffer, _idLow);
+            BinaryPrimitives.WriteInt64LittleEndian(buffer.Slice(8), _idHigh);
 
             guid = new Guid(buffer);
             return true;

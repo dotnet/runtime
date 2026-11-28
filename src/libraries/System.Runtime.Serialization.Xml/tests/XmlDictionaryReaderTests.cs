@@ -312,6 +312,46 @@ namespace System.Runtime.Serialization.Xml.Tests
             }
         }
 
+        [Theory]
+        [InlineData("00112233-4455-6677-8899-aabbccddeeff", "33221100554477668899AABBCCDDEEFF")]
+        [InlineData("00000000-0000-8000-0000-000000000000", "00000000000000800000000000000000")]
+        [InlineData("00000000-0000-0000-0000-000000000080", "00000000000000000000000000000080")]
+        public static void UniqueId_TryGetGuid_RoundTrips(string value, string hexBytes)
+        {
+            Guid expected = new Guid(value);
+            byte[] expectedBytes = Convert.FromHexString(hexBytes);
+
+            foreach (UniqueId id in new[] { new UniqueId(expected), new UniqueId("urn:uuid:" + value) })
+            {
+                Assert.True(id.TryGetGuid(out Guid actual));
+                Assert.Equal(expected, actual);
+
+                byte[] buffer = new byte[expectedBytes.Length];
+                Assert.True(id.TryGetGuid(buffer, 0));
+                Assert.Equal(expectedBytes, buffer);
+            }
+        }
+
+        [Fact]
+        public static void UniqueId_TryGetGuid_NonGuid()
+        {
+            UniqueId[] ids =
+            [
+                new UniqueId("not-a-guid"),
+                new UniqueId("urn:uuid:00000000-0000-0000-0000-000000000000"),
+                new UniqueId(Guid.Empty)
+            ];
+
+            foreach (UniqueId id in ids)
+            {
+                Assert.False(id.IsGuid);
+
+                Guid actual = new Guid("00112233-4455-6677-8899-aabbccddeeff");
+                Assert.False(id.TryGetGuid(out actual));
+                Assert.Equal(Guid.Empty, actual);
+            }
+        }
+
         [Fact]
         public static void BinaryXml_ReadPrimitiveTypes()
         {
