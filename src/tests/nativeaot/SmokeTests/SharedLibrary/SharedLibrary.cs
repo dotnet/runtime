@@ -86,6 +86,14 @@ namespace SharedLibrary
             return result;
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "CheckCommandLineArgs", CallConvs = [typeof(CallConvStdcall)])]
+        public static int CheckCommandLineArgs(int expectedCount)
+        {
+            // A shared library has no managed Main, so this goes through the native fallback.
+            string[] args = Environment.GetCommandLineArgs();
+            return args.Length == expectedCount && args[0].Length > 0 ? 100 : 1;
+        }
+
         private static bool s_collected;
 
         class ClassWithFinalizer

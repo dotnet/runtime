@@ -21,6 +21,7 @@ set(NATIVE_SOURCES
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
+        pal_commandline.c
         pal_dynamicload.c
         pal_interfaceaddresses.c
         pal_mount.c
@@ -33,6 +34,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     )
 elseif (CLR_CMAKE_TARGET_BROWSER)
     list (APPEND NATIVE_SOURCES
+        pal_commandline.c
         pal_dynamicload_wasm.c
         pal_interfaceaddresses_browser.c
         pal_mount.c

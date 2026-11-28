@@ -127,3 +127,35 @@ char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }
+
+uint16_t SystemNative_WasiArgsSizesGet(size_t* argc, size_t* argvBufSize) __attribute__((__import_module__("wasi_snapshot_preview1"), __import_name__("args_sizes_get")));
+uint16_t SystemNative_WasiArgsGet(uint8_t** argv, uint8_t* argvBuf) __attribute__((__import_module__("wasi_snapshot_preview1"), __import_name__("args_get")));
+
+char** SystemNative_GetCommandLine(int32_t* argc)
+{
+    *argc = 0;
+
+    size_t count;
+    size_t bufferSize;
+    if (SystemNative_WasiArgsSizesGet(&count, &bufferSize) != 0 || count > INT32_MAX ||
+        count > (SIZE_MAX - bufferSize) / sizeof(char*))
+    {
+        return NULL;
+    }
+
+    // args_get fills in both the pointers and the strings, so a single allocation can hold them all.
+    char** result = (char**)malloc(count * sizeof(char*) + bufferSize);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
+    if (SystemNative_WasiArgsGet((uint8_t**)result, (uint8_t*)(result + count)) != 0)
+    {
+        free(result);
+        return NULL;
+    }
+
+    *argc = (int32_t)count;
+    return result;
+}

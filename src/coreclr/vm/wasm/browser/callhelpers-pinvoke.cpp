@@ -89,6 +89,7 @@ namespace direct_pinvoke {
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t) __asm__("SystemNative_FileSystemSupportsLocking");
     void SystemNative_Free (void *) __asm__("SystemNative_Free");
     void SystemNative_FreeLibrary (void *) __asm__("SystemNative_FreeLibrary");
+    void * SystemNative_GetCommandLine (void *) __asm__("SystemNative_GetCommandLine");
     double SystemNative_GetCpuUtilization (void *) __asm__("SystemNative_GetCpuUtilization");
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t) __asm__("SystemNative_GetCryptographicallySecureRandomBytes");
     void * SystemNative_GetCwd (void *, int32_t) __asm__("SystemNative_GetCwd");
@@ -228,6 +229,7 @@ static const Entry s_libSystem_Native [] = {
     { "SystemNative_FileSystemSupportsLocking", (void*)&direct_pinvoke::SystemNative_FileSystemSupportsLocking }, // System.Private.CoreLib
     { "SystemNative_Free", (void*)&direct_pinvoke::SystemNative_Free }, // System.Private.CoreLib
     { "SystemNative_FreeLibrary", (void*)&direct_pinvoke::SystemNative_FreeLibrary }, // System.Private.CoreLib
+    { "SystemNative_GetCommandLine", (void*)&direct_pinvoke::SystemNative_GetCommandLine }, // System.Private.CoreLib
     { "SystemNative_GetCpuUtilization", (void*)&direct_pinvoke::SystemNative_GetCpuUtilization }, // System.Private.CoreLib
     { "SystemNative_GetCryptographicallySecureRandomBytes", (void*)&direct_pinvoke::SystemNative_GetCryptographicallySecureRandomBytes }, // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
     { "SystemNative_GetCwd", (void*)&direct_pinvoke::SystemNative_GetCwd }, // System.Private.CoreLib
@@ -313,7 +315,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 87},
+    {"libSystem.Native", s_libSystem_Native, 88},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };

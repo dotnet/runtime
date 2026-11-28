@@ -7,6 +7,7 @@
 #include "dlfcn.h"
 #endif
 #include "stdio.h"
+#include "stdlib.h"
 #include "string.h"
 
 #ifdef __ELF__
@@ -70,6 +71,7 @@ typedef int(__stdcall *f_ReturnsPrimitiveInt)();
 typedef bool(__stdcall *f_ReturnsPrimitiveBool)();
 typedef char(__stdcall *f_ReturnsPrimitiveChar)();
 typedef void(__stdcall *f_EnsureManagedClassLoaders)();
+typedef int(__stdcall *f_CheckCommandLineArgs)(int);
 
 #ifdef TARGET_WINDOWS
 int __cdecl main()
@@ -96,6 +98,8 @@ int main(int argc, char* argv[])
     f_EnsureManagedClassLoaders ensureManagedClassLoaders = (f_EnsureManagedClassLoaders)GetProcAddress(handle, "EnsureManagedClassLoaders");
     f_ReturnsPrimitiveInt checkSimpleGCCollect = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "CheckSimpleGCCollect");
     f_ReturnsPrimitiveInt checkSimpleExceptionHandling = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "CheckSimpleExceptionHandling");
+    f_CheckCommandLineArgs checkCommandLineArgs = (f_CheckCommandLineArgs)GetProcAddress(handle, "CheckCommandLineArgs");
+    int argc = __argc;
 #else
     f_ReturnsPrimitiveInt thisMethodMustBeCalledFirst = (f_ReturnsPrimitiveInt)dlsym(handle, "ThisMethodMustBeCalledFirst");
     f_ReturnsPrimitiveInt returnsPrimitiveInt = (f_ReturnsPrimitiveInt)dlsym(handle, "ReturnsPrimitiveInt");
@@ -104,6 +108,7 @@ int main(int argc, char* argv[])
     f_EnsureManagedClassLoaders ensureManagedClassLoaders = (f_EnsureManagedClassLoaders)dlsym(handle, "EnsureManagedClassLoaders");
     f_ReturnsPrimitiveInt checkSimpleGCCollect = (f_ReturnsPrimitiveInt)dlsym(handle, "CheckSimpleGCCollect");
     f_ReturnsPrimitiveInt checkSimpleExceptionHandling = (f_ReturnsPrimitiveInt)dlsym(handle, "CheckSimpleExceptionHandling");
+    f_CheckCommandLineArgs checkCommandLineArgs = (f_CheckCommandLineArgs)dlsym(handle, "CheckCommandLineArgs");
 #endif
 
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -131,6 +136,9 @@ int main(int argc, char* argv[])
 
     if (checkSimpleExceptionHandling() != 100)
         return 5;
+
+    if (checkCommandLineArgs(argc) != 100)
+        return 8;
 
 #ifdef __ELF__
     // argv[0] has been suffixed with ".so" above
