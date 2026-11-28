@@ -33,9 +33,16 @@ namespace ILCompiler.DependencyAnalysis
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             try
             {
-                foreach (DependencyListEntry dependency in Dataflow.ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, mdManager.FlowAnnotations, mdManager.Logger, _methodIL, out _runtimeDependencies))
+                var dataflowDependencies = Dataflow.ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, mdManager.FlowAnnotations, mdManager.Logger, _methodIL, out _runtimeDependencies, out var conditionalDependencies);
+                foreach (DependencyListEntry dependency in dataflowDependencies)
                 {
                     sink.Add(dependency);
+                }
+
+                if (conditionalDependencies != null)
+                {
+                    foreach (var dependency in conditionalDependencies)
+                        sink.Add(dependency);
                 }
             }
             catch (TypeSystemException)

@@ -82,7 +82,7 @@ namespace ILCompiler
 
         public IILScanner ToILScanner()
         {
-            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _preinitializationManager, _typeMapManager);
+            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _preinitializationManager, _typeMapManager, _ilProvider);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
             return new ILScanner(graph, nodeFactory, [.._compilationRoots, _typeMapManager], _ilProvider, new NullDebugInformationProvider(), _logger, _parallelism);

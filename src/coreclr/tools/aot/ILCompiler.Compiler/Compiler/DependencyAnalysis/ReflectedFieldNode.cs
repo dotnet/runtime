@@ -36,6 +36,14 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.GetDependenciesDueToReflectability(sink, factory, _field);
 
+            // Reflection can read the field, so any delegate stored in it is observable.
+            if (factory is ILScanNodeFactory { DelegateFlow: not null } scanFactory)
+            {
+                FieldDesc fieldDefinition = _field.GetTypicalFieldDefinition();
+                if (DelegateFlowAnalysis.IsTrackedField(fieldDefinition))
+                    sink.Add(scanFactory.DelegateFieldRead(fieldDefinition), "Reflectable field");
+            }
+
             // No runtime artifacts needed if this is a generic definition or literal field
             if (_field.OwningType.IsGenericDefinition || _field.IsLiteral)
             {

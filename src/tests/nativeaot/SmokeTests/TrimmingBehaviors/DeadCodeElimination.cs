@@ -85,6 +85,7 @@ class DeadCodeElimination
         TestInteropMapTrimming.Run();
         TestInteropMapArrayTrimming.Run();
         TestInteropMapTypeLoaderKeys.Run();
+        TestDeadDelegateStores.Run();
 
         return 100;
     }
@@ -1727,6 +1728,247 @@ class DeadCodeElimination
                 throw new Exception("Unexpected entry E");
             if (map.TryGetValue("H", out _))
                 throw new Exception("Unexpected entry H");
+        }
+    }
+
+    class TestDeadDelegateStores
+    {
+        class DeadFieldResult;
+        class DeadChainResult;
+        class DeadCopiedResult;
+        class DeadStaticResult;
+        class DeadMethodGroupResult;
+        class DeadClearedResult;
+        class DeadGenericResult;
+        class DeadGenericMethodGroupResult;
+        class LiveFieldResult;
+        class LiveReflectionResult;
+        class LiveChainResult;
+        class LiveRefResult;
+        class LiveMixedResult;
+        class LiveUncachedResult;
+        class ConstrainedResult;
+
+        class ReflectionTarget
+        {
+            public void Hidden() { }
+            public void Visible() { }
+        }
+
+        class DeadFieldHolder { public Func<object> Factory; }
+        class DeadGenericHolder<T> { public Func<T> Factory; }
+        class LiveFieldHolder { public Func<object> Factory; }
+        class ReflectedFieldHolder { public Func<object> Factory; }
+        class RefReadHolder { public Func<object> Factory; }
+
+        class DeadPropertyHolder
+        {
+            Func<object> _factory;
+            public Func<object> Factory { get => _factory; init => _factory = value; }
+        }
+
+        class LivePropertyHolder
+        {
+            Func<object> _factory;
+            public Func<object> Factory { get => _factory; init => _factory = value; }
+        }
+
+        class DeadSink { public Func<object> Factory; }
+        class LiveSink { public Func<object> Factory; }
+
+        static class StaticHolder
+        {
+            public static Func<object> s_dead;
+            public static Func<object> s_source;
+            public static Func<object> s_sink;
+            public static Func<object> s_refilled;
+            public static Func<object> s_refilledSink;
+        }
+
+        interface IFactory
+        {
+            static abstract object Create();
+        }
+
+        class PreinitGate { public static int s_zero; }
+
+        interface IPreinitThing { object Make(); }
+        class PreinitThing<T> : IPreinitThing { public object Make() => typeof(T).Name; }
+
+        // The static constructor can be preinitialized by the compiler, including the delegate creation in Fill.
+        // The delegate must not get dropped just because nothing in the scanned code reads s_dead.
+        static class PreinitHolder
+        {
+            public static Func<object> s_dead;
+            public static string s_live;
+
+            static PreinitHolder()
+            {
+                _ = PreinitGate.s_zero;
+                Fill();
+                s_live = "ok";
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void Fill() => s_dead = new Func<object>(MakeThing);
+
+            static object MakeThing()
+            {
+                IPreinitThing thing = new PreinitThing<PreinitGate>();
+                return thing.Make();
+            }
+        }
+
+        class ConstrainedFactory : IFactory
+        {
+            public static object Create() => new ConstrainedResult();
+        }
+
+        static object CreateDeadMethodGroupResult() => new DeadMethodGroupResult();
+        static T CreateDeadGenericMethodGroupResult<T>() where T : class
+        {
+            GC.KeepAlive(new DeadGenericMethodGroupResult());
+            return null;
+        }
+        static object CreateLiveMixedResult() => new LiveMixedResult();
+        static object CreateLiveUncachedResult() => new LiveUncachedResult();
+        static object CreateCoalescedResult() => null;
+        static object CreateRefilledResult() => null;
+        static Func<object> ThrowFromFallback() => throw new Exception();
+
+        class ReceiverHolder
+        {
+            public static readonly ReceiverHolder Instance = Create();
+
+            static ReceiverHolder Create()
+            {
+                TouchedFlag.s_touched = true;
+                return new ReceiverHolder();
+            }
+
+            public object Make() => null;
+        }
+
+        static class TouchedFlag
+        {
+            public static bool s_touched;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void MakeDeadDelegates()
+        {
+            // Nobody ever reads the fields these delegates are stored into, so the lambdas are never called.
+            GC.KeepAlive(new DeadFieldHolder { Factory = static () => new DeadFieldResult() });
+            GC.KeepAlive(new DeadFieldHolder { Factory = static () => typeof(ReflectionTarget).GetMethod("Hidden") });
+            GC.KeepAlive(new DeadFieldHolder { Factory = CreateDeadMethodGroupResult });
+            StaticHolder.s_dead = static () => new DeadStaticResult();
+
+            // Clearing a field is not a read of it.
+            var cleared = new DeadFieldHolder { Factory = static () => new DeadClearedResult() };
+            System.Threading.Volatile.Write(ref cleared.Factory, null);
+
+            var source = new DeadPropertyHolder { Factory = static () => new DeadChainResult() };
+            GC.KeepAlive(new DeadSink { Factory = source.Factory });
+
+            var copied = new DeadFieldHolder { Factory = static () => new DeadCopiedResult() };
+            GC.KeepAlive(new DeadSink { Factory = copied.Factory });
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void MakeDeadGenericDelegate<T>() where T : class
+        {
+            GC.KeepAlive(new DeadFieldHolder { Factory = static () => typeof(T) == typeof(string) ? new DeadGenericResult() : null });
+            GC.KeepAlive(new DeadGenericHolder<T> { Factory = CreateDeadGenericMethodGroupResult<T> });
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void MakeConstrainedDelegate<T>() where T : IFactory
+        {
+            // The IL for this has a `constrained.` prefix in front of the function pointer load, so the delegate creation is left alone.
+            GC.KeepAlive(new DeadFieldHolder { Factory = T.Create });
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "That's the point")]
+        private static MethodInfo GetMethodSecretly(Type type, string name)
+            => type.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        public static void Run()
+        {
+            MakeDeadDelegates();
+            MakeDeadGenericDelegate<string>();
+            MakeDeadGenericDelegate<object>();
+            MakeConstrainedDelegate<ConstrainedFactory>();
+            GC.KeepAlive(new ReflectionTarget());
+
+            // Delegates that can be observed still work.
+            var liveField = new LiveFieldHolder { Factory = static () => new LiveFieldResult() };
+            if (liveField.Factory() is not LiveFieldResult)
+                throw new Exception();
+
+            var reflected = new ReflectedFieldHolder { Factory = static () => new LiveReflectionResult() };
+            var reflectedDelegate = (Func<object>)typeof(ReflectedFieldHolder).GetField(nameof(ReflectedFieldHolder.Factory)).GetValue(reflected);
+            if (reflectedDelegate() is not LiveReflectionResult)
+                throw new Exception();
+
+            var liveSource = new LivePropertyHolder { Factory = static () => new LiveChainResult() };
+            var liveSink = new LiveSink { Factory = liveSource.Factory };
+            if (liveSink.Factory() is not LiveChainResult)
+                throw new Exception();
+
+            // Taking the address of the field can read it.
+            var refRead = new RefReadHolder { Factory = static () => new LiveRefResult() };
+            var observed = System.Threading.Interlocked.CompareExchange(ref refRead.Factory, null, null);
+            if (observed() is not LiveRefResult)
+                throw new Exception();
+
+            // Reflection over the contents of a lambda that gets called keeps the members alive.
+            Func<object> visible = static () => typeof(ReflectionTarget).GetMethod("Visible");
+            if (visible() is null)
+                throw new Exception();
+
+            // One of these is dead, but the other one needs the method to exist.
+            GC.KeepAlive(new DeadFieldHolder { Factory = CreateLiveMixedResult });
+            Func<object> mixed = CreateLiveMixedResult;
+            if (mixed() is not LiveMixedResult)
+                throw new Exception();
+
+            // An uncached creation of the same target does not read the cache, but still needs the method.
+            GC.KeepAlive(new DeadFieldHolder { Factory = CreateLiveUncachedResult });
+            Func<object> uncached = new Func<object>(CreateLiveUncachedResult);
+            if (uncached() is not LiveUncachedResult)
+                throw new Exception();
+
+            // Whether the delegate is null decides if the fallback runs, so it is observed even if the destination never is.
+            StaticHolder.s_source = CreateCoalescedResult;
+            StaticHolder.s_sink = StaticHolder.s_source ?? ThrowFromFallback();
+
+            // A refill that is not the cache of a compiler generated class can run anything, so the field counts as read.
+            StaticHolder.s_refilled = CreateRefilledResult;
+            StaticHolder.s_refilledSink = StaticHolder.s_refilled ??= ReceiverHolder.Instance.Make;
+            if (TouchedFlag.s_touched)
+                throw new Exception();
+
+            PreinitHolder.s_live += "!";
+            if (PreinitHolder.s_live != "ok!")
+                throw new Exception();
+
+#if !DEBUG
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadFieldResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadChainResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadCopiedResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadStaticResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadMethodGroupResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadClearedResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadGenericResult));
+            ThrowIfPresent(typeof(TestDeadDelegateStores), nameof(DeadGenericMethodGroupResult));
+
+            // Reflection over the contents of a lambda that is never called doesn't keep the members alive.
+            if (GetMethodSecretly(typeof(ReflectionTarget), nameof(ReflectionTarget.Hidden)) != null)
+                throw new Exception();
+            if (GetMethodSecretly(typeof(ReflectionTarget), nameof(ReflectionTarget.Visible)) == null)
+                throw new Exception();
+#endif
         }
     }
 

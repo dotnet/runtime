@@ -10,10 +10,14 @@ using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.Logging;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 
 #nullable enable
@@ -25,6 +29,11 @@ namespace ILCompiler.Dataflow
     {
         private readonly IDependencySink _dependencies;
         private readonly DependencyList? _dependencyList;
+        private readonly bool _conditionalLambdaDependencies;
+#pragma warning disable CS0169, CS0649 // Only used in builds that support conditional lambda dependencies
+        private CombinedDependencyList? _conditionalDependencyList;
+        private Dictionary<MethodDesc, IDependencySink?>? _lambdaSinks;
+#pragma warning restore CS0169, CS0649
         private readonly Logger _logger;
         private readonly MetadataType? _typeHierarchyDataFlowOrigin;
         private readonly bool _enabled;
@@ -39,6 +48,63 @@ namespace ILCompiler.Dataflow
             {
                 Debug.Assert(_dependencyList is not null);
                 return _dependencyList;
+            }
+        }
+
+        /// <summary>
+        /// Dependencies that originate from lambdas and local functions, which are only needed if the body of
+        /// the lambda or local function is compiled.
+        /// </summary>
+        public CombinedDependencyList? ConditionalDependencies => _conditionalDependencyList;
+
+        // A lambda that nobody ends up calling should not cause reflection dependencies. The dependencies that a
+        // dataflow scan of the method containing the lambda produces for the lambda body are therefore conditional
+        // on the body of the lambda being compiled. This is only done for non-generic lambdas and local functions
+        // to avoid any interaction with the specialization of the dependencies for generic instantiations.
+        private IDependencySink GetSink(in MessageOrigin origin)
+        {
+#if !ILTRIM
+            if (!_conditionalLambdaDependencies || _dependencyList is null || origin.MemberDefinition is not MethodDesc method)
+                return _dependencies;
+
+            _lambdaSinks ??= new Dictionary<MethodDesc, IDependencySink?>();
+            if (!_lambdaSinks.TryGetValue(method, out IDependencySink? sink))
+            {
+                sink = null;
+                if (method.IsTypicalMethodDefinition
+                    && !method.HasInstantiation
+                    && !method.OwningType.HasInstantiation
+                    && CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name.AsSpan()))
+                {
+                    var bodyNode = (DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>)Factory.MethodEntrypoint(method);
+                    _conditionalDependencyList ??= new CombinedDependencyList();
+                    sink = new ConditionalSink(_conditionalDependencyList, bodyNode);
+                }
+
+                _lambdaSinks.Add(method, sink);
+            }
+
+            return sink ?? _dependencies;
+#else
+            return _dependencies;
+#endif
+        }
+
+        private sealed class ConditionalSink(CombinedDependencyList list, DependencyAnalysisFramework.DependencyNodeCore<NodeFactory> condition) : IDependencySink
+        {
+            public void Add(DependencyAnalysisFramework.DependencyNodeCore<NodeFactory> node, string reason)
+                => list.Add(new CombinedDependencyListEntry(node, condition, reason));
+
+            public void Add(object node, string reason)
+                => list.Add(new CombinedDependencyListEntry(node, condition, reason));
+
+            public void Add(DependencyListEntry dependency)
+                => list.Add(new CombinedDependencyListEntry(dependency.Node, condition, dependency.Reason));
+
+            public void AddRange(params ReadOnlySpan<DependencyListEntry> dependencies)
+            {
+                foreach (DependencyListEntry dependency in dependencies)
+                    Add(dependency);
             }
         }
         public List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> RuntimeDeterminedDependencies { get; } = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
@@ -58,9 +124,11 @@ namespace ILCompiler.Dataflow
             bool enabled,
             bool suppressTrimAnalysisWarnings = false,
             bool suppressAotAnalysisWarnings = false,
-            IDependencySink? dependencySink = null)
+            IDependencySink? dependencySink = null,
+            bool conditionalLambdaDependencies = false)
         {
             _logger = logger;
+            _conditionalLambdaDependencies = conditionalLambdaDependencies;
             Factory = factory;
             Annotations = annotations;
             _typeHierarchyDataFlowOrigin = typeHierarchyDataFlowOrigin;
@@ -194,7 +262,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            RootingHelpers.TryAddDependenciesForReflectedType(_dependencies, Factory, type, reason);
+            RootingHelpers.TryAddDependenciesForReflectedType(GetSink(origin), Factory, type, reason);
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -212,7 +280,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, method, accessKind);
 
-            RootingHelpers.TryAddDependenciesForReflectedMethod(_dependencies, Factory, method, reason);
+            RootingHelpers.TryAddDependenciesForReflectedMethod(GetSink(origin), Factory, method, reason);
         }
 
         internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -222,7 +290,7 @@ namespace ILCompiler.Dataflow
 
             CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
-            RootingHelpers.TryAddDependenciesForReflectedField(_dependencies, Factory, field, reason);
+            RootingHelpers.TryAddDependenciesForReflectedField(GetSink(origin), Factory, field, reason);
         }
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)

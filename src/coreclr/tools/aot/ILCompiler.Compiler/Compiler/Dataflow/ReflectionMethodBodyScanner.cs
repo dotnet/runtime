@@ -17,6 +17,7 @@ using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
 using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using InteropTypes = Internal.TypeSystem.Interop.InteropTypes;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
@@ -115,7 +116,12 @@ namespace ILCompiler.Dataflow
             base.InterproceduralScan(methodIL);
 
             // Replace the reflection marker with one which actually marks
+#if ILTRIM
             _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+#else
+            // Dataflow results for lambdas are conditional on the lambda body in the scanner, which sees all calls.
+            _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true, conditionalLambdaDependencies: _factory is ILScanNodeFactory && _factory.CompilationModuleGroup.IsSingleFileCompilation);
+#endif
             TrimAnalysisPatterns.MarkAndProduceDiagnostics(_reflectionMarker);
         }
 
@@ -125,7 +131,12 @@ namespace ILCompiler.Dataflow
             base.Scan(methodIL, ref interproceduralState);
         }
 
+#if ILTRIM
         public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> runtimeDependencies)
+            => ScanAndProcessReturnValue(factory, annotations, logger, methodIL, out runtimeDependencies, out _);
+#endif
+
+        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> runtimeDependencies, out CombinedDependencyList? conditionalDependencies)
         {
 #if !ILTRIM
             methodIL = AsyncMaskingILProvider.WrapIL(methodIL);
@@ -136,6 +147,7 @@ namespace ILCompiler.Dataflow
             scanner.InterproceduralScan(methodIL);
 
             runtimeDependencies = scanner._reflectionMarker.RuntimeDeterminedDependencies;
+            conditionalDependencies = scanner._reflectionMarker.ConditionalDependencies;
             return scanner._reflectionMarker.Dependencies;
         }
 
