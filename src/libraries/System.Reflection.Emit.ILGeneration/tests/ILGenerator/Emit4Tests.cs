@@ -194,6 +194,139 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public unsafe void TestDynamicMethodFnPtrParameterAndLocal()
+        {
+            DynamicMethod dynamicMethod = new("Test", typeof(int), [typeof(delegate*<int, int, int>)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            LocalBuilder local = il.DeclareLocal(typeof(delegate*<int, int, int>));
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Stloc, local);
+            il.Emit(OpCodes.Ldc_I4_S, (byte)10);
+            il.Emit(OpCodes.Ldc_I4_S, (byte)5);
+            il.Emit(OpCodes.Ldloc, local);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), [typeof(int), typeof(int)], null);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, [((Func<int, int, int>)Int32Sum).Method.MethodHandle.GetFunctionPointer()]);
+
+            Assert.Equal(15, resultValue);
+        }
+
+        [Fact]
+        public unsafe void TestDynamicMethodNestedFnPtrParameter()
+        {
+            DynamicMethod dynamicMethod = new("Test", typeof(int), [typeof(delegate*<int, delegate*<int, int>, int>), typeof(delegate*<int, int>)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_S, (byte)21);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), [typeof(int), typeof(delegate*<int, int>)], null);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, [(nint)(delegate*<int, delegate*<int, int>, int>)&Apply, (nint)(delegate*<int, int>)&Twice]);
+
+            Assert.Equal(42, resultValue);
+        }
+
+        [Fact]
+        public unsafe void TestDynamicMethodFnPtrWithClassAndValueTypeParameters()
+        {
+            DynamicMethod dynamicMethod = new("Test", typeof(int), [typeof(delegate*<Version, TimeSpan, int>), typeof(Version)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            LocalBuilder local = il.DeclareLocal(typeof(delegate*<Version, TimeSpan, int>));
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Stloc, local);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldsfld, typeof(TimeSpan).GetField(nameof(TimeSpan.MaxValue)));
+            il.Emit(OpCodes.Ldloc, local);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), [typeof(Version), typeof(TimeSpan)], null);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, [(nint)(delegate*<Version, TimeSpan, int>)&MajorPlusHours, new Version(3, 0)]);
+
+            Assert.Equal(3 + TimeSpan.MaxValue.Hours, resultValue);
+        }
+
+        [Fact]
+        public unsafe void TestDynamicMethodUnmanagedFnPtrParameter()
+        {
+            DynamicMethod dynamicMethod = new("Test", typeof(nint), [typeof(delegate* unmanaged[Cdecl]<nint>)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, typeof(nint), Type.EmptyTypes);
+            il.Emit(OpCodes.Ret);
+
+            nint result = (nint)dynamicMethod.Invoke(null, [(nint)(delegate* unmanaged[Cdecl]<nint>)&GetInt32SumUnmanaged])!;
+
+            Assert.Equal(15, ((delegate*<int, int, int>)result)(10, 5));
+        }
+
+        [Fact]
+        public unsafe void TestDynamicMethodEmitCallFnPtrReturnType()
+        {
+            DynamicMethod dynamicMethod = new("Test", typeof(int), Type.EmptyTypes);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            LocalBuilder local = il.DeclareLocal(typeof(nint));
+            il.EmitCall(OpCodes.Call, typeof(ILGeneratorEmit4).GetMethod(nameof(GetInt32Sum), BindingFlags.NonPublic | BindingFlags.Static), null);
+            il.Emit(OpCodes.Stloc, local);
+            il.Emit(OpCodes.Ldc_I4_S, (byte)10);
+            il.Emit(OpCodes.Ldc_I4_S, (byte)5);
+            il.Emit(OpCodes.Ldloc, local);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), [typeof(int), typeof(int)], null);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, null);
+
+            Assert.Equal(15, resultValue);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public unsafe void TestDynamicMethodEmitCalliFnPtrReturnType(bool unmanaged)
+        {
+            DynamicMethod dynamicMethod = new("Test", typeof(delegate*<int, int, int>), [typeof(nint)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            if (unmanaged)
+                il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, typeof(delegate*<int, int, int>), Type.EmptyTypes);
+            else
+                il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(delegate*<int, int, int>), Type.EmptyTypes, null);
+            il.Emit(OpCodes.Ret);
+
+            nint getter = unmanaged
+                ? (nint)(delegate* unmanaged[Cdecl]<nint>)&GetInt32SumUnmanaged
+                : (nint)(delegate*<delegate*<int, int, int>>)&GetInt32Sum;
+            delegate*<int, int, int> fn = ((Int32SumGetter)dynamicMethod.CreateDelegate(typeof(Int32SumGetter)))(getter);
+
+            Assert.Equal(15, fn(10, 5));
+        }
+
+        [Fact]
+        public unsafe void TestDynamicMethodEmitCalliSignatureHelperFnPtrParameter()
+        {
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(null, typeof(int), [typeof(int), typeof(delegate*<int, int>)]);
+            DynamicMethod dynamicMethod = new("Test", typeof(int), [typeof(nint), typeof(nint)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_S, (byte)21);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Calli, sig);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, [(nint)(delegate*<int, delegate*<int, int>, int>)&Apply, (nint)(delegate*<int, int>)&Twice]);
+
+            Assert.Equal(42, resultValue);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/133123", TestPlatforms.Wasi, TargetFrameworkMonikers.Any, TestRuntimes.CoreCLR)]
         public void TestDynamicMethodEmitCalliFnPtrStdCall()
@@ -291,7 +424,22 @@ namespace System.Reflection.Emit.Tests
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate string StringReverseCdecl(string a);
 
+        private unsafe delegate delegate*<int, int, int> Int32SumGetter(nint getter);
+
         private static int Int32Sum(int a, int b) => a + b;
+
+        private unsafe static delegate*<int, int, int> GetInt32Sum() => &Int32Sum;
+
+        // Returns nint: Mono cannot create the UnmanagedCallersOnly wrapper for a function pointer return type
+        // (https://github.com/dotnet/runtime/issues/136448).
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+        private unsafe static nint GetInt32SumUnmanaged() => (nint)(delegate*<int, int, int>)&Int32Sum;
+
+        private unsafe static int Apply(int value, delegate*<int, int> fn) => fn(value);
+
+        private static int Twice(int value) => value * 2;
+
+        private static int MajorPlusHours(Version version, TimeSpan time) => version.Major + time.Hours;
 
         private static string StringReverse(string a) => string.Join("", a.Reverse());
 
