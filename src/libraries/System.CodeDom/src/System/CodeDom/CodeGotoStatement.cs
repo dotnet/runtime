@@ -5,7 +5,7 @@ namespace System.CodeDom
 {
     public class CodeGotoStatement : CodeStatement
     {
-        private string _label;
+        private string? _label;
 
         public CodeGotoStatement() { }
 
@@ -16,7 +16,7 @@ namespace System.CodeDom
 
         public string Label
         {
-            get => _label;
+            get => _label!;
             set
             {
                 if (string.IsNullOrEmpty(value))

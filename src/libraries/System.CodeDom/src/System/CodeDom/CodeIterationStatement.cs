@@ -7,7 +7,7 @@ namespace System.CodeDom
     {
         public CodeIterationStatement() { }
 
-        public CodeIterationStatement(CodeStatement initStatement, CodeExpression testExpression, CodeStatement incrementStatement, params CodeStatement[] statements)
+        public CodeIterationStatement(CodeStatement? initStatement, CodeExpression? testExpression, CodeStatement? incrementStatement, params CodeStatement[] statements)
         {
             InitStatement = initStatement;
             TestExpression = testExpression;
@@ -15,11 +15,11 @@ namespace System.CodeDom
             Statements.AddRange(statements);
         }
 
-        public CodeStatement InitStatement { get; set; }
+        public CodeStatement? InitStatement { get; set; }
 
-        public CodeExpression TestExpression { get; set; }
+        public CodeExpression? TestExpression { get; set; }
 
-        public CodeStatement IncrementStatement { get; set; }
+        public CodeStatement? IncrementStatement { get; set; }
 
         public CodeStatementCollection Statements { get; } = new CodeStatementCollection();
     }

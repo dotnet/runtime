@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeTypeParameter this[int index]
         {
-            get => (CodeTypeParameter)List[index];
+            get => (CodeTypeParameter)List[index]!;
             set => List[index] = value;
         }
 

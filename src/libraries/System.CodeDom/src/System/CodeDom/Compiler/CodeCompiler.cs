@@ -159,9 +159,9 @@ namespace System.CodeDom.Compiler
         {
             if (e.ReferencedAssemblies.Count > 0)
             {
-                foreach (string assemblyName in e.ReferencedAssemblies)
+                foreach (string? assemblyName in e.ReferencedAssemblies)
                 {
-                    if (!options.ReferencedAssemblies.Contains(assemblyName))
+                    if (assemblyName != null && !options.ReferencedAssemblies.Contains(assemblyName))
                     {
                         options.ReferencedAssemblies.Add(assemblyName);
                     }

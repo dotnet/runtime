@@ -5,7 +5,7 @@ namespace System.CodeDom
 {
     public class CodeStatement : CodeObject
     {
-        public CodeLinePragma LinePragma { get; set; }
+        public CodeLinePragma? LinePragma { get; set; }
 
         public CodeDirectiveCollection StartDirectives => field ??= new CodeDirectiveCollection();
 

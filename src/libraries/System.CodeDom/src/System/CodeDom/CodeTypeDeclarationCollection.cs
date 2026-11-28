@@ -21,7 +21,7 @@ namespace System.CodeDom
 
         public CodeTypeDeclaration this[int index]
         {
-            get => (CodeTypeDeclaration)List[index];
+            get => (CodeTypeDeclaration)List[index]!;
             set => List[index] = value;
         }
 

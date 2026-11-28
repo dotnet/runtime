@@ -21,8 +21,8 @@ namespace System.IO.Internal
 #endif
     class TempFileCollection : ICollection, IDisposable
     {
-        private string _basePath;
-        private readonly string _tempDir;
+        private string? _basePath;
+        private readonly string? _tempDir;
         private readonly Hashtable _files;
         private bool _createdTempDirectory;
 
@@ -30,11 +30,11 @@ namespace System.IO.Internal
         {
         }
 
-        public TempFileCollection(string tempDir) : this(tempDir, false)
+        public TempFileCollection(string? tempDir) : this(tempDir, false)
         {
         }
 
-        public TempFileCollection(string tempDir, bool keepFiles)
+        public TempFileCollection(string? tempDir, bool keepFiles)
         {
             KeepFiles = keepFiles;
             _tempDir = tempDir;
@@ -105,7 +105,7 @@ namespace System.IO.Internal
 
         int ICollection.Count => _files.Count;
 
-        object ICollection.SyncRoot => null;
+        object ICollection.SyncRoot => null!;
 
         bool ICollection.IsSynchronized => false;
 
@@ -116,7 +116,7 @@ namespace System.IO.Internal
             get
             {
                 EnsureTempNameCreated();
-                return _basePath;
+                return _basePath!;
             }
         }
 
@@ -170,7 +170,7 @@ namespace System.IO.Internal
 
         private bool KeepFile(string fileName)
         {
-            object keep = _files[fileName];
+            object? keep = _files[fileName];
             return keep != null ? (bool)keep : false;
         }
 
@@ -218,7 +218,7 @@ namespace System.IO.Internal
             {
                 try
                 {
-                    Directory.Delete(Path.GetDirectoryName(BasePath));
+                    Directory.Delete(Path.GetDirectoryName(BasePath)!);
                 }
                 catch
                 {
