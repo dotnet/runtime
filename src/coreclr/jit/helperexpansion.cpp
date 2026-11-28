@@ -1625,7 +1625,17 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
         JITDUMP("Optimized for size - bail out.\n")
         return result;
     }
-    return fgExpandHelper<&Compiler::fgVNBasedIntrinsicExpansionForCall>(true);
+    result = fgExpandHelper<&Compiler::fgVNBasedIntrinsicExpansionForCall>(true);
+
+    // Const-char-set folding emits QMARKs, which are normally expanded during
+    // morph. Expand any QMARKs introduced here before switch recognition runs.
+    if (compQmarkUsed && !compQmarkRationalized)
+    {
+        fgExpandQmarkNodes(false);
+        result = PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -1650,6 +1660,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
     if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
     {
         return fgVNBasedIntrinsicExpansionForCall_ReadUtf8(pBlock, stmt, call);
+    }
+    else if (ni == NI_System_SpanHelpers_ContainsValueType)
+    {
+        return fgVNBasedIntrinsicExpansionForCall_ContainsValueType(pBlock, stmt, call);
     }
 
     // TODO: Expand IsKnownConstant here
@@ -1899,6 +1913,204 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// fgVNBasedIntrinsicExpansionForCall_ContainsValueType: Fold a
+//    `SpanHelpers.ContainsValueType<T>` call whose data is a constant UTF-8/UTF-16
+//    literal into a range or set membership check. This covers `string.Contains(char)`,
+//    `ReadOnlySpan<char>.Contains(char)` and `ReadOnlySpan<byte>.Contains(byte)`.
+//
+// Arguments:
+//    pBlock - Block containing the call to expand (updated after splitting)
+//    stmt   - Statement containing the call
+//    call   - The call to expand
+//
+// Returns:
+//    True if expanded, false otherwise.
+//
+bool Compiler::fgVNBasedIntrinsicExpansionForCall_ContainsValueType(BasicBlock** pBlock, Statement* stmt,
+                                                                    GenTreeCall* call)
+{
+    if (call->gtArgs.CountUserArgs() != 3)
+    {
+        return false;
+    }
+
+    CallArg* dataArg   = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* valueArg  = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* lengthArg = call->gtArgs.GetUserArgByIndex(2);
+
+    // Only byte (UTF-8) and 16-bit (UTF-16/char) primitives are in scope.
+    const var_types valueType = valueArg->GetSignatureType();
+    unsigned        elemSize;
+    bool            fromUnsigned;
+    if ((valueType == TYP_SHORT) || (valueType == TYP_USHORT))
+    {
+        elemSize     = 2;
+        fromUnsigned = (valueType == TYP_USHORT);
+    }
+    else if ((valueType == TYP_UBYTE) || (valueType == TYP_BYTE))
+    {
+        elemSize     = 1;
+        fromUnsigned = (valueType == TYP_UBYTE);
+    }
+    else
+    {
+        return false;
+    }
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lengthArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        JITDUMP("ContainsValueType: length is not constant\n")
+        return false;
+    }
+
+    constexpr unsigned MaxCharSetSize = 128;
+    const size_t       len            = vnStore->CoercedConstantValue<size_t>(lenVN);
+    if ((len == 0) || (len > MaxCharSetSize))
+    {
+        JITDUMP("ContainsValueType: length is 0 or too big\n")
+        return false;
+    }
+
+    uint8_t* data = nullptr;
+    if (!GetImmutableDataFromAddress(dataArg->GetNode(), (int)(len * elemSize), getAllocator(), &data))
+    {
+        JITDUMP("ContainsValueType: data is not available at compile time\n")
+        return false;
+    }
+
+    int32_t values[MaxCharSetSize];
+    for (size_t i = 0; i < len; i++)
+    {
+        if (elemSize == 1)
+        {
+            values[i] = fromUnsigned ? (int32_t)data[i] : (int32_t)(int8_t)data[i];
+        }
+        else
+        {
+            uint16_t raw;
+            memcpy(&raw, data + (i * 2), sizeof(raw));
+            values[i] = fromUnsigned ? (int32_t)raw : (int32_t)(int16_t)raw;
+        }
+    }
+
+    int32_t mn = values[0];
+    int32_t mx = mn;
+    for (size_t i = 1; i < len; i++)
+    {
+        mn = min(mn, values[i]);
+        mx = max(mx, values[i]);
+    }
+
+    const unsigned span = (unsigned)(mx - mn);
+    if (span > MaxCharSetSize - 1)
+    {
+        JITDUMP("ContainsValueType: value range is too wide\n")
+        return false;
+    }
+
+    uint64_t mask[2] = {};
+    unsigned distinct = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+        const unsigned bit = (unsigned)(values[i] - mn);
+        if ((mask[bit / 64] & (1ULL << (bit % 64))) == 0)
+        {
+            distinct++;
+        }
+        mask[bit / 64] |= 1ULL << (bit % 64);
+    }
+
+    const bool isContinuous = (distinct == span + 1);
+    constexpr unsigned MaxBitSetSpan = 31;
+    if (!isContinuous && (span > MaxBitSetSpan))
+    {
+        JITDUMP("ContainsValueType: value range is too wide for a bit set test\n")
+        return false;
+    }
+
+    if (lvaHaveManyLocals(0.75))
+    {
+        JITDUMP("ContainsValueType: method has too many locals - bail out.\n")
+        return false;
+    }
+
+    DebugInfo debugInfo = stmt->GetDebugInfo();
+
+    GenTree**   callUse  = nullptr;
+    Statement*  callStmt = nullptr;
+    BasicBlock* block    = fgSplitBlockBeforeTree(*pBlock, stmt, call, &callStmt, &callUse);
+    *pBlock              = block;
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    for (Statement* newStmt = callStmt; (newStmt != nullptr) && (newStmt != stmt); newStmt = newStmt->GetNextStmt())
+    {
+        fgMorphStmtBlockOps(block, newStmt);
+    }
+
+    // The searched value may have side effects; evaluate it exactly once.
+    GenTree* valueLcl = fgMakeMultiUse(&valueArg->NodeRef());
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(call, &sideEffects, GTF_ALL_EFFECT, true);
+
+    // QMARKs are normally expanded during morph; allow them here and let
+    // fgVNBasedIntrinsicExpansion expand them before later optimization phases.
+    // A late QMARK must be the data of a top-level local store.
+    compQmarkRationalized = false;
+
+    unsigned resultTmp         = lvaGrabTemp(true DEBUGARG("ContainsValueType result"));
+    lvaTable[resultTmp].lvType = TYP_INT;
+
+    GenTree* folded = nullptr;
+    if (isContinuous)
+    {
+        JITDUMP("ContainsValueType: folding into a range check\n")
+
+        // Emit the canonical unsigned range form:
+        //     (uint)(value - mn) <= (mx - mn)
+        // TYP_UINT is not legal in the IR; GTF_UNSIGNED carries the signedness.
+        GenTree* index = gtNewOperNode(GT_SUB, TYP_INT, valueLcl, gtNewIconNode(mn, TYP_INT));
+        index->SetUnsigned();
+        GenTree* cond = gtNewOperNode(GT_LE, TYP_INT, index, gtNewIconNode(span, TYP_INT));
+        cond->SetUnsigned();
+        folded = gtNewQmarkNode(TYP_INT, cond, gtNewColonNode(TYP_INT, gtNewTrue(), gtNewFalse()));
+    }
+    else
+    {
+        JITDUMP("ContainsValueType: folding into a bit set test\n")
+
+        // Fold `(uint)(value - mn) <= span && ((mask >> (uint)(value - mn)) & 1) != 0`.
+        // The range check prevents shift-count wraparound for values outside the set.
+        GenTree* inRangeIndex = gtNewOperNode(GT_SUB, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT));
+        inRangeIndex->SetUnsigned();
+        GenTree* inRange = gtNewOperNode(GT_LE, TYP_INT, inRangeIndex, gtNewIconNode(span, TYP_INT));
+        inRange->SetUnsigned();
+
+        GenTree* bitIndex = gtNewOperNode(GT_SUB, TYP_INT, gtCloneExpr(valueLcl), gtNewIconNode(mn, TYP_INT));
+        bitIndex->SetUnsigned();
+        GenTree* shifted = gtNewOperNode(GT_RSZ, TYP_INT, gtNewIconNode((int32_t)mask[0], TYP_INT), bitIndex);
+        GenTree* cond = gtNewOperNode(GT_AND, TYP_INT, inRange, shifted);
+        folded = gtNewQmarkNode(TYP_INT, cond, gtNewColonNode(TYP_INT, gtNewTrue(), gtNewFalse()));
+    }
+
+    if (sideEffects != nullptr)
+    {
+        fgInsertStmtBefore(block, stmt, gtNewStmt(sideEffects, debugInfo));
+    }
+
+    fgInsertStmtBefore(block, stmt, gtNewStmt(gtNewStoreLclVarNode(resultTmp, folded), debugInfo));
+    *callUse = gtNewLclvNode(resultTmp, TYP_INT);
+
+    gtUpdateStmtSideEffects(stmt);
+    fgSetStmtSeq(stmt);
+
+    DEBUG_DESTROY_NODE(call);
+
+    JITDUMP("ContainsValueType: successfully expanded!\n")
     return true;
 }
 

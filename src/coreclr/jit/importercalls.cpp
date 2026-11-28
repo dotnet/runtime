@@ -5594,6 +5594,16 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_SpanHelpers_ContainsValueType:
+            {
+                if (sig->sigInst.methInstCount == 1)
+                {
+                    // We'll try to fold constant data in fgVNBasedIntrinsicExpansion.
+                    isSpecial = true;
+                }
+                break;
+            }
+
             case NI_System_SpanHelpers_Fill:
             {
                 if (sig->sigInst.methInstCount == 1)
@@ -11986,7 +11996,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     }
                     else if (strcmp(className, "SpanHelpers") == 0)
                     {
-                        if (strcmp(methodName, "SequenceEqual") == 0)
+                        if (strcmp(methodName, "ContainsValueType") == 0)
+                        {
+                            result = NI_System_SpanHelpers_ContainsValueType;
+                        }
+                        else if (strcmp(methodName, "SequenceEqual") == 0)
                         {
                             result = NI_System_SpanHelpers_SequenceEqual;
                         }

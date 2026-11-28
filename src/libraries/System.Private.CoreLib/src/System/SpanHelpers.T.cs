@@ -1458,7 +1458,8 @@ namespace System
             return firstLength.CompareTo(secondLength);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic] // Folded by the JIT when the search space is constant
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
