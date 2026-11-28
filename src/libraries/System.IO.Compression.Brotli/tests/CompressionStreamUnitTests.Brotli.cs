@@ -42,6 +42,26 @@ namespace System.IO.Compression
 
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("BrotliTestData", Path.GetFileName(uncompressedPath) + ".br");
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Read_InvalidData_ThrowsInvalidDataException(bool async)
+        {
+            // The Large Window Brotli escape followed by a zero window size is invalid.
+            using MemoryStream input = new(new byte[] { 0x11, 0x00 });
+            using BrotliStream decompressor = new(input, CompressionMode.Decompress);
+            byte[] buffer = new byte[1];
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => decompressor.ReadAsync(buffer, 0, buffer.Length));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => decompressor.Read(buffer, 0, buffer.Length));
+            }
+        }
+
         [Fact]
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
@@ -524,12 +544,12 @@ namespace System.IO.Compression
             byte[] compressed = CreateLargeWindowCompressed(windowLog2);
 
             // Large Window Brotli is not part of RFC 7932, so a decoder that did not opt in rejects the stream.
-            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(compressed, decompressionOptions: null));
+            Assert.Throws<InvalidDataException>(() => DecompressWithOptions(compressed, decompressionOptions: null));
 
             Assert.Equal<byte>(testData, DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = windowLog2 }));
 
             // A window larger than the configured maximum is reported the same way as any other invalid stream.
-            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = windowLog2 - 1 }));
+            Assert.Throws<InvalidDataException>(() => DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = windowLog2 - 1 }));
         }
 
         [Fact]
@@ -539,7 +559,7 @@ namespace System.IO.Compression
             byte[] compressed = CompressWithWindowLog2(testData, 22);
 
             // A window larger than the configured maximum is reported the same way as any other invalid stream.
-            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = 10 }));
+            Assert.Throws<InvalidDataException>(() => DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = 10 }));
 
             Assert.Equal<byte>(testData, DecompressWithOptions(compressed, new BrotliDecompressionOptions { MaxWindowLog2 = 22 }));
         }
@@ -630,8 +650,8 @@ namespace System.IO.Compression
             // immediately rather than waiting for the second header byte.
             byte[] truncatedLargeWindowEscape = { 0x11 };
 
-            Assert.Throws<InvalidOperationException>(() => Decompress_Stream(truncatedLargeWindowEscape));
-            Assert.Throws<InvalidOperationException>(() => DecompressWithOptions(truncatedLargeWindowEscape, new BrotliDecompressionOptions()));
+            Assert.Throws<InvalidDataException>(() => Decompress_Stream(truncatedLargeWindowEscape));
+            Assert.Throws<InvalidDataException>(() => DecompressWithOptions(truncatedLargeWindowEscape, new BrotliDecompressionOptions()));
         }
 
         private static byte[] CreateWindowTestData()
