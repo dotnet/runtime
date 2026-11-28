@@ -23458,55 +23458,18 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
 
     instruction ins = HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, comp);
 
-    switch (ins)
-    {
-        case INS_cvtpd2dq:
-        case INS_cvtpd2ps:
-        case INS_cvttpd2dq:
-        case INS_vcvtdq2ph:
-        case INS_vcvtneps2bf16:
-        case INS_vcvtpd2ph:
-        case INS_vcvtpd2udq:
-        case INS_vcvtps2ph:
-        case INS_vcvtps2phx:
-        case INS_vcvtqq2ph:
-        case INS_vcvtqq2ps:
-        case INS_vcvttpd2dqs:
-        case INS_vcvttpd2udq:
-        case INS_vcvttpd2udqs:
-        case INS_vcvtudq2ph:
-        case INS_vcvtuqq2ph:
-        case INS_vcvtuqq2ps:
-        case INS_vpmovdb:
-        case INS_vpmovdw:
-        case INS_vpmovqb:
-        case INS_vpmovqd:
-        case INS_vpmovqw:
-        case INS_vpmovsdb:
-        case INS_vpmovsdw:
-        case INS_vpmovsqb:
-        case INS_vpmovsqd:
-        case INS_vpmovsqw:
-        case INS_vpmovswb:
-        case INS_vpmovusdb:
-        case INS_vpmovusdw:
-        case INS_vpmovusqb:
-        case INS_vpmovusqd:
-        case INS_vpmovusqw:
-        case INS_vpmovuswb:
-        case INS_vpmovwb:
-        {
-            // Narrowing conversions apply the write mask per (narrower) destination element, with
-            // the element count set by the source vector length, and zero any destination bits
-            // above the converted elements. The mask size checks below assume the mask lanes
-            // evenly cover the result type, which doesn't hold here.
-            return false;
-        }
+    unsigned outputSize = CodeGenInterface::instOutputSize(ins);
 
-        default:
-        {
-            break;
-        }
+    if ((outputSize != 0) && (outputSize < CodeGenInterface::instInputSize(ins)))
+    {
+        // Narrowing conversions apply the write mask per (narrower) destination element, with
+        // the element count set by the source vector length, and zero any destination bits
+        // above the converted elements. The mask size checks below assume the mask lanes
+        // evenly cover the result type, which doesn't hold here.
+        //
+        // TODO-AVX512-CQ: Use the output size to allow embedded masking when the masked
+        // elements do cover the result type, such as V256<double> -> V128<int>.
+        return false;
     }
 
     unsigned maskBaseSize    = CodeGenInterface::instKMaskBaseSize(ins);

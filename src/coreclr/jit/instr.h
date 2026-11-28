@@ -258,6 +258,14 @@ enum insFlags : uint64_t
     // The instruction has a pseudo name that should be used for disasm display
     INS_FLAGS_HasPseudoName = 1ULL << 52,
 
+    // instruction output element size, currently only set for packed narrowing
+    // instructions, whose output elements are smaller than their input elements
+    // (see Input_*); used to determine if we can use embedded masking
+    Output_8Bit  = 1ULL << 53,
+    Output_16Bit = 1ULL << 54,
+    Output_32Bit = 1ULL << 55,
+    Output_Mask  = (0x7ULL) << 53,
+
     // Keep the legacy spelling because shared code and the non-xarch insFlags enum also use
     // INS_FLAGS_DONT_CARE. Renaming it would extend this xarch-only cleanup into other targets.
     // TODO-Cleanup: Remove this flag and its usage from TARGET_XARCH.
