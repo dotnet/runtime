@@ -255,12 +255,12 @@ namespace System.Threading
             }
         }
 
-        private bool Register(Operation _)
+        private AsyncResult Register(Operation _)
         {
             if (TryRegisterWithPollThread(out Interop.Error error))
             {
                 // Registration was a success. Operation will be triggered by poll thread.
-                return true;
+                return AsyncResult.Pending;
             }
 
             if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
