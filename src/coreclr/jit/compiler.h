@@ -5420,6 +5420,7 @@ protected:
                             IL_OFFSET          rawILOffset);
 
     GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_CALL_INFO*      callInfo,
                                 CORINFO_CONTEXT_HANDLE  exactContextHnd,
                                 bool                    exactContextNeedsRuntimeLookup,
