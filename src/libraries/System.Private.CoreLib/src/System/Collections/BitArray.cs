@@ -725,6 +725,7 @@ namespace System.Collections
                 int newByteLength = GetAlignedByteArrayLength(value);
                 if (newByteLength > _array.Length)
                 {
+                    _array.AsSpan(GetByteArrayLengthFromBitLength(_bitLength)).Clear();
                     Array.Resize(ref _array, newByteLength);
                 }
                 else
@@ -981,7 +982,7 @@ namespace System.Collections
         public int PopCount()
         {
             int count = 0;
-            foreach (int i in MemoryMarshal.Cast<byte, int>(_array))
+            foreach (int i in MemoryMarshal.Cast<byte, int>(_array.AsSpan(0, GetAlignedByteArrayLength(_bitLength))))
             {
                 count += int.PopCount(i);
             }
