@@ -661,7 +661,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void GetContentToSign_AllInOneBlob()
         {
-            var builder = new BlobBuilder(16);
+            var builder = new FixedChunkBlobBuilder(16);
             builder.WriteBytes(1, 5);
             var snFixup = builder.ReserveBytes(5);
             builder.WriteBytes(2, 6);
@@ -680,7 +680,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void GetContentToSign_MultiBlobHeader()
         {
-            var builder = new BlobBuilder(16);
+            var builder = new FixedChunkBlobBuilder(16);
             builder.WriteBytes(0, 16);
             builder.WriteBytes(1, 16);
             builder.WriteBytes(2, 16);
@@ -707,7 +707,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void GetContentToSign_HeaderAndFixupInDistinctBlobs()
         {
-            var builder = new BlobBuilder(16);
+            var builder = new FixedChunkBlobBuilder(16);
             builder.WriteBytes(0, 16);
             builder.WriteBytes(1, 16);
             builder.WriteBytes(2, 16);
@@ -916,5 +916,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Equal(2, b.Start);
             Assert.Equal(0, b.Length);
         }
+
+        private sealed class FixedChunkBlobBuilder(int size) : BlobBuilder(new byte[size], size);
     }
 }
