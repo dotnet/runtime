@@ -2879,6 +2879,25 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             std::swap(arg0VN, arg1VN);
         }
     }
+    else if (((func < VNF_Boundary) && GenTree::StaticOperIs(oper, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT)) ||
+             (func == VNF_LT_UN) || (func == VNF_LE_UN) || (func == VNF_GE_UN) || (func == VNF_GT_UN))
+    {
+        // We canonicalize relops the same way, swapping the relop along with the operands,
+        // so that e.g. "a < b" and "b > a" get the same VN. Swapping both the operands and
+        // the relop does not change the result, including for unsigned and unordered relops.
+        if (arg0VN > arg1VN)
+        {
+            std::swap(arg0VN, arg1VN);
+            func = SwapRelop(func);
+        }
+
+        // ... unless one of them is a constant, in which case we want the constant to be arg1
+        if (IsVNConstantNonHandle(arg0VN))
+        {
+            std::swap(arg0VN, arg1VN);
+            func = SwapRelop(func);
+        }
+    }
 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
     //
@@ -7546,6 +7565,8 @@ genTreeOps ValueNumStore::VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned)
 //    VRK_SwapReverse        (y >= x)
 //
 //    VRK_Same will always return the VN passed in.
+//    For integral comparisons, VRK_Swap will also return the VN passed in, since
+//    relop VNs are canonical (see VNForFunc), so (x > y) and (y < x) have the same VN.
 //    For other relations, this method will return NoVN for all float comparisons.
 //
 ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)

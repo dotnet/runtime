@@ -1050,9 +1050,9 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 }
                 else if (andApp.GetArg(0) == pathApp.GetArg(1) && andApp.GetArg(1) == pathApp.GetArg(0))
                 {
-                    andVN = vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
-                    vnStore->GetVNFunc(andVN, &andApp);
-                    newRelopFunc = andApp.GetFunc();
+                    // Relop VNs are canonical, so we cannot get a VN with swapped operands;
+                    // swap the relop itself to make it apply to pathApp's operand order.
+                    newRelopFunc = ValueNumStore::SwapRelop(andApp.GetFunc());
                 }
 
                 JITDUMPEXEC(vnStore->vnDump(this, blockPathVN));
@@ -1074,7 +1074,13 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 const ValueNum treeOp1VN = vnStore->VNNormalValue(tree->AsOp()->gtOp1->GetVN(VNK_Liberal));
                 const ValueNum treeOp2VN = vnStore->VNNormalValue(tree->AsOp()->gtOp2->GetVN(VNK_Liberal));
 
-                if ((pathApp.GetArg(0) != treeOp1VN) || (pathApp.GetArg(1) != treeOp2VN))
+                if ((pathApp.GetArg(0) == treeOp2VN) && (pathApp.GetArg(1) == treeOp1VN) &&
+                    (pathApp.GetArg(0) != pathApp.GetArg(1)))
+                {
+                    // The canonical relop VN has the tree operands in the other order.
+                    newRelopFunc = ValueNumStore::SwapRelop(newRelopFunc);
+                }
+                else if ((pathApp.GetArg(0) != treeOp1VN) || (pathApp.GetArg(1) != treeOp2VN))
                 {
                     JITDUMP("; relop operands do not match tree operands, cannot simplify\n");
                     break;
