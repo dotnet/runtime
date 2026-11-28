@@ -1585,6 +1585,32 @@ namespace Internal.JitInterface
             }
         }
 
+        /// <summary>
+        /// Computes the <see cref="MethodWithToken"/> for the target of a call, used for both its entrypoint and
+        /// its generic context lookup. When a constrained call was resolved at compile time to a method body in
+        /// the version bubble, the import names that method by its own token and omits the constrained type: the
+        /// runtime cannot resolve the call differently, and decoding the constraint would load the exact
+        /// constrained type (and its instantiation arguments) for no benefit.
+        /// </summary>
+        private MethodWithToken ComputeCallTargetMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool resolvedConstraint, bool unboxing, bool useInstantiatingStub)
+        {
+            // Unboxing and instantiating stubs need the exact owning type, which a shared-code target
+            // cannot express without the constraint.
+            if (constrainedType != null && resolvedConstraint && !unboxing && !useInstantiatingStub
+                && method.IsPrimaryMethodDesc()
+                && !method.IsAbstract
+                && _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
+            {
+                ModuleToken methodToken = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: false, throwIfNotFound: false);
+                if (!methodToken.IsNull)
+                {
+                    return new MethodWithToken(method, methodToken, constrainedType: null, unboxing: false, genericContextObject: null);
+                }
+            }
+
+            return ComputeMethodWithToken(method, ref pResolvedToken, constrainedType, unboxing);
+        }
+
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, out bool strippedInstantiation)
         {
             mdToken token = pResolvedToken.token;
@@ -2107,7 +2133,8 @@ namespace Internal.JitInterface
             out TypeDesc exactType,
             out MethodDesc callerMethod,
             out EcmaModule callerModule,
-            out bool useInstantiatingStub)
+            out bool useInstantiatingStub,
+            out bool resolvedConstraint)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
@@ -2174,7 +2201,7 @@ namespace Internal.JitInterface
 
             constrainedType = (pConstrainedResolvedToken != null ? HandleToObject(pConstrainedResolvedToken->hClass) : null);
 
-            bool resolvedConstraint = false;
+            resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
 
             MethodDesc methodAfterConstraintResolution = originalMethod;
@@ -2674,6 +2701,7 @@ namespace Internal.JitInterface
             MethodDesc callerMethod;
             EcmaModule callerModule;
             bool useInstantiatingStub;
+            bool resolvedConstraint;
             ceeInfoGetCallInfo(
                 ref resolvedToken,
                 pConstrainedResolvedToken,
@@ -2687,7 +2715,8 @@ namespace Internal.JitInterface
                 out exactType,
                 out callerMethod,
                 out callerModule,
-                out useInstantiatingStub);
+                out useInstantiatingStub,
+                out resolvedConstraint);
 
             if (callerMethod.HasInstantiation || callerMethod.OwningType.HasInstantiation)
             {
@@ -2827,8 +2856,8 @@ namespace Internal.JitInterface
                             // Preserve each target's first import-time activation token separately:
                             // surviving call sites may carry different tokens after JIT transformations.
                             // See #DeferredWasmCallFinalization and #DeferredWasmCallRewriting.
-                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
-                                nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: false);
+                            MethodWithToken targetMethodWithToken = ComputeCallTargetMethodWithToken(
+                                nonUnboxingMethod, ref resolvedToken, constrainedType, resolvedConstraint, unboxing: false, useInstantiatingStub: false);
                             ISymbolNode fallback = _compilation.NodeFactory.MethodEntrypoint(
                                 targetMethodWithToken, isInstantiatingStub: false,
                                 isPrecodeImportRequired: false, isJumpableImportRequired: false);
@@ -2845,7 +2874,7 @@ namespace Internal.JitInterface
                             // READYTORUN: FUTURE: Direct calls if possible
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                                 _compilation.NodeFactory.MethodEntrypoint(
-                                    ComputeMethodWithToken(nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: isUnboxingStub),
+                                    ComputeCallTargetMethodWithToken(nonUnboxingMethod, ref resolvedToken, constrainedType, resolvedConstraint, unboxing: isUnboxingStub, useInstantiatingStub),
                                     isInstantiatingStub: useInstantiatingStub,
                                     isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
                                     isJumpableImportRequired: false));
@@ -2899,7 +2928,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
+                            ComputeCallTargetMethodWithToken(targetMethod, ref resolvedToken, constrainedType, resolvedConstraint, unboxing: false, useInstantiatingStub: false)));
                     }
                     else
                     {
@@ -2908,7 +2937,7 @@ namespace Internal.JitInterface
                         {
                             instParamLookup = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.DeclaringTypeHandle,
-                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType, unboxing: false));
+                                ComputeCallTargetMethodWithToken(targetMethod, ref resolvedToken, constrainedType, resolvedConstraint, unboxing: false, useInstantiatingStub: false));
                         }
                         else
                         {

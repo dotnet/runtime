@@ -605,6 +605,179 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// A constrained call resolved at compile time to a shared in-bubble method body is imported by that
+    /// method's own token. The exact constrained owner is not encoded, so decoding the import doesn't
+    /// load the constrained type's instantiation arguments. The exact instantiation still reaches the
+    /// shared body through its generic dictionary import. Targets whose exact instantiation is outside
+    /// the version bubble keep their exact instantiation.
+    /// </summary>
+    [Fact]
+    public void ResolvedConstrainedCallImportsOmitConstrainedType()
+        => RunResolvedConstrainedCallTest(nameof(ResolvedConstrainedCallImportsOmitConstrainedType), deferredWasmCalls: false);
+
+    /// <summary>
+    /// Compiling CoreLib into the same composite image enables deferred Wasm direct calls, whose readiness fixups
+    /// are <c>MethodEntry_ReadyToRun</c> imports. Those must also omit the constrained type.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void ResolvedConstrainedCallDeferredWasmImportsOmitConstrainedType()
+        => RunResolvedConstrainedCallTest(nameof(ResolvedConstrainedCallDeferredWasmImportsOmitConstrainedType), deferredWasmCalls: true);
+
+    private void RunResolvedConstrainedCallTest(string testName, bool deferredWasmCalls)
+    {
+        CompiledAssembly external = new()
+        {
+            AssemblyName = testName + "External",
+            SourceResourceNames = ["ConstrainedCalls/ExternalTypes.cs"],
+        };
+        CompiledAssembly input = new()
+        {
+            AssemblyName = testName,
+            SourceResourceNames = ["ConstrainedCalls/ResolvedConstrainedCall.cs"],
+            References = [external],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            testName,
+            [
+                new(testName,
+                    [new CrossgenAssembly(input), new CrossgenAssembly(external) { Kind = Crossgen2InputKind.Reference }])
+                {
+                    Options = deferredWasmCalls ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    AdditionalArgs = deferredWasmCalls
+                        ? ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath, "--codegenopt", "JitNoInline=1"]
+                        : ["--codegenopt", "JitNoInline=1"],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = reader => Validate(reader, deferredWasmCalls),
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader, bool deferredWasmCalls)
+        {
+            const string ExternalValueEnumerator = "ConstrainedCalls.Enumerator`1<ConstrainedCalls.External.ExternalValue>";
+            SignatureFormattingOptions formatting = new();
+            bool foundEnumeratorDispose = false;
+            bool foundNoInliningEnumeratorDispose = false;
+            bool foundGenericMethodDictionary = false;
+            bool foundExternalGenericMethodDictionary = false;
+            bool foundExternalValueEnumeratorDispose = false;
+            bool foundMarkerEnumeratorDictionary = false;
+            bool foundExternalMarkerEnumeratorDictionary = false;
+            bool foundReadinessEnumeratorDispose = false;
+            bool foundOrdinaryNoInliningEnumeratorDispose = false;
+            bool foundReadinessQueueEnumeratorDispose = false;
+            bool foundCoreLibKeyValuePairToString = false;
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature is not { } entrySignature)
+                    {
+                        continue;
+                    }
+
+                    string signature = entrySignature.ToString(formatting);
+                    if (entrySignature.FixupKind == ReadyToRunFixupKind.TypeDictionary)
+                    {
+                        // The shared Enumerator`1<__Canon>.Dispose body gets its exact instantiation from here.
+                        foundMarkerEnumeratorDictionary |= signature.Contains("ConstrainedCalls.Enumerator`1<ConstrainedCalls.Marker>", StringComparison.Ordinal);
+                        foundExternalMarkerEnumeratorDictionary |= signature.Contains("ConstrainedCalls.Enumerator`1<ConstrainedCalls.External.ExternalMarker>", StringComparison.Ordinal);
+                        continue;
+                    }
+
+                    bool isMethodEntry = entrySignature.FixupKind is ReadyToRunFixupKind.MethodEntry
+                        or ReadyToRunFixupKind.MethodEntry_DefToken
+                        or ReadyToRunFixupKind.MethodEntry_RefToken
+                        or ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+                    if (!isMethodEntry && entrySignature.FixupKind != ReadyToRunFixupKind.MethodDictionary)
+                    {
+                        continue;
+                    }
+
+                    bool isCoreLibQueueEnumeratorDispose = isMethodEntry
+                        && signature.Contains("System.Collections.Generic.Queue`1", StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal);
+                    bool isCoreLibKeyValuePairToString = isMethodEntry
+                        && signature.Contains("System.Collections.Generic.KeyValuePair`2", StringComparison.Ordinal)
+                        && signature.Contains("ToString", StringComparison.Ordinal);
+                    if (isCoreLibQueueEnumeratorDispose || isCoreLibKeyValuePairToString)
+                    {
+                        // CoreLib is only in the version bubble when it is compiled into the composite image. There, an
+                        // eager readiness fixup naming Marker would load this assembly while CoreLib is still loading.
+                        if (deferredWasmCalls)
+                        {
+                            bool isCoreLibReadinessFixup = entrySignature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+                            foundReadinessQueueEnumeratorDispose |= isCoreLibQueueEnumeratorDispose && isCoreLibReadinessFixup;
+                            foundCoreLibKeyValuePairToString |= isCoreLibKeyValuePairToString;
+                            Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
+                            Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
+                        }
+
+                        continue;
+                    }
+
+                    bool isEnumeratorDispose = isMethodEntry
+                        && signature.Contains("ConstrainedCalls.Enumerator`1", StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal);
+                    bool isNoInliningEnumeratorDispose = isMethodEntry
+                        && signature.Contains("ConstrainedCalls.NoInliningEnumerator`1", StringComparison.Ordinal)
+                        && signature.Contains("Dispose", StringComparison.Ordinal);
+                    bool isGenericMethodDictionary = !isMethodEntry
+                        && signature.Contains("ConstrainedCalls.GenericMethodStruct", StringComparison.Ordinal)
+                        && signature.Contains("Invoke", StringComparison.Ordinal);
+
+                    if (isEnumeratorDispose && signature.Contains(ExternalValueEnumerator, StringComparison.Ordinal))
+                    {
+                        // Enumerator`1<ExternalValue>.Dispose isn't shared and its exact instantiation is outside
+                        // the version bubble, so the import must still name that exact instantiation.
+                        foundExternalValueEnumeratorDispose = true;
+                        continue;
+                    }
+
+                    if (isGenericMethodDictionary && signature.Contains("ConstrainedCalls.External.ExternalMarker", StringComparison.Ordinal))
+                    {
+                        // The dictionary for GenericMethodStruct.Invoke<ExternalMarker> must name the exact method
+                        // instantiation, which is outside the version bubble.
+                        foundExternalGenericMethodDictionary = true;
+                        continue;
+                    }
+
+                    if (!isEnumeratorDispose && !isNoInliningEnumeratorDispose && !isGenericMethodDictionary)
+                    {
+                        continue;
+                    }
+
+                    foundEnumeratorDispose |= isEnumeratorDispose;
+                    foundNoInliningEnumeratorDispose |= isNoInliningEnumeratorDispose;
+                    foundGenericMethodDictionary |= isGenericMethodDictionary;
+                    bool isReadinessFixup = entrySignature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+                    foundReadinessEnumeratorDispose |= isEnumeratorDispose && isReadinessFixup;
+                    foundOrdinaryNoInliningEnumeratorDispose |= isNoInliningEnumeratorDispose && !isReadinessFixup;
+                    Assert.DoesNotContain("Marker", signature, StringComparison.Ordinal);
+                    Assert.DoesNotContain(" @ ", signature, StringComparison.Ordinal);
+                }
+            }
+
+            Assert.True(foundEnumeratorDispose, "Expected a MethodEntry import for Enumerator`1.Dispose");
+            Assert.True(foundNoInliningEnumeratorDispose, "Expected a MethodEntry import for NoInliningEnumerator`1.Dispose");
+            Assert.True(foundGenericMethodDictionary, "Expected a MethodDictionary import for GenericMethodStruct.Invoke");
+            Assert.True(foundExternalGenericMethodDictionary, "Expected a MethodDictionary import for GenericMethodStruct.Invoke<ExternalMarker>");
+            Assert.True(foundExternalValueEnumeratorDispose, "Expected a MethodEntry import for Enumerator`1<ExternalValue>.Dispose");
+            Assert.True(foundMarkerEnumeratorDictionary, "Expected a TypeDictionary import for Enumerator`1<Marker>");
+            Assert.True(foundExternalMarkerEnumeratorDictionary, "Expected a TypeDictionary import for Enumerator`1<ExternalMarker>");
+            if (deferredWasmCalls)
+            {
+                // The deferred direct call to Enumerator`1.Dispose gets a readiness fixup, while the
+                // NoInlining control keeps an ordinary indirect-call import.
+                Assert.True(foundReadinessEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Enumerator`1.Dispose");
+                Assert.True(foundOrdinaryNoInliningEnumeratorDispose, "Expected an ordinary MethodEntry import for NoInliningEnumerator`1.Dispose");
+                Assert.True(foundReadinessQueueEnumeratorDispose, "Expected a MethodEntry_ReadyToRun import for Queue`1.Enumerator.Dispose");
+                Assert.True(foundCoreLibKeyValuePairToString, "Expected a MethodEntry import for KeyValuePair`2.ToString");
+            }
+        }
+    }
+
     [Fact]
     public void CallSignaturesDoNotRequireTypeHandleFixups()
     {
