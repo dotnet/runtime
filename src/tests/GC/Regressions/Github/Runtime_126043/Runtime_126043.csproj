@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Needed for setting env vars for the test -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'x86' or '$(TargetsWasmArch)' == 'true'">true</CLRTestTargetUnsupported>
     <Optimize>True</Optimize>
     <CLRTestPriority>1</CLRTestPriority>
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+import Wasm64 from "consts:wasm64";
 
 import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, Module } from "./cross-module";
 
@@ -428,7 +429,9 @@ export function marshalArrayToCsImpl(arg: JSMarshalerArgument, value: Array<any>
     } else {
         const elementSize = arrayElementSize(elementType);
         dotnetAssert.fastCheck(elementSize != -1, () => `Element type ${elementType} not supported`);
-        const length = value.length;
+        // A non-array value has no length; the element type checks below report it. Keep the
+        // allocation size an integer: wasm64 converts it to a BigInt, which rejects NaN.
+        const length = Wasm64 && typeof value.length !== "number" ? 0 : value.length;
         const bufferLength = elementSize * length;
         const bufferPtr = Module._malloc(bufferLength) as any;
         if (elementType == MarshalerType.String) {

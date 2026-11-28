@@ -15,7 +15,7 @@
     <IsApplePlatform Condition="'$(TargetsOSX)' == 'true' or '$(IsiOSLike)' == 'true'">true</IsApplePlatform>
     <IsMobileLike Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(IsiOSLike)' == 'true' or '$(TargetsAndroid)' == 'true'">true</IsMobileLike>
     <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
-    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm'">true</SupportsWasmIntrinsics>
+    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' or ('$(Platform)' == 'wasm64' and '$(FeatureCoreCLR)' == 'true')">true</SupportsWasmIntrinsics>
     <SupportsWasmIntrinsics Condition="'$(SupportsWasmIntrinsics)' == ''">false</SupportsWasmIntrinsics>
     <!-- Mono does not implement RelaxedSimd, so it uses the PlatformNotSupported implementation. -->
     <SupportsWasmRelaxedSimdIntrinsics Condition="'$(SupportsWasmIntrinsics)' == 'true' and '$(FeatureMono)' != 'true'">true</SupportsWasmRelaxedSimdIntrinsics>
@@ -25,7 +25,7 @@
     <NotSupportedOnMono Condition="'$(FeatureMono)' == 'true'">.PlatformNotSupported</NotSupportedOnMono>
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
     <IsBigEndian Condition="'$(Platform)' == 's390x'">true</IsBigEndian>
-    <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64'">true</Is64Bit>
+    <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64' or '$(Platform)' == 'wasm64'">true</Is64Bit>
     <UseMinimalGlobalizationData Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <FeatureCrossProcessMutex Condition="'$(IsMobileLike)' != 'true'">true</FeatureCrossProcessMutex>

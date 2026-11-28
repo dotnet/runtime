@@ -676,13 +676,13 @@ void DBG_PrintInterpreterStack()
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef TARGET_WASMARCH
-typedef void* (*HELPER_FTN_P_P)(int*, void*, int32_t);
-typedef void* (*HELPER_FTN_BOX_UNBOX)(int*, MethodTable*, void*, int32_t);
-typedef Object* (*HELPER_FTN_NEWARR)(int*, MethodTable*, intptr_t, int32_t);
-typedef void* (*HELPER_FTN_P_PP)(int*, void*, void*, int32_t);
-typedef void (*HELPER_FTN_V_PPP)(int*, void*, void*, void*, int32_t);
-typedef void* (*HELPER_FTN_P_PPIP)(int*, void*, void*, int32_t, void*, int32_t);
-typedef void (*HELPER_FTN_V_PP)(int*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_P)(int*, void*, PCODE);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(int*, MethodTable*, void*, PCODE);
+typedef Object* (*HELPER_FTN_NEWARR)(int*, MethodTable*, intptr_t, PCODE);
+typedef void* (*HELPER_FTN_P_PP)(int*, void*, void*, PCODE);
+typedef void (*HELPER_FTN_V_PPP)(int*, void*, void*, void*, PCODE);
+typedef void* (*HELPER_FTN_P_PPIP)(int*, void*, void*, int32_t, void*, PCODE);
+typedef void (*HELPER_FTN_V_PP)(int*, void*, void*, PCODE);
 
 // These helpers are all noinline, so that when the R2R compiler overwrites values relative to framePointer lower
 // down in the stack, no meaningful state from the C++ code here will be overwritten.

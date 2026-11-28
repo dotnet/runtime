@@ -322,6 +322,7 @@ instructionsetgroup  ,apple-m5                   ,ARM64    ,armv8.9-a
 
 ; Definition of Wasm instruction sets
 definearch           ,Wasm32      ,32Bit               ,        ,        ,Wasm
+definearch           ,Wasm64      ,64Bit               ,        ,        ,Wasm
 
 instructionset       ,Wasm32      ,WasmBase            ,         ,91     ,WasmBase        ,base
 instructionset       ,Wasm32      ,PackedSimd          ,         ,92     ,PackedSimd      ,simd128
@@ -332,3 +333,4 @@ vectorinstructionset ,Wasm32      ,Vector128
 implication          ,Wasm32      ,Vector128   ,PackedSimd
 implication          ,Wasm32      ,RelaxedSimd ,PackedSimd
 implication          ,Wasm32      ,PackedSimd  ,WasmBase
+copyinstructionsets  ,Wasm32      ,Wasm64

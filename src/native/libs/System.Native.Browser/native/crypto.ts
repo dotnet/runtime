@@ -18,7 +18,10 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
         return -1;
     }
 
-    bufferPtr = bufferPtr >>> 0;
+    // Emscripten serializes this function into the native library without its module scope, so it
+    // cannot use build-time constants. wasm64 passes a non-negative offset.
+    if (bufferPtr < 0)
+        bufferPtr = bufferPtr >>> 0;
     const memoryView = _ems_.dotnetApi.localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 

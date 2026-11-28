@@ -1189,7 +1189,7 @@ CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, EndAddress, offsetof(HeapList, endA
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, Heap, offsetof(HeapList, pHeap))
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && !defined(TARGET_WASMARCH)
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, CLRPersonalityRoutine, offsetof(HeapList, CLRPersonalityRoutine))
 #endif
 CDAC_TYPE_END(CodeHeapListNode)

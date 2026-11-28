@@ -30,9 +30,9 @@ public class WebcilConverter
         Log = logger;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger, int webcilVersion = 0)
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger, int webcilVersion = 0, bool memory64 = false)
     {
-        var converter = NET.WebAssembly.Webcil.WebcilConverter.FromPortableExecutable(inputPath, outputPath, webcilVersion);
+        var converter = NET.WebAssembly.Webcil.WebcilConverter.FromPortableExecutable(inputPath, outputPath, webcilVersion, memory64);
         return new WebcilConverter(converter, inputPath, outputPath, logger);
     }
 

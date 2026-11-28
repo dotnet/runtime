@@ -89,7 +89,7 @@ namespace System.CommandLine
                     instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
                 }
             }
-            else if (targetArchitecture == TargetArchitecture.Wasm32)
+            else if (targetArchitecture is TargetArchitecture.Wasm32 or TargetArchitecture.Wasm64)
             {
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
                 instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");

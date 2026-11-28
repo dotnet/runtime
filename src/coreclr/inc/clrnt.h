@@ -521,17 +521,21 @@ RtlVirtualUnwind(
 #define UNW_FLAG_EHANDLER               0x1             /* filter handler */
 #define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
 
+// Only the Wasm runtime implements this. Cross-targeting tools such as the Wasm JIT must not see it:
+// on a 64-bit Windows host it would redeclare the SDK's dllimport RtlVirtualUnwind.
+#ifdef HOST_WASMARCH
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
-    _In_ DWORD ImageBase,
-    _In_ DWORD ControlPc,
+    _In_ UINT_PTR ImageBase,
+    _In_ UINT_PTR ControlPc,
     _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     _Out_ PVOID *HandlerData,
-    _Out_ PDWORD EstablisherFrame,
+    _Out_ UINT_PTR *EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
+#endif // HOST_WASMARCH
 
 UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
 

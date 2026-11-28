@@ -11,7 +11,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL\</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;arm64;wasm</Platforms>
+    <Platforms>x64;x86;arm;arm64;wasm;wasm64</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 
@@ -72,7 +72,11 @@
     <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <DefineConstants>$(DefineConstants);TARGET_WASMARCH</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_WASMARCH;TARGET_WASM</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'wasm64'">
+    <DefineConstants>$(DefineConstants);TARGET_WASMARCH;TARGET_WASM64</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->

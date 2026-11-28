@@ -149,9 +149,11 @@ inline void FATAL_GC_ERROR()
 //    https://github.com/dotnet/runtime/issues/104211
 // Apple non-macOS platforms (such as iOS, tvOS, and Mac Catalyst) disallow
 // the large virtual address space reservations that GC regions require.
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX))
+// WebAssembly has no reserve-only memory: a reservation grows linear memory,
+// which can never be returned, so wasm64 uses segments like wasm32.
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX)) && !defined(HOST_WASMARCH)
 #define USE_REGIONS
-#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX)
+#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX) && !HOST_WASMARCH
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE

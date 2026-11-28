@@ -47,6 +47,11 @@
         "browser"
       ]
     },
+    "browser-wasm64": {
+      "#import": [
+        "browser"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"

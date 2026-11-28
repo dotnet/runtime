@@ -1845,10 +1845,12 @@ CPalThread::GetStackLimit()
     uintptr_t stackLimitMaybe = emscripten_stack_get_end();
     if (stackLimitMaybe == 0) // emscripten_stack_get_end can return 0.
     {
-        stackLimitMaybe += sizeof(size_t);
-
         // CoreCLR doesn't like using 0 as a limit address.
-        // So we bump it up a bit and tell emscripten about it.
+        // So we bump it up a bit and tell emscripten about it. Emscripten writes its stack
+        // cookie 4 bytes in when the stack ends at 0 and checks it at the current end, so use
+        // 4 rather than the pointer size to keep that check valid on wasm64.
+        stackLimitMaybe += 4;
+
         emscripten_stack_set_limits(GetStackBase(), (void*)stackLimitMaybe);
     }
     stackLimit = (void*)stackLimitMaybe;

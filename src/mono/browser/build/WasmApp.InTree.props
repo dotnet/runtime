@@ -12,6 +12,10 @@
     <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' != 'Core'">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\netframework\</_WebAssemblySdkTasksDirectory>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm64' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UsingMicrosoftNETSdkStaticWebAssets)' != 'true'">
+    <_WasmInTreeImportStaticWebAssets>true</_WasmInTreeImportStaticWebAssets>
+  </PropertyGroup>
+  <Import Sdk="Microsoft.NET.Sdk.StaticWebAssets" Project="Sdk.props" Condition="'$(_WasmInTreeImportStaticWebAssets)' == 'true'" />
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
 
   <PropertyGroup>

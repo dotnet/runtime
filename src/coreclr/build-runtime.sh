@@ -169,7 +169,7 @@ if [[ -z "$__CMakeTarget" ]]; then
     __CMakeTarget="install"
 fi
 
-if [[ "$__TargetArch" != "$__HostArch" ]]; then
+if [[ "$__TargetArch" != "$__HostArch" || "$__TargetArch" == wasm64 ]]; then
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch $__CMakeArgs"
 fi
 

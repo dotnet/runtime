@@ -39,6 +39,14 @@ function libDotnetInteropFactory() {
         },
         $DOTNET_INTEROP__postset: "DOTNET_INTEROP.selfInitialize()",
         $DOTNET_INTEROP__deps: commonDeps,
+        // Emscripten converts memory64 BigInt pointers and intptr_t handles to/from JS numbers only
+        // for imports with a 'p' in their __sig. Keep these in sync with entrypoints.c; 'p' is i32 on wasm32.
+        SystemInteropJS_BindJSImportST__sig: "pp",
+        SystemInteropJS_InvokeJSImportST__sig: "vip",
+        SystemInteropJS_ResolveOrRejectPromise__sig: "vp",
+        SystemInteropJS_InvokeJSFunction__sig: "vpp",
+        SystemInteropJS_ReleaseCSOwnedObject__sig: "vp",
+        SystemInteropJS_CancelPromise__sig: "vp",
     };
 
     for (const exportName of Reflect.ownKeys(exports)) {

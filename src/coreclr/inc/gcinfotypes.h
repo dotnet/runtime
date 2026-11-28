@@ -919,17 +919,21 @@ struct X86GcInfoEncoding {
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
 
-#elif defined(TARGET_WASMARCH) && !defined(TARGET_64BIT)
+#elif defined(TARGET_WASMARCH)
 
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#ifdef TARGET_64BIT
+#define TARGET_POINTER_SIZE 8
+#else
+#define TARGET_POINTER_SIZE 4
+#endif
 #endif
 
-#define TargetGcInfoEncoding Wasm32GcInfoEncoding
+#define TargetGcInfoEncoding WasmGcInfoEncoding
 
 // TODO-WASM: Investigate normalizing stack slots to save space based on wasm stack alignment
 
-struct Wasm32GcInfoEncoding {
+struct WasmGcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return (x); }

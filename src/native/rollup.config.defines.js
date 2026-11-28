@@ -18,11 +18,12 @@ if (process.env.ProductVersion === undefined) {
 export const isDebug = process.env.Configuration.toLowerCase() !== "release";
 export const configuration = isDebug ? "Debug" : "Release";
 export const runtimeFlavor = process.env.RuntimeFlavor || "CoreCLR";
+export const wasm64 = process.env.TargetArchitecture === "wasm64";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm`;
 
-console.log(`Rollup configuration: Configuration=${configuration}, RuntimeFlavor=${runtimeFlavor}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
+console.log(`Rollup configuration: Configuration=${configuration}, RuntimeFlavor=${runtimeFlavor}, Wasm64=${wasm64}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
 export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/rollup.config.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
@@ -51,6 +52,7 @@ export const envConstants = {
     productVersion,
     configuration,
     runtimeFlavor,
+    wasm64,
     gitHash,
     isContinuousIntegrationBuild,
 };
