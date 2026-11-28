@@ -896,6 +896,7 @@ size_t      gc_heap::ephemeral_fgc_counts[max_generation];
 VOLATILE(c_gc_state) gc_heap::current_c_gc_state = c_gc_state_free;
 
 VOLATILE(BOOL) gc_heap::gc_background_running = FALSE;
+VOLATILE(bool) gc_heap::background_rescan_refcounted_handles_p;
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
@@ -3275,6 +3276,7 @@ VOLATILE(bool) gc_heap::gc_done_event_set;
 GCEvent gc_heap::gc_done_event;
 #endif //!MULTIPLE_HEAPS
 VOLATILE(bool) gc_heap::internal_gc_done;
+VOLATILE(bool) gc_heap::rescan_refcounted_handles_p;
 
 int
 gc_heap::init_gc_heap (int h_number)

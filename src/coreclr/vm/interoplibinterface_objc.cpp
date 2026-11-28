@@ -22,11 +22,16 @@ namespace
     ObjCMarshalNative::BeginEndCallback g_BeginEndCallback;
     ObjCMarshalNative::IsReferencedCallback g_IsReferencedCallback;
     ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
+    ObjCMarshalNative::HaveReferencesChangedCallback g_HaveReferencesChangedCallback;
+
+    // True while the GC conservatively promotes still-unmarked Objective-C tracked objects.
+    bool g_RefCountedHandleRescanActive;
 }
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
+    _In_opt_ ObjCMarshalNative::HaveReferencesChangedCallback haveReferencesChangedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
     _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
     QCallExceptionStatus* qcallError)
@@ -49,6 +54,7 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
         {
             g_BeginEndCallback = beginEndCallback;
             g_IsReferencedCallback = isReferencedCallback;
+            g_HaveReferencesChangedCallback = haveReferencesChangedCallback;
             g_TrackedObjectEnteredFinalizationCallback = trackedObjectEnteredFinalization;
             g_ObjectiveCTrackingInfoTable = GetAppDomain()->CreateHandle(objectTrackingInfoTable.Get());
 
@@ -192,6 +198,14 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* is
     if (!TryGetTaggedMemory(object, &taggedMemory))
         return false;
 
+    if (g_RefCountedHandleRescanActive)
+    {
+        // If a rescan of ref-counted handles is active, we conservatively treat
+        // this object as referenced regardless of its actual reference state.
+        *isReferenced = true;
+        return true;
+    }
+
     _ASSERTE(g_IsReferencedCallback != NULL);
     int result = g_IsReferencedCallback(taggedMemory);
 
@@ -298,7 +312,11 @@ void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()
         g_BeginEndCallback();
 }
 
-void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
+// This is called after the last IsTrackedReference query.
+// Returning true indicates references have changed since the IsTrackedReference queries. The GC
+// should then conservatively promote still-unmarked tracked objects. See IsTrackedReference
+// and its usage of g_RefCountedHandleRescanActive.
+bool ObjCMarshalNative::ShouldRescanRefCountedHandles()
 {
     CONTRACTL
     {
@@ -306,6 +324,28 @@ void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    _ASSERTE(!g_RefCountedHandleRescanActive);
+
+    // Used when the client doesn't provide a callback; references are never reported as changed.
+    // The default state of g_RefCountedHandleRescanActive should be false, "no changes".
+    if (g_HaveReferencesChangedCallback != NULL)
+        g_RefCountedHandleRescanActive = (g_HaveReferencesChangedCallback() != 0);
+
+    return g_RefCountedHandleRescanActive;
+}
+
+void ObjCMarshalNative::AfterScanForFinalization()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // Mark that the ref counted handle rescan is no longer active.
+    g_RefCountedHandleRescanActive = false;
 
     if (g_BeginEndCallback != NULL)
         g_BeginEndCallback();

@@ -2761,6 +2761,24 @@ void gc_heap::fire_mark_event (int root_type, size_t& current_promoted_bytes, si
 #endif // FEATURE_EVENT_TRACE
 }
 
+#ifdef HEAP_ANALYZE
+void gc_heap::ha_finish (int condemned_gen_number)
+{
+    uint64_t promoted_bytes_global = 0;
+    heap_analyze_enabled = FALSE;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        promoted_bytes_global += g_heaps[i]->get_promoted_bytes();
+    }
+#else
+    promoted_bytes_global = get_promoted_bytes();
+#endif //MULTIPLE_HEAPS
+
+    GCToEEInterface::AnalyzeSurvivorsFinished (settings.gc_index, condemned_gen_number, promoted_bytes_global, GCHeap::ReportGenerationBounds);
+}
+#endif // HEAP_ANALYZE
+
 void gc_heap::mark_phase (int condemned_gen_number)
 {
     assert (settings.concurrent == FALSE);
@@ -3240,21 +3258,17 @@ void gc_heap::mark_phase (int condemned_gen_number)
         record_mark_time (gc_time_info[time_mark_roots], current_mark_time, last_mark_time);
 #endif //FEATURE_EVENT_TRACE
 
-        uint64_t promoted_bytes_global = 0;
-#ifdef HEAP_ANALYZE
-        heap_analyze_enabled = FALSE;
-#ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < n_heaps; i++)
-        {
-            promoted_bytes_global += g_heaps[i]->get_promoted_bytes();
-        }
-#else
-        promoted_bytes_global = get_promoted_bytes();
-#endif //MULTIPLE_HEAPS
+        rescan_refcounted_handles_p = GCToEEInterface::ShouldRescanRefCountedHandles (&sc);
 
-        GCToEEInterface::AnalyzeSurvivorsFinished (settings.gc_index, condemned_gen_number, promoted_bytes_global, GCHeap::ReportGenerationBounds);
+        // The EE treats marking as complete in AfterGcScanRoots, so defer it until after any rescan.
+        if (!rescan_refcounted_handles_p)
+        {
+#ifdef HEAP_ANALYZE
+            ha_finish (condemned_gen_number);
 #endif // HEAP_ANALYZE
-        GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
+            // No rescan, so we can call AfterGcScanRoots immediately.
+            GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
+        }
 
 #ifdef MULTIPLE_HEAPS
         if (!full_p)
@@ -3266,6 +3280,42 @@ void gc_heap::mark_phase (int condemned_gen_number)
         dprintf(3, ("Starting all gc thread for short weak handle scan"));
         gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
+    }
+
+    if (rescan_refcounted_handles_p)
+    {
+        dprintf(3, ("Rescanning refcounted handles"));
+        GCScan::GcScanRefCountedHandles (GCHeap::Promote, condemned_gen_number, max_generation, &sc);
+        drain_mark_queue();
+        fire_mark_event (ETW::GC_ROOT_HANDLES, current_promoted_bytes, last_promoted_bytes);
+
+        // Promote secondaries of dependent handles whose primaries were promoted by the rescan.
+        // As before scan_dependent_handles will also process any mark stack overflow.
+        scan_dependent_handles (condemned_gen_number, &sc, false);
+
+        // mark queue must be empty after scan_dependent_handles
+        mark_queue.verify_empty();
+        fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
+
+#ifdef MULTIPLE_HEAPS
+        // All heaps must finish marking before any heap clears short weak references.
+        dprintf(3, ("Joining after refcounted handle rescan"));
+        gc_t_join.join(this, gc_join_rescan_refcounted_handles);
+        if (gc_t_join.joined())
+#endif //MULTIPLE_HEAPS
+        {
+#ifdef HEAP_ANALYZE
+            ha_finish (condemned_gen_number);
+#endif // HEAP_ANALYZE
+
+            // Rescan of refcounted handles completed, now call AfterGcScanRoots
+            GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
+
+#ifdef MULTIPLE_HEAPS
+            dprintf(3, ("Starting all gc thread after refcounted handle rescan"));
+            gc_t_join.restart();
+#endif //MULTIPLE_HEAPS
+        }
     }
 
 #ifdef FEATURE_CARD_MARKING_STEALING
@@ -3345,6 +3395,8 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #ifdef FEATURE_EVENT_TRACE
         record_mark_time (gc_time_info[time_mark_scan_finalization], current_mark_time, last_mark_time);
 #endif //FEATURE_EVENT_TRACE
+
+        GCToEEInterface::AfterScanForFinalization (condemned_gen_number, max_generation, &sc);
 
 #ifdef USE_REGIONS
         sync_promoted_bytes();

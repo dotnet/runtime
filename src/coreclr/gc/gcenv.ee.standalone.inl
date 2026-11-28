@@ -92,6 +92,26 @@ inline bool GCToEEInterface::IsClientBridgeProcessingActive()
     return false;
 }
 
+inline bool GCToEEInterface::ShouldRescanRefCountedHandles(ScanContext* sc)
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 6)
+    {
+        return g_theGCToCLR->ShouldRescanRefCountedHandles(sc);
+    }
+
+    return false;
+}
+
+inline void GCToEEInterface::AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc)
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 6)
+    {
+        g_theGCToCLR->AfterScanForFinalization(condemned, max_gen, sc);
+    }
+}
+
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     assert(g_theGCToCLR != nullptr);

@@ -26,6 +26,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static unsafe bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<int> haveReferencesChangedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
              => throw new NotImplementedException();
 

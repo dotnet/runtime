@@ -157,6 +157,15 @@ bool GCToEEInterface::IsClientBridgeProcessingActive()
     return false;
 }
 
+bool GCToEEInterface::ShouldRescanRefCountedHandles(ScanContext* sc)
+{
+    return false;
+}
+
+void GCToEEInterface::AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc)
+{
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     Thread* pThread = ::GetThread();

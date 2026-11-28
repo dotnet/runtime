@@ -498,8 +498,8 @@ namespace System.Runtime
 
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhRegisterObjectiveCMarshalBeginEndCallback")]
-        internal static extern bool RhRegisterObjectiveCMarshalBeginEndCallback(IntPtr pCalloutMethod);
+        [RuntimeImport(RuntimeLibrary, "RhRegisterObjectiveCMarshalReferenceTrackerCallbacks")]
+        internal static extern bool RhRegisterObjectiveCMarshalReferenceTrackerCallbacks(IntPtr beginEndCallback, IntPtr haveReferencesChangedCallback);
 #endif
 
         //

@@ -33,13 +33,10 @@
 
 namespace
 {
-    // TODO: Support registering multiple begin/end callbacks.
-    // NativeAOT support the concept of multiple managed "worlds",
-    // each with their own object heirarchy. Each of these worlds
-    // could potentially have its own set of callbacks.
-    // However this Objective-C Marshal API was not designed with such a
-    // possibility in mind.
+    // The Objective-C Marshal API is designed as a single use per process.
     ObjCMarshalNative::BeginEndCallback s_pBeginEndCallback = nullptr;
+    ObjCMarshalNative::HaveReferencesChangedCallback s_pHaveReferencesChangedCallback = nullptr;
+    bool s_refCountedHandleRescanActive;
 
     struct DisableTriggerGcWhileCallingManagedCode
     {
@@ -97,16 +94,20 @@ namespace
     }
 }
 
-bool ObjCMarshalNative::RegisterBeginEndCallback(void * callback)
+bool ObjCMarshalNative::RegisterReferenceTrackerCallbacks(void * beginEndCallback, void * haveReferencesChangedCallback)
 {
-    ASSERT(callback != nullptr);
+    ASSERT(beginEndCallback != nullptr);
 
     // We must be in Cooperative mode since we are setting callbacks that
     // will be used during a GC and we want to ensure a GC isn't occurring
     // while they are being set.
     ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
-    return PalInterlockedCompareExchangePointer(&s_pBeginEndCallback, callback, nullptr) == nullptr;
+    if (PalInterlockedCompareExchangePointer(&s_pBeginEndCallback, beginEndCallback, nullptr) != nullptr)
+        return false;
+
+    s_pHaveReferencesChangedCallback = reinterpret_cast<HaveReferencesChangedCallback>(haveReferencesChangedCallback);
+    return true;
 }
 
 bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isReferenced)
@@ -116,9 +117,6 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
     if (!object->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
         return false;
 
-    auto pIsReferencedCallbackCallback = (ObjCMarshalNative::IsReferencedCallback)GetCallbackViaClasslibCallback(
-        object, ClasslibFunctionId::ObjectiveCMarshalGetIsTrackedReferenceCallback);
-
     void* taggedMemory;
     if (!TryGetTaggedMemory(object, &taggedMemory))
     {
@@ -127,6 +125,16 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
         ASSERT(false);
         return false;
     }
+
+    if (s_refCountedHandleRescanActive)
+    {
+        // Conservatively treat tracked objects as referenced during the rescan.
+        *isReferenced = true;
+        return true;
+    }
+
+    auto pIsReferencedCallbackCallback = (ObjCMarshalNative::IsReferencedCallback)GetCallbackViaClasslibCallback(
+        object, ClasslibFunctionId::ObjectiveCMarshalGetIsTrackedReferenceCallback);
 
     int result = pIsReferencedCallbackCallback(taggedMemory);
 
@@ -140,8 +148,20 @@ void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()
         s_pBeginEndCallback();
 }
 
-void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
+bool ObjCMarshalNative::ShouldRescanRefCountedHandles()
 {
+    ASSERT(!s_refCountedHandleRescanActive);
+
+    if (s_pHaveReferencesChangedCallback != nullptr)
+        s_refCountedHandleRescanActive = (s_pHaveReferencesChangedCallback() != 0);
+
+    return s_refCountedHandleRescanActive;
+}
+
+void ObjCMarshalNative::AfterScanForFinalization()
+{
+    s_refCountedHandleRescanActive = false;
+
     if (s_pBeginEndCallback != nullptr)
         s_pBeginEndCallback();
 }

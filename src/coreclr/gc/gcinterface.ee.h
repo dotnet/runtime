@@ -117,10 +117,10 @@ public:
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind) PURE_VIRTUAL
 
     virtual
-    void FireGCAllocationTick_V4(uint64_t allocationAmount, 
-                                 uint32_t allocationKind, 
-                                 uint32_t heapIndex, 
-                                 void* objectAddress, 
+    void FireGCAllocationTick_V4(uint64_t allocationAmount,
+                                 uint32_t allocationKind,
+                                 uint32_t heapIndex,
+                                 void* objectAddress,
                                  uint64_t objectSize) PURE_VIRTUAL
 
     virtual
@@ -475,6 +475,19 @@ public:
     // cross references would be discarded by the client, so the GC can skip computing it.
     virtual
     bool IsClientBridgeProcessingActive() PURE_VIRTUAL
+
+    // The following methods are available only with EE_INTERFACE_MAJOR_VERSION >= 6.
+
+    // Called once per non-concurrent mark, on a single GC thread, before AfterGcScanRoots
+    // and short weak references are cleared. Returns true if the EE cannot commit
+    // the initial refcounted-handle decisions and the GC should scan again.
+    virtual
+    bool ShouldRescanRefCountedHandles(ScanContext* sc) PURE_VIRTUAL
+
+    // Called once per non-concurrent mark, on a single GC thread, after objects have been
+    // scanned for finalization and before long weak references are cleared.
+    virtual
+    void AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc) PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

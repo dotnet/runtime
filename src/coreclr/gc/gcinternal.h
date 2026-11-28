@@ -227,7 +227,8 @@ enum gc_join_stage
     gc_join_merge_temp_fl = 39,
     gc_join_bridge_processing = 40,
     gc_join_bgc_retire_alloc_contexts = 41,
-    gc_join_max = 42
+    gc_join_rescan_refcounted_handles = 42,
+    gc_join_max = 43
 };
 
 enum gc_join_flavor

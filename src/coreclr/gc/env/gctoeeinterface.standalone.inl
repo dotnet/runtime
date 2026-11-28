@@ -59,6 +59,16 @@ namespace standalone
             return ::GCToEEInterface::IsClientBridgeProcessingActive();
         }
 
+        bool ShouldRescanRefCountedHandles(ScanContext* sc)
+        {
+            return ::GCToEEInterface::ShouldRescanRefCountedHandles(sc);
+        }
+
+        void AfterScanForFinalization(int condemned, int max_gen, ScanContext* sc)
+        {
+            ::GCToEEInterface::AfterScanForFinalization(condemned, max_gen, sc);
+        }
+
         void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
         {
             ::GCToEEInterface::SyncBlockCacheWeakPtrScan(scanProc, lp1, lp2);

@@ -3052,6 +3052,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCReferenceTrackingCallbacks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs" Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoreleasePool.cs" />
@@ -3059,6 +3060,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCReferenceTrackingCallbacks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">

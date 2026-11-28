@@ -20,6 +20,7 @@ public:
     using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
     using IsReferencedCallback = int(STDMETHODCALLTYPE *)(_In_ void*);
     using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(_In_ void*);
+    using HaveReferencesChangedCallback = int(STDMETHODCALLTYPE *)(void);
 
     // See MessageSendFunction in ObjectiveCMarshal class
     enum MessageSendFunction
@@ -48,8 +49,9 @@ public: // Exceptions
 
 public: // GC interaction
     static void BeforeRefCountedHandleCallbacks();
-    static void AfterRefCountedHandleCallbacks();
+    static bool ShouldRescanRefCountedHandles();
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
+    static void AfterScanForFinalization();
 };
 
 class ObjcTrackingInformationObject final : public Object
@@ -70,6 +72,7 @@ using OBJC_TRACKING_INFO_REF = DPTR(ObjcTrackingInformationObject);
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
+    _In_opt_ ObjCMarshalNative::HaveReferencesChangedCallback haveReferencesChangedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
     _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
     QCallExceptionStatus* qcallError);
