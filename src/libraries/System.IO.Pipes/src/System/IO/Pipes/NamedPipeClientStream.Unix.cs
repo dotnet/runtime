@@ -49,16 +49,13 @@ namespace System.IO.Pipes
             }
 
             var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            SafePipeHandle? clientHandle = null;
             try
             {
                 socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath!));
-                clientHandle = new SafePipeHandle(socket);
-                ConfigureSocket(socket, clientHandle, _direction, 0, 0, _inheritability);
+                ConfigureSocket(socket, _direction, 0, 0, _inheritability);
             }
             catch (SocketException e)
             {
-                clientHandle?.Dispose();
                 socket.Dispose();
 
                 switch (e.SocketErrorCode)
@@ -75,6 +72,7 @@ namespace System.IO.Pipes
                 }
             }
 
+            var clientHandle = new SafePipeHandle(socket);
             try
             {
                 ValidateRemotePipeUser(clientHandle);
@@ -82,7 +80,6 @@ namespace System.IO.Pipes
             catch (Exception)
             {
                 clientHandle.Dispose();
-                socket.Dispose();
                 throw;
             }
 
@@ -107,7 +104,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-                return InternalHandle?.PipeSocket.ReceiveBufferSize ?? 0;
+                return InternalHandle?.GetSocketBufferSize(SocketOptionName.ReceiveBuffer) ?? 0;
             }
         }
 
@@ -117,7 +114,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-                return InternalHandle?.PipeSocket.SendBufferSize ?? 0;
+                return InternalHandle?.GetSocketBufferSize(SocketOptionName.SendBuffer) ?? 0;
             }
         }
 
