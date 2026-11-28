@@ -405,6 +405,133 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     }
 }
 
+#if !defined(HOST_UNIX) && !defined(TARGET_X86)
+// Unwind managed frames with the code manager, retaining register-slot pointers.
+static bool UnwindRegDisplayToSp(REGDISPLAY *pRD, TADDR targetSp, int *pFramesUnwound)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    while (GetRegdisplaySP(pRD) < targetSp)
+    {
+        EECodeInfo codeInfo(GetControlPC(pRD));
+        if (!codeInfo.IsValid() || codeInfo.IsInterpretedCode())
+        {
+            return false;
+        }
+
+        // Deliberately conservative: stop on any step that does not raise SP.
+        TADDR previousSp = GetRegdisplaySP(pRD);
+        if (!codeInfo.GetCodeManager()->UnwindStackFrame(pRD, &codeInfo, 0) || (GetRegdisplaySP(pRD) <= previousSp))
+        {
+            return false;
+        }
+
+        (*pFramesUnwound)++;
+    }
+
+    return GetRegdisplaySP(pRD) == targetSp;
+}
+
+// The OS unwinder may have read these registers while the thread was preemptive, so take them from the slots the GC updates.
+static NOINLINE void UpdateNonvolatileRegistersFromExplicitFrame(Thread *pThread, CONTEXT *pContextRecord)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    void *sp = (void*)GetSP(pContextRecord);
+    PCODE ip = GetIP(pContextRecord);
+#ifdef TARGET_ARM64
+    // Strip any PAC signature before comparing IPs.
+    ip = (PCODE)PacStripPtr((void*)ip);
+#endif
+
+    REGDISPLAY rd;
+    Frame* pLastCandidate = NULL;
+    Frame* pInlinedCallFrame = NULL;
+    TADDR frameSp = 0;
+    PCODE frameIp = 0;
+    for (Frame* pFrame = pThread->GetFrame(); pFrame < sp; pFrame = pFrame->PtrNextFrame())
+    {
+        if (!pFrame->NeedsUpdateRegDisplay())
+        {
+            continue;
+        }
+
+        // An InlinedCallFrame below the target records a call made by a deeper frame, so it never describes the target.
+        // It is not an unwind seed; that is logged below only if no other Frame below the target reports registers.
+        if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
+        {
+            pInlinedCallFrame = pFrame;
+            continue;
+        }
+
+        FillRegDisplay(&rd, pContextRecord);
+        rd.SP = 0; // A frame that leaves the REGDISPLAY unchanged (a FuncEvalFrame without a hijack) must not match
+        rd.ControlPC = 0;
+        pFrame->UpdateRegDisplay(&rd);
+
+        pLastCandidate = pFrame;
+        frameSp = GetRegdisplaySP(&rd);
+        frameIp = GetControlPC(&rd);
+#ifdef TARGET_ARM64
+        frameIp = (PCODE)PacStripPtr((void*)frameIp);
+#endif
+        if ((frameSp == (TADDR)sp) && (frameIp == ip))
+        {
+            STRESS_LOG4(LF_EH, LL_INFO100, "Refreshing nonvolatile registers from %s %p for SP=%p, IP=%p\n",
+                Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()), pFrame, sp, (void*)ip);
+            ExInfo::UpdateNonvolatileRegisters(pContextRecord, &rd, false /* fAborting */);
+            return;
+        }
+    }
+
+    if (pLastCandidate == NULL)
+    {
+        if (pInlinedCallFrame != NULL)
+        {
+            STRESS_LOG3(LF_EH, LL_INFO100, "Only active InlinedCallFrames report registers below SP=%p, IP=%p, nearest %p; not refreshed\n",
+                sp, (void*)ip, pInlinedCallFrame);
+        }
+        else
+        {
+            STRESS_LOG2(LF_EH, LL_INFO100, "No register-reporting explicit frame below SP=%p, IP=%p\n", sp, (void*)ip);
+        }
+        return;
+    }
+
+    // For example, the OS gives no handler to a frame whose IP is the first instruction of an epilog, so the second
+    // pass runs for its caller, and the explicit Frame then describes a frame below the target. rd holds the nearest one.
+    int framesUnwound = 0;
+    bool landed = (frameSp < (TADDR)sp) && UnwindRegDisplayToSp(&rd, (TADDR)sp, &framesUnwound);
+    frameIp = GetControlPC(&rd);
+#ifdef TARGET_ARM64
+    frameIp = (PCODE)PacStripPtr((void*)frameIp);
+#endif
+    if (landed && (frameIp == ip))
+    {
+        STRESS_LOG5(LF_EH, LL_INFO100, "Refreshing nonvolatile registers from %s %p after unwinding %d frames for SP=%p, IP=%p\n",
+            Frame::GetFrameTypeName(pLastCandidate->GetFrameIdentifier()), pLastCandidate, framesUnwound, sp, (void*)ip);
+        ExInfo::UpdateNonvolatileRegisters(pContextRecord, &rd, false /* fAborting */);
+        return;
+    }
+
+    STRESS_LOG7(LF_EH, LL_INFO100, "No explicit frame matches SP=%p, IP=%p; nearest %s %p reached SP=%p, IP=%p after %d unwinds\n",
+        sp, (void*)ip, Frame::GetFrameTypeName(pLastCandidate->GetFrameIdentifier()), pLastCandidate,
+        (void*)GetRegdisplaySP(&rd), (void*)frameIp, framesUnwound);
+}
+#endif // !HOST_UNIX && !TARGET_X86
+
 #if defined(HOST_WINDOWS) && defined(HOST_X86)
 static void DispatchLongJmp(IN     PEXCEPTION_RECORD   pExceptionRecord,
                             IN     PVOID               pEstablisherFrame,
@@ -544,11 +671,17 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         if ((pFrame < sp) && (pFrame->GetFrameIdentifier() == FrameIdentifier::RedirectedThreadFrame))
         {
             // The exception came from a thread interrupted in managed code, so this context
-            // points to the interrupted instruction, not a return address.
-            _ASSERTE(GetSP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetSP(pContextRecord));
-            _ASSERTE(GetIP(static_cast<RedirectedThreadFrame*>(pFrame)->GetContext()) == GetIP(pContextRecord));
-            pContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+            // points to the interrupted instruction, not a return address, unless the OS
+            // dispatched a caller instead, as after an interruption at an epilog start.
+            T_CONTEXT* pInterruptedContext = static_cast<RedirectedThreadFrame*>(pFrame)->GetContext();
+            if ((GetSP(pInterruptedContext) == GetSP(pContextRecord)) && (GetIP(pInterruptedContext) == GetIP(pContextRecord)))
+            {
+                pContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+            }
         }
+#endif
+#ifndef TARGET_X86
+        UpdateNonvolatileRegistersFromExplicitFrame(pThread, pContextRecord);
 #endif
         PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
         ExInfo::PopExInfos(pThread, sp);
