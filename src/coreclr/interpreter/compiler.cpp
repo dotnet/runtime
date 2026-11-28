@@ -4487,8 +4487,33 @@ void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO
     }
 }
 
+// Prepare the selected call lookup before pushing its value.
+void InterpCompiler::EmitPushCallLookup(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                                      CORINFO_CALL_INFO* callInfo, CORINFO_LOOKUP& lookup)
+{
+    assert((&lookup == &callInfo->instParamLookup) || (&lookup == &callInfo->codePointerLookup));
+    if (lookup.lookupKind.needsRuntimeLookup && (lookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED))
+    {
+        m_compHnd->prepareCallLookups(token, constrainedToken, m_methodInfo->ftn, callInfo);
+    }
+    if (lookup.lookupKind.needsRuntimeLookup)
+    {
+        EmitPushCORINFO_LOOKUP(lookup);
+    }
+    else
+    {
+        assert(lookup.constLookup.accessType == IAT_VALUE);
+        EmitLoadPointer((intptr_t)lookup.constLookup.handle);
+    }
+}
+
 void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
 {
+    // A lookup deferred by getCallInfo carries CORINFO_LOOKUP_DEFERRED until prepareCallLookups
+    // completes it. Reaching materialization in that state means prepareCallLookups was not called.
+    assert(!lookup.lookupKind.needsRuntimeLookup ||
+           (lookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_DEFERRED));
+
     PushStackType(StackTypeI, NULL);
     int32_t resultVar = m_pStackPointer[-1].var;
 
@@ -4975,7 +5000,8 @@ void InterpCompiler::EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isVi
     {
         callInfoFlags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN);
     }
-    m_compHnd->getCallInfo(pResolvedToken, m_pConstrainedToken, m_methodInfo->ftn, callInfoFlags, &callInfo);
+    CORINFO_RESOLVED_TOKEN* pConstrainedToken = m_pConstrainedToken;
+    m_compHnd->getCallInfo(pResolvedToken, pConstrainedToken, m_methodInfo->ftn, callInfoFlags, &callInfo);
     m_pConstrainedToken = NULL;
 
     // This check really only applies to intrinsic Array.Address methods
@@ -5023,7 +5049,7 @@ void InterpCompiler::EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isVi
     }
     else
     {
-        EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+        EmitPushCallLookup(pResolvedToken, pConstrainedToken, &callInfo, callInfo.codePointerLookup);
     }
 }
 
@@ -5542,63 +5568,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         }
         else
         {
-            // Instantiated generic method
-            CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
-            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
             {
-                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-                CORINFO_METHOD_HANDLE exactMethodHandle =
-                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-                DeclarePointerIsMethod(exactMethodHandle);
-
-                if (!callInfo.exactContextNeedsRuntimeLookup)
-                {
-                    PushStackType(StackTypeI, NULL);
-                    m_pStackPointer--;
-                    contextParamVar = m_pStackPointer[0].var;
-                    AddIns(INTOP_LDPTR);
-                    m_pLastNewIns->SetDVar(contextParamVar);
-                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
-                }
-                else
-                {
-                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
-                }
+                // A null instantiation argument requests readonly array Address semantics.
+                EmitLoadPointer(0);
             }
-            // otherwise must be an instance method in a generic struct,
-            // a static method in a generic type, or a runtime-generated array method
             else
             {
-                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-                CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
-                DeclarePointerIsClass(exactClassHandle);
-
-                if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
-                {
-                    PushStackType(StackTypeI, NULL);
-                    m_pStackPointer--;
-                    contextParamVar = m_pStackPointer[0].var;
-                    // We indicate "readonly" to the Address operation by using a null
-                    // instParam.
-                    AddIns(INTOP_LDPTR);
-                    m_pLastNewIns->SetDVar(contextParamVar);
-                    m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
-                }
-                else if (!callInfo.exactContextNeedsRuntimeLookup)
-                {
-                    PushStackType(StackTypeI, NULL);
-                    m_pStackPointer--;
-                    contextParamVar = m_pStackPointer[0].var;
-                    AddIns(INTOP_LDPTR);
-                    m_pLastNewIns->SetDVar(contextParamVar);
-                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
-                }
-                else
-                {
-                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
-                }
+                EmitPushCallLookup(&resolvedCallToken, pConstrainedToken, &callInfo, callInfo.instParamLookup);
             }
+            contextParamVar = (--m_pStackPointer)->var;
         }
         callArgs[extraParamArgLocation] = contextParamVar;
     }
@@ -5816,7 +5795,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetSVar(callArgs[0]);
             }
 
-            EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
+            EmitPushCallLookup(&resolvedCallToken, pConstrainedToken, &callInfo, callInfo.codePointerLookup);
             m_pStackPointer--;
             int codePointerLookupResult = m_pStackPointer[0].var;
 

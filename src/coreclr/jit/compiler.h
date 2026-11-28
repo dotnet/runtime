@@ -5420,11 +5420,8 @@ protected:
                             IL_OFFSET          rawILOffset);
 
     GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                CORINFO_CALL_INFO*      callInfo,
-                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
-                                bool                    exactContextNeedsRuntimeLookup,
-                                unsigned                clsFlags,
-                                bool                    isReadonlyCall);
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo, unsigned clsFlags, bool isReadonlyCall);
 
     void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
                                     CORINFO_RESOLVED_TOKEN*   pResolvedToken,
@@ -5633,7 +5630,9 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                              CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                              CORINFO_CALL_INFO*      pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -5692,6 +5691,13 @@ public:
     {
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, true);
     }
+
+    GenTree* impCallLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                               CORINFO_CALL_INFO* callInfo,
+                               CORINFO_LOOKUP* lookup,
+                               GenTreeFlags handleFlags,
+                               void* compileTimeHandle);
 
     GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,

@@ -521,7 +521,14 @@ inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(C
     Agnostic_CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));
     lookup.lookupKind = CreateAgnostic_CORINFO_LOOKUP_KIND(&pLookup->lookupKind);
-    if (pLookup->lookupKind.needsRuntimeLookup)
+    if (pLookup->lookupKind.needsRuntimeLookup && pLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
+    {
+        lookup.deferredLookup.method = CastHandle(pLookup->deferredLookup.method);
+        lookup.deferredLookup.entryKind = pLookup->deferredLookup.entryKind;
+        lookup.deferredLookup.interfaceIndex = pLookup->deferredLookup.interfaceIndex;
+        lookup.deferredLookup.reuseResolvedTarget = pLookup->deferredLookup.reuseResolvedTarget;
+    }
+    else if (pLookup->lookupKind.needsRuntimeLookup)
     {
         lookup.runtimeLookup = StoreAgnostic_CORINFO_RUNTIME_LOOKUP(&pLookup->runtimeLookup);
     }
@@ -537,7 +544,14 @@ inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(const Agnostic_CO
     CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));
     lookup.lookupKind = RestoreCORINFO_LOOKUP_KIND(agnosticLookup.lookupKind);
-    if (lookup.lookupKind.needsRuntimeLookup)
+    if (lookup.lookupKind.needsRuntimeLookup && lookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
+    {
+        lookup.deferredLookup.method = (CORINFO_METHOD_HANDLE)agnosticLookup.deferredLookup.method;
+        lookup.deferredLookup.entryKind = agnosticLookup.deferredLookup.entryKind;
+        lookup.deferredLookup.interfaceIndex = agnosticLookup.deferredLookup.interfaceIndex;
+        lookup.deferredLookup.reuseResolvedTarget = agnosticLookup.deferredLookup.reuseResolvedTarget != 0;
+    }
+    else if (lookup.lookupKind.needsRuntimeLookup)
     {
         lookup.runtimeLookup = RestoreCORINFO_RUNTIME_LOOKUP(agnosticLookup.runtimeLookup);
     }

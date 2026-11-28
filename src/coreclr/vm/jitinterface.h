@@ -459,7 +459,8 @@ public:
                                                    CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    MethodDesc * pCallerMD,
-                                                   CORINFO_LOOKUP *pResultLookup);
+                                                   CORINFO_LOOKUP *pResultLookup,
+                                                   DWORD interfaceIndex = (DWORD)-1);
     void FinishComputeRuntimeLookup(
         SigBuilder& sig,
         MethodDesc* pCallerMD,

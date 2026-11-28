@@ -55,11 +55,22 @@ struct Agnostic_CORINFO_RUNTIME_LOOKUP
     Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
 };
 
+struct Agnostic_CORINFO_DEFERRED_LOOKUP
+{
+    DWORDLONG method;
+    DWORD entryKind;
+    DWORD interfaceIndex;
+    DWORD reuseResolvedTarget;
+};
+
 struct Agnostic_CORINFO_LOOKUP
 {
     Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
-    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
-                                                   // layouts.. :-| copy the right one based on lookupKinds value
+    union
+    {
+        Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup;
+        Agnostic_CORINFO_DEFERRED_LOOKUP deferredLookup;
+    };
     Agnostic_CORINFO_CONST_LOOKUP constLookup;
 };
 
@@ -393,7 +404,7 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORDLONG                     contextHandle;
     DWORD                         exactContextNeedsRuntimeLookup;
     Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
-    Agnostic_CORINFO_CONST_LOOKUP instParamLookup;
+    Agnostic_CORINFO_LOOKUP instParamLookup;
     DWORD                         exceptionCode;
 };
 
@@ -472,6 +483,20 @@ struct Agnostic_EmbedGenericHandle
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
     DWORDLONG                       hCallerHandle;
     DWORD                           fEmbedParent;
+};
+
+struct Agnostic_PrepareCallLookups
+{
+    Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
+    Agnostic_CORINFO_RESOLVED_TOKEN ConstrainedResolvedToken;
+    DWORDLONG context;
+    DWORDLONG callerHandle;
+};
+
+struct Agnostic_PrepareCallLookupsResult
+{
+    DWORD                   isCallTarget; // which CORINFO_CALL_INFO lookup prepareCallLookups completed
+    Agnostic_CORINFO_LOOKUP lookup;
 };
 
 struct Agnostic_ExpandRawHandleIntrinsic

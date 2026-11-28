@@ -61,6 +61,8 @@ enum DictionaryEntryKind
     // Only used by ReadyToRun signatures (READYTORUN_FIXUP_DeclaringTypeHandle). The signature encodes a
     // method and the slot is populated with the type which declares that method.
     DeclaringTypeHandleFromMethodSlot = 8,
+    // JIT-only: a known method on an interface selected by index in the constrained type's interface map.
+    InterfaceMethodEntrySlot = 9,
 };
 
 enum DictionaryEntrySignatureSource : BYTE

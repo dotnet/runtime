@@ -1604,6 +1604,14 @@ void interceptor_ICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken
     mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
+void interceptor_ICJI::prepareCallLookups(CORINFO_RESOLVED_TOKEN* token, CORINFO_RESOLVED_TOKEN* constrainedToken,
+                                   CORINFO_METHOD_HANDLE caller, CORINFO_CALL_INFO* callInfo)
+{
+    mc->cr->AddCall("prepareCallLookups");
+    original_ICorJitInfo->prepareCallLookups(token, constrainedToken, caller, callInfo);
+    mc->recPrepareCallLookups(token, constrainedToken, caller, callInfo);
+}
+
 // Return information used to locate the exact enclosing type of the current method.
 // Used only to invoke .cctor method from code shared across generic instantiations
 //   !needsRuntimeLookup       statically known (enclosing type of method itself)

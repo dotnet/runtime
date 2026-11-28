@@ -72,7 +72,15 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_L
 {
     std::string kind = DumpAgnostic_CORINFO_LOOKUP_KIND(lookup.lookupKind);
     std::string lookupDescription;
-    if (lookup.lookupKind.needsRuntimeLookup)
+    if (lookup.lookupKind.needsRuntimeLookup && lookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_DEFERRED)
+    {
+        char buffer[160];
+        sprintf_s(buffer, sizeof(buffer), "method-%016" PRIX64 " entry-%u interface-%u resolved-%u",
+                  lookup.deferredLookup.method, lookup.deferredLookup.entryKind,
+                  lookup.deferredLookup.interfaceIndex, lookup.deferredLookup.reuseResolvedTarget);
+        lookupDescription = buffer;
+    }
+    else if (lookup.lookupKind.needsRuntimeLookup)
     {
         lookupDescription = DumpAgnostic_CORINFO_RUNTIME_LOOKUP(lookup.runtimeLookup);
     }

@@ -859,6 +859,7 @@ Dictionary::PopulateEntry(
         case MethodDescSlot:
         case DispatchStubAddrSlot:
         case MethodEntrySlot:
+        case InterfaceMethodEntrySlot:
         case DeclaringTypeHandleFromMethodSlot:
         {
             TypeHandle ownerType;
@@ -971,6 +972,14 @@ Dictionary::PopulateEntry(
                 pOwnerMT = ownerType.GetMethodTable();
                 _ASSERTE(pOwnerMT != NULL);
 
+                if (kind == InterfaceMethodEntrySlot || kind == DeclaringTypeHandleFromMethodSlot)
+                {
+                    uint32_t interfaceIndex;
+                    IfFailThrow(ptr.GetData(&interfaceIndex));
+                    MethodTable::InterfaceMapIterator it = pOwnerMT->IterateInterfaceMapFrom(interfaceIndex);
+                    pOwnerMT = it.GetInterface(pOwnerMT);
+                }
+
                 IfFailThrow(ptr.GetData(&methodFlags));
 
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
@@ -1026,8 +1035,6 @@ Dictionary::PopulateEntry(
 
             if (fDeclaringTypeHandleFromMethod)
             {
-                _ASSERTE(isReadyToRunModule);
-
                 // The signature describes a method; the value of the slot is the type which declares that method.
                 // The method may be declared on a base type of the type referenced by the token, and the MethodDesc
                 // found for it may belong to a canonical instantiation of that base type, so walk the parent chain of
@@ -1216,7 +1223,7 @@ Dictionary::PopulateEntry(
                 result = (CORINFO_GENERIC_HANDLE)pResolvedMD->GetMultiCallableAddrOfCode();
             }
             else
-            if (kind == MethodEntrySlot)
+            if (kind == MethodEntrySlot || kind == InterfaceMethodEntrySlot)
             {
                 if (isReadyToRunModule)
                     pMethod->PrepareForUseAsACallTargetOfANativeImage();
