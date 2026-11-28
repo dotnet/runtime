@@ -24,6 +24,13 @@
 #endif
 
 #if defined(TARGET_BROWSER) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__) || defined(__GLIBC__) || defined(TARGET_ANDROID)
+// setproctitle implementations can change argv entries concurrently, so read each pointer only once.
+static const char* ReadArg(const char* const* args, int32_t i)
+{
+    const char* arg = ((const char* const volatile*)args)[i];
+    return arg != NULL ? arg : "";
+}
+
 // Packs the arguments into a single allocation that can be released with one free().
 static char** PackCommandLine(int32_t count, const char* const* args, int32_t* argc)
 {
@@ -35,7 +42,7 @@ static char** PackCommandLine(int32_t count, const char* const* args, int32_t* a
     size_t size = (size_t)count * sizeof(char*);
     for (int32_t i = 0; i < count; i++)
     {
-        size_t length = strlen(args[i]) + 1;
+        size_t length = strlen(ReadArg(args, i)) + 1;
         if (length > SIZE_MAX - size)
         {
             return NULL;
@@ -50,14 +57,15 @@ static char** PackCommandLine(int32_t count, const char* const* args, int32_t* a
         return NULL;
     }
 
-    // The arguments can be modified concurrently (e.g. by setproctitle implementations that reuse
-    // the argv memory), so bound each copy by the space left, keeping one byte for each remaining argument.
+    // The arguments can also change length between the two loops, so bound each copy by the space
+    // left, keeping one byte for each remaining argument.
     char* strings = (char*)(result + count);
     char* end = (char*)result + size;
     for (int32_t i = 0; i < count; i++)
     {
-        size_t length = strnlen(args[i], (size_t)(end - strings) - (size_t)(count - i));
-        memcpy(strings, args[i], length);
+        const char* arg = ReadArg(args, i);
+        size_t length = strnlen(arg, (size_t)(end - strings) - (size_t)(count - i));
+        memcpy(strings, arg, length);
         strings[length] = '\0';
         result[i] = strings;
         strings += length + 1;
