@@ -228,7 +228,16 @@ namespace System.Diagnostics.Tracing
 
         private readonly EventSourceSettings m_config;      // configuration information
 
+        // Callback state encoding:
+        //   [0, int.MaxValue]   - number of admitted callbacks
+        //   (int.MinValue, 0)   - disposal claimed, with the remaining callback count added to int.MinValue
+        //   int.MinValue        - disposal claimed and all admitted callbacks have exited
+        // Once disposal makes the state negative, no new callbacks are admitted. Existing callbacks decrement
+        // the state until it reaches CallbackDisposing, allowing the disposing thread to continue.
+        private const int CallbackDisposing = int.MinValue;
+
         private bool m_eventSourceDisposed;              // has Dispose been called.
+        private int m_eventSourceCallbackState;          // callback count, or a negative disposing state
 
         // Enabling bits
         private bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
@@ -252,6 +261,22 @@ namespace System.Diagnostics.Tracing
 
         [ThreadStatic]
         private static byte m_EventSourceExceptionRecurenceCount; // current recursion count inside ThrowEventSourceException
+
+        [ThreadStatic]
+        private static int t_callbackDepth;
+
+        internal static bool IsExecutingCallback => t_callbackDepth > 0;
+
+        internal static void EnterCallbackScope()
+        {
+            t_callbackDepth++;
+        }
+
+        internal static void ExitCallbackScope()
+        {
+            Debug.Assert(t_callbackDepth > 0);
+            t_callbackDepth--;
+        }
 
         internal volatile ulong[]? m_channelData;
 
@@ -1501,6 +1526,10 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Disposes of an EventSource.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The method was called from an <see cref="EventSource"/> callback while a callback for this
+        /// <see cref="EventSource"/> was already in progress.
+        /// </exception>
         public void Dispose()
         {
             this.Dispose(true);
@@ -1525,9 +1554,64 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            // Do not invoke Dispose under the lock as this can lead to a deadlock.
-            // See https://github.com/dotnet/runtime/issues/48342 for details.
-            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
+            int callbackState = Volatile.Read(ref m_eventSourceCallbackState);
+            while (callbackState >= 0)
+            {
+                if (callbackState == 0)
+                {
+                    // Claim disposal only if no callback entered after the state was read.
+                    int zeroObservedState = Interlocked.CompareExchange(
+                        ref m_eventSourceCallbackState,
+                        CallbackDisposing,
+                        0);
+                    if (zeroObservedState == 0)
+                    {
+                        break;
+                    }
+
+                    callbackState = zeroObservedState;
+                    continue;
+                }
+
+                if (!disposing)
+                {
+                    // A callback keeps the source alive, so this should not occur during finalization.
+                    Debug.Fail("An EventSource command callback should keep the EventSource alive.");
+                    return;
+                }
+
+                if (IsExecutingCallback)
+                {
+                    // Waiting here would deadlock if this thread is responsible for completing a callback.
+                    throw new InvalidOperationException(SR.EventSource_DisposeInsideCallback);
+                }
+
+                // Make the state negative to close callback admission while preserving the number to drain.
+                int observedState = Interlocked.CompareExchange(
+                    ref m_eventSourceCallbackState,
+                    CallbackDisposing + callbackState,
+                    callbackState);
+                if (observedState == callbackState)
+                {
+                    // Each admitted callback decrements the state as it exits.
+                    SpinWait spinWait = default;
+                    while (Volatile.Read(ref m_eventSourceCallbackState) != CallbackDisposing)
+                    {
+                        spinWait.SpinOnce();
+                    }
+
+                    break;
+                }
+
+                // The callback count changed, or another thread claimed disposal. Retry with its value.
+                callbackState = observedState;
+            }
+
+            if (callbackState < 0)
+            {
+                // Another thread claimed disposal and owns the remaining cleanup.
+                return;
+            }
 
             if (disposing)
             {
@@ -1714,17 +1798,25 @@ namespace System.Diagnostics.Tracing
 
                 }
 #endif
-                // Add the eventSource to the global (weak) list.
-                // This also sets m_id, which is the index in the list.
-                EventListener.AddEventSource(this);
+                ObjectDisposedException.ThrowIf(!TryEnterCallback(), this);
+                try
+                {
+                    // Add the eventSource to the global (weak) list.
+                    // This also sets m_id, which is the index in the list.
+                    EventListener.AddEventSource(this);
 
-                // OK if we get this far without an exception, then we can at least write out error messages.
-                // Set m_provider, which allows this.
-                m_etwProvider = etwProvider;
+                    // OK if we get this far without an exception, then we can at least write out error messages.
+                    // Set m_provider, which allows this.
+                    m_etwProvider = etwProvider;
 
 #if FEATURE_PERFTRACING
-                m_eventPipeProvider = eventPipeProvider;
+                    m_eventPipeProvider = eventPipeProvider;
 #endif
+                }
+                finally
+                {
+                    ExitCallback();
+                }
                 Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.
             }
             catch (Exception e)
@@ -1741,10 +1833,20 @@ namespace System.Diagnostics.Tracing
                 // Note that we are NOT resetting m_deferredCommands to NULL here,
                 // We are giving for EventHandler<EventCommandEventArgs> that will be attached later
                 EventCommandEventArgs? deferredCommands = m_deferredCommands;
-                while (deferredCommands != null)
+                if (deferredCommands != null && TryEnterCallback())
                 {
-                    DoCommand(deferredCommands);      // This can never throw, it catches them and reports the errors.
-                    deferredCommands = deferredCommands.nextCommand;
+                    try
+                    {
+                        while (deferredCommands != null)
+                        {
+                            DoCommand(deferredCommands);      // This can never throw, it catches them and reports the errors.
+                            deferredCommands = deferredCommands.nextCommand;
+                        }
+                    }
+                    finally
+                    {
+                        ExitCallback();
+                    }
                 }
 
                 if (m_constructionException == null)
@@ -2620,38 +2722,85 @@ namespace System.Diagnostics.Tracing
                                   EventLevel level, EventKeywords matchAnyKeyword,
                                   IDictionary<string, string?>? commandArguments)
         {
-            if (!IsSupported)
+            if (!IsSupported || !TryEnterCallback())
             {
                 return;
             }
 
-            var commandArgs = new EventCommandEventArgs(command, commandArguments, this, listener, eventProviderType, perEventSourceSessionId, enable, level, matchAnyKeyword);
-            lock (EventListener.EventListenersLock)
+            try
             {
-                if (m_completelyInited)
+                var commandArgs = new EventCommandEventArgs(command, commandArguments, this, listener, eventProviderType, perEventSourceSessionId, enable, level, matchAnyKeyword);
+                lock (EventListener.EventListenersLock)
                 {
-                    // After the first command arrive after construction, we are ready to get rid of the deferred commands
-                    this.m_deferredCommands = null;
-                    // We are fully initialized, do the command
-                    DoCommand(commandArgs);
-                }
-                else
-                {
-                    // We can't do the command, simply remember it and we do it when we are fully constructed.
-                    if (m_deferredCommands == null)
+                    if (m_completelyInited)
                     {
-                        m_deferredCommands = commandArgs;       // create the first entry
+                        // After the first command arrive after construction, we are ready to get rid of the deferred commands
+                        this.m_deferredCommands = null;
+                        // We are fully initialized, do the command
+                        DoCommand(commandArgs);
                     }
                     else
                     {
-                        // We have one or more entries, find the last one and add it to that.
-                        EventCommandEventArgs lastCommand = m_deferredCommands;
-                        while (lastCommand.nextCommand != null)
-                            lastCommand = lastCommand.nextCommand;
-                        lastCommand.nextCommand = commandArgs;
+                        // We can't do the command, simply remember it and we do it when we are fully constructed.
+                        if (m_deferredCommands == null)
+                        {
+                            m_deferredCommands = commandArgs;       // create the first entry
+                        }
+                        else
+                        {
+                            // We have one or more entries, find the last one and add it to that.
+                            EventCommandEventArgs lastCommand = m_deferredCommands;
+                            while (lastCommand.nextCommand != null)
+                                lastCommand = lastCommand.nextCommand;
+                            lastCommand.nextCommand = commandArgs;
+                        }
                     }
                 }
             }
+            finally
+            {
+                ExitCallback();
+            }
+        }
+
+        // Atomically admits a callback unless disposal has started and marks the current thread
+        // as executing callback code. SendCommand admits before taking EventListenersLock so
+        // disposal can observe callbacks waiting for that lock.
+        internal bool TryEnterCallback()
+        {
+            int callbackState = Volatile.Read(ref m_eventSourceCallbackState);
+            while (callbackState >= 0)
+            {
+                if (callbackState == int.MaxValue)
+                {
+                    Debug.Fail("Too many concurrent EventSource command callbacks.");
+                    return false;
+                }
+
+                int observedState = Interlocked.CompareExchange(
+                    ref m_eventSourceCallbackState,
+                    callbackState + 1,
+                    callbackState);
+                if (observedState == callbackState)
+                {
+                    EnterCallbackScope();
+                    return true;
+                }
+
+                callbackState = observedState;
+            }
+
+            // A negative state means disposal has started and no new callbacks may enter.
+            return false;
+        }
+
+        // Releases the per-source admission and thread callback scope acquired by TryEnterCallback.
+        // This must run on the admitting thread in a finally block.
+        internal void ExitCallback()
+        {
+            int callbackState = Interlocked.Decrement(ref m_eventSourceCallbackState);
+            Debug.Assert(callbackState != int.MaxValue, "Callback state underflowed.");
+            ExitCallbackScope();
         }
 
         /// <summary>
