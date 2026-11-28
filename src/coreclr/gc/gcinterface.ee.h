@@ -189,6 +189,10 @@ public:
     void FireDestroyGCHandle(void *handleID) PURE_VIRTUAL
     virtual
     void FirePrvDestroyGCHandle(void *handleID) PURE_VIRTUAL
+
+    // The following method is available starting with GC_PAUSE_EVENT_MINIMUM_EE_VERSION.
+    virtual
+    void FireGCPause(uint32_t count, uint64_t durationMicroseconds, uint32_t depth, uint32_t type) PURE_VIRTUAL
 };
 
 // This interface provides the interface that the GC will use to speak to the rest

@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
-    internal static class RuntimeMetrics
+    internal static partial class RuntimeMetrics
     {
         [ThreadStatic] private static bool t_handlingFirstChanceException;
 
@@ -70,6 +70,10 @@ namespace System.Diagnostics.Metrics
                 () => GC.GetTotalPauseDuration().TotalSeconds,
                 unit: "s",
                 description: "The total amount of time paused in GC since the process has started.");
+
+#if NET11_0_OR_GREATER
+            InitializeGCPauseMetrics();
+#endif
 
             s_meter.CreateObservableCounter(
                 "dotnet.jit.compiled_il.size",

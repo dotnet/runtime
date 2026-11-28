@@ -63,6 +63,13 @@ void GCToCLREventSink::FireGCEnd_V1(uint32_t count, uint32_t depth)
     FireEtwGCEnd_V1(count, depth, GetClrInstanceId());
 }
 
+void GCToCLREventSink::FireGCPause(uint32_t count, uint64_t durationMicroseconds, uint32_t depth, uint32_t type)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FireEtwGCPause(count, durationMicroseconds, depth, type, GetClrInstanceId());
+}
+
 void GCToCLREventSink::FireGCHeapStats_V2(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
