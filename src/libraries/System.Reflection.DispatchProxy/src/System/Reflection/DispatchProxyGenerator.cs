@@ -575,9 +575,27 @@ namespace System.Reflection
 
                 if (resultLocal != null)
                 {
-                    // return (mi.ReturnType)result;
-                    il.Emit(OpCodes.Ldloc, resultLocal);
-                    Convert(_assembly, il, typeof(object), mi.ReturnType, false);
+                    if (mi.ReturnType.IsByRef)
+                    {
+                        // Invoke returns a value, so return a reference to a copy of it in storage the proxy allocates.
+                        // return ref new T[] { (T)result }[0];
+                        Type elementType = mi.ReturnType.GetElementType()!;
+                        il.Emit(OpCodes.Ldc_I4_1);
+                        il.Emit(OpCodes.Newarr, elementType);
+                        il.Emit(OpCodes.Dup);
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Ldloc, resultLocal);
+                        Convert(_assembly, il, typeof(object), elementType);
+                        il.Emit(OpCodes.Stelem, elementType);
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Ldelema, elementType);
+                    }
+                    else
+                    {
+                        // return (mi.ReturnType)result;
+                        il.Emit(OpCodes.Ldloc, resultLocal);
+                        Convert(_assembly, il, typeof(object), mi.ReturnType);
+                    }
                 }
 
                 il.Emit(OpCodes.Ret);
@@ -654,7 +672,7 @@ namespace System.Reflection
                 OpCodes.Stind_Ref, //String = 18,
             };
 
-            private static void Convert(ProxyAssembly assembly, ILGenerator il, Type source, Type target, bool isAddress)
+            private static void Convert(ProxyAssembly assembly, ILGenerator il, Type source, Type target)
             {
                 Debug.Assert(!target.IsByRef);
                 if (target == source)
@@ -662,10 +680,9 @@ namespace System.Reflection
 
                 if (source.IsByRef)
                 {
-                    Debug.Assert(!isAddress);
                     Type argType = source.GetElementType()!;
                     Ldind(il, argType);
-                    Convert(assembly, il, argType, target, isAddress);
+                    Convert(assembly, il, argType, target);
                     return;
                 }
                 if (source.IsPointer)
@@ -695,16 +712,13 @@ namespace System.Reflection
                     {
                         Debug.Assert(source.IsAssignableFrom(target));
                         il.Emit(OpCodes.Unbox, target);
-                        if (!isAddress)
-                            Ldind(il, target);
+                        Ldind(il, target);
                     }
                 }
                 else if (target.IsAssignableFrom(source))
                 {
                     if (source.IsValueType || source.IsGenericParameter)
                     {
-                        if (isAddress)
-                            Ldind(il, source);
                         il.Emit(OpCodes.Box, source);
                     }
                 }
@@ -793,7 +807,7 @@ namespace System.Reflection
                 {
                     Debug.Assert(_paramTypes[i].IsByRef);
                     Type argType = _paramTypes[i].GetElementType()!;
-                    Convert(_assembly, _il, stackType, argType, false);
+                    Convert(_assembly, _il, stackType, argType);
                     Stind(_il, argType);
                 }
             }
@@ -834,7 +848,7 @@ namespace System.Reflection
 
                 internal void EndSet(Type stackType)
                 {
-                    Convert(_assembly, _il, stackType, typeof(T), false);
+                    Convert(_assembly, _il, stackType, typeof(T));
                     _il.Emit(OpCodes.Stelem_Ref);
                 }
             }

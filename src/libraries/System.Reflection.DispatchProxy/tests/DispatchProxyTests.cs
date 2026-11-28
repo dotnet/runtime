@@ -1295,6 +1295,91 @@ namespace DispatchProxyTests
             Assert.Equal((nint)(&value), (nint)p);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_RefReadOnly_Return_Method(bool useGenericCreate)
+        {
+            TestType_IRefReadOnlyReturnService proxy = CreateHelper<TestType_IRefReadOnlyReturnService, TestDispatchProxy>(useGenericCreate);
+            object returnValue = null;
+            bool echoArgument = true;
+            MethodInfo invokedMethod = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                return method.IsGenericMethod && echoArgument ? args[0] : returnValue;
+            };
+
+            returnValue = 42;
+            ref readonly int intRef = ref proxy.GetInt();
+            Assert.Equal(nameof(TestType_IRefReadOnlyReturnService.GetInt), invokedMethod.Name);
+            Assert.Equal(42, intRef);
+
+            returnValue = 43;
+            Assert.Equal(43, proxy.GetInt());
+            Assert.Equal(42, intRef);
+
+            Assert.Equal(43, proxy.ReadOnlyProperty);
+            Assert.Equal("get_" + nameof(TestType_IRefReadOnlyReturnService.ReadOnlyProperty), invokedMethod.Name);
+
+            Assert.Equal(43, proxy.GetNullableInt());
+            returnValue = null;
+            Assert.Null(proxy.GetNullableInt());
+
+            Guid guid = new Guid("0f8fad5b-d9cb-469f-a165-70867728950e");
+            returnValue = guid;
+            Assert.Equal(guid, proxy.GetGuid());
+
+            returnValue = "Hello";
+            Assert.Equal("Hello", proxy.GetString());
+            returnValue = null;
+            Assert.Null(proxy.GetString());
+
+            Assert.Equal("Hello", proxy.Echo("Hello"));
+            Assert.Equal(42, proxy.Echo(42));
+            Assert.Equal(DayOfWeek.Monday, proxy.Echo(DayOfWeek.Monday));
+
+            returnValue = "Hello";
+            Assert.Throws<InvalidCastException>(() => proxy.GetInt());
+            returnValue = 42;
+            Assert.Throws<InvalidCastException>(() => proxy.GetString());
+            returnValue = null;
+            Assert.Throws<NullReferenceException>(() => proxy.GetInt());
+
+            echoArgument = false;
+            returnValue = "Hello";
+            Assert.Throws<InvalidCastException>(() => proxy.Echo(42));
+            returnValue = 42;
+            Assert.Throws<InvalidCastException>(() => proxy.Echo("Hello"));
+            returnValue = null;
+            Assert.Throws<NullReferenceException>(() => proxy.Echo(42));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_Ref_Return_Method(bool useGenericCreate)
+        {
+            TestType_IRefReturnService proxy = CreateHelper<TestType_IRefReturnService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo invokedMethod = null;
+            object returnValue = 42;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                return returnValue;
+            };
+
+            ref int intRef = ref proxy.GetInt();
+            Assert.Equal(nameof(TestType_IRefReturnService.GetInt), invokedMethod.Name);
+            Assert.Equal(42, intRef);
+
+            intRef = 5;
+            Assert.Equal(42, (int)returnValue);
+            ref int secondRef = ref proxy.GetInt();
+            Assert.Equal(42, secondRef);
+            Assert.Equal(5, intRef);
+        }
+
         private static TestType_IHelloService CreateTestHelloProxy(bool useGenericCreate) =>
             CreateHelper<TestType_IHelloService, TestDispatchProxy>(useGenericCreate);
 
