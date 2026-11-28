@@ -751,6 +751,11 @@ namespace System.Formats.Tar
             {
                 checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
                 checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+
+                if (_gnuUnusedBytes is not null)
+                {
+                    checksum += WriteLeftAlignedBytesAndGetChecksum(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
+                }
             }
 
             return checksum;
