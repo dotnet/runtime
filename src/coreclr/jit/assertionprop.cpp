@@ -5108,37 +5108,33 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         IntegralRange castRng = IntegralRange::ForCastInput(cast);
         int64_t       castLo  = IntegralRange::SymbolicToRealValue(castRng.GetLowerBound());
         int64_t       castHi  = IntegralRange::SymbolicToRealValue(castRng.GetUpperBound());
+        GenTree*      castOp  = cast->CastOp();
+        bool          inRange = false;
         if (FitsIn<int>(castLo) && FitsIn<int>(castHi))
         {
-            Range castToTypeRange = Range(Limit(Limit::keConstant, (int)castLo), Limit(Limit::keConstant, (int)castHi));
+            Range castOpRng = GetRange(this, castOp, block, assertions, /*fast*/ true);
+            inRange         = castOpRng.IsConstantRange() && (castOpRng.LowerLimit().GetConstant() >= castLo) &&
+                      (castOpRng.UpperLimit().GetConstant() <= castHi);
+        }
 
-            if (castToTypeRange.IsConstantRange())
+        if (!inRange && KnownBitsAnalysis(this).IsInRange(castOp, castLo, castHi, assertions))
+        {
+            JITDUMP("Cast %06u input is in range based on known bits.\n", dspTreeID(cast));
+            inRange = true;
+        }
+
+        if (inRange)
+        {
+            if (canDropCast)
             {
-                GenTree* castOp    = cast->CastOp();
-                Range    castOpRng = GetRange(this, castOp, block, assertions, /*fast*/ true);
-
-                if (castOpRng.IsConstantRange())
-                {
-                    int castFromLo = castOpRng.LowerLimit().GetConstant();
-                    int castFromHi = castOpRng.UpperLimit().GetConstant();
-                    int castToLo   = castToTypeRange.LowerLimit().GetConstant();
-                    int castToHi   = castToTypeRange.UpperLimit().GetConstant();
-
-                    if ((castFromLo >= castToLo) && (castFromHi <= castToHi))
-                    {
-                        if (canDropCast)
-                        {
-                            JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
-                            return optAssertionProp_Update(castOp, cast, stmt);
-                        }
-
-                        assert(cast->gtOverflow());
-                        JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
-                        cast->ClearOverflow();
-                        return optAssertionProp_Update(cast, cast, stmt);
-                    }
-                }
+                JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
+                return optAssertionProp_Update(castOp, cast, stmt);
             }
+
+            assert(cast->gtOverflow());
+            JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
+            cast->ClearOverflow();
+            return optAssertionProp_Update(cast, cast, stmt);
         }
         return nullptr;
     }
