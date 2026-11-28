@@ -44,6 +44,74 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Theory]
+        [InlineData(TokenImpersonationLevel.Identification, false)]
+        [InlineData(TokenImpersonationLevel.Identification, true)]
+        [InlineData(TokenImpersonationLevel.Impersonation, false)]
+        [InlineData(TokenImpersonationLevel.Impersonation, true)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task RunAsClient_Nested_RestoresOuterIdentity(TokenImpersonationLevel innerImpersonationLevel, bool throwFromInner)
+        {
+            string outerPipeName = GetUniquePipeName();
+            string innerPipeName = GetUniquePipeName();
+            using var outerServer = new NamedPipeServerStream(outerPipeName);
+            using var outerClient = new NamedPipeClientStream(".", outerPipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+            using var innerServer = new NamedPipeServerStream(innerPipeName);
+            using var innerClient = new NamedPipeClientStream(".", innerPipeName, PipeDirection.InOut, PipeOptions.None, innerImpersonationLevel);
+
+            Task outerConnection = outerServer.WaitForConnectionAsync();
+            outerClient.Connect();
+            await outerConnection;
+
+            Task innerConnection = innerServer.WaitForConnectionAsync();
+            innerClient.Connect();
+            await innerConnection;
+
+            TokenImpersonationLevel outerLevel = TokenImpersonationLevel.None;
+            TokenImpersonationLevel innerLevel = TokenImpersonationLevel.None;
+            TokenImpersonationLevel afterInnerLevel = TokenImpersonationLevel.None;
+            bool innerRan = false;
+
+            outerServer.RunAsClient(() =>
+            {
+                outerLevel = GetWindowsImpersonationLevel();
+
+                PipeStreamImpersonationWorker innerWorker = () =>
+                {
+                    innerRan = true;
+                    innerLevel = GetWindowsImpersonationLevel();
+                    if (throwFromInner)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                };
+
+                if (throwFromInner)
+                {
+                    Assert.Throws<InvalidOperationException>(() => innerServer.RunAsClient(innerWorker));
+                }
+                else
+                {
+                    innerServer.RunAsClient(innerWorker);
+                }
+
+                afterInnerLevel = GetWindowsImpersonationLevel();
+            });
+
+            Assert.True(innerRan);
+            Assert.Equal(TokenImpersonationLevel.Impersonation, outerLevel);
+            Assert.Equal(innerImpersonationLevel, innerLevel);
+            Assert.Equal(TokenImpersonationLevel.Impersonation, afterInnerLevel);
+            Assert.Equal(TokenImpersonationLevel.None, GetWindowsImpersonationLevel());
+        }
+
+        private static TokenImpersonationLevel GetWindowsImpersonationLevel()
+        {
+            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+
+            return identity.ImpersonationLevel;
+        }
+
         private static string GetUniquePipeName()
         {
             if (PlatformDetection.IsInAppContainer)
