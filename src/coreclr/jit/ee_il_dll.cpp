@@ -171,18 +171,20 @@ void jitShutdown(bool processIsTerminating)
         return;
     }
 
-    Compiler::compShutdown();
-
-    FILE* file = s_jitstdout;
-    if ((file != nullptr) && (file != procstdout()))
+    // The CRT may already have released its resources during process termination.
+    // Only clean up on an explicit unload, when the caller has stopped using the JIT.
+    if (!processIsTerminating)
     {
-        // When the process is terminating, the fclose call is unnecessary and is also prone to
-        // crashing since the UCRT itself often frees the backing memory earlier on in the
-        // termination sequence.
-        if (!processIsTerminating)
+        Compiler::ProcessShutdownWork(nullptr);
+        Compiler::compShutdown();
+
+        FILE* file = s_jitstdout;
+        if ((file != nullptr) && (file != procstdout()))
         {
             fclose(file);
         }
+
+        s_jitstdout = nullptr;
     }
 
     g_jitInitialized = false;
@@ -312,9 +314,14 @@ CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
 
 void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
-    jitShutdown(false);
-
+    // Other threads may still be compiling. Leave shared resources alive until DLL unloading.
     Compiler::ProcessShutdownWork(statInfo);
+
+    FILE* file = s_jitstdout;
+    if (file != nullptr)
+    {
+        fflush(file);
+    }
 }
 
 /*****************************************************************************
