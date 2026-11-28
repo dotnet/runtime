@@ -1149,7 +1149,10 @@ namespace System.Net.Http
                         _response!.Headers.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     case HeaderState.TrailingHeaders:
-                        _trailingHeaders!.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                        if (!descriptor.HeaderType.HasFlag(HttpHeaderType.NonTrailing))
+                        {
+                            _trailingHeaders!.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                        }
                         break;
                     default:
                         Debug.Fail($"Unexpected {nameof(Http3RequestStream)}.{nameof(_headerState)} '{_headerState}'.");

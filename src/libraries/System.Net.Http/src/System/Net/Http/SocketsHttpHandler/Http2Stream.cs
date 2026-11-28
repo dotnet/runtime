@@ -708,6 +708,11 @@ namespace System.Net.Http
                     if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                     {
                         Debug.Assert(_trailers != null);
+                        if ((descriptor.HeaderType & HttpHeaderType.NonTrailing) != 0)
+                        {
+                            return;
+                        }
+
                         string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                         _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                     }

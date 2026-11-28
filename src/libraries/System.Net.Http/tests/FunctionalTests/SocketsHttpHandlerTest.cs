@@ -1096,6 +1096,80 @@ namespace System.Net.Http.Functional.Tests
                 await AcceptConnectionAndSendResponseAsync(server, DataBytes, headers, TrailingHeaders, sendDataAgain);
             });
         }
+
+        [Theory]
+        [InlineData("Age", "1")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy authorisation header.")]
+        [InlineData("Authorization", "test")]
+        [InlineData("Cache-Control", "no-cache")]
+        [InlineData("Content-Disposition", "inline")]
+        [InlineData("Content-Encoding", "gzip")]
+        [InlineData("Content-Length", "22")]
+        [InlineData("Content-Location", "/content")]
+        [InlineData("Content-Range", "bytes 200-1000/67589")]
+        [InlineData("Content-type", "foo/bar")]
+        [InlineData("Date", "Wed, 21 Oct 2015 07:28:00 GMT")]
+        [InlineData("Expect", "100-continue")]
+        [InlineData("Expires", "Wed, 21 Oct 2015 07:28:00 GMT")]
+        [InlineData("Host", "foo")]
+        [InlineData("If-Match", "Wed, 21 Oct 2015 07:28:00 GMT")]
+        [InlineData("If-Modified-Since", "Wed, 21 Oct 2015 07:28:00 GMT")]
+        [InlineData("If-None-Match", "*")]
+        [InlineData("If-Range", "Wed, 21 Oct 2015 07:28:00 GMT")]
+        [InlineData("If-Unmodified-Since", "Wed, 21 Oct 2015 07:28:00 GMT")]
+        [InlineData("Location", "/index.html")]
+        [InlineData("Max-Forwards", "2")]
+        [InlineData("Pragma", "no-cache")]
+        [InlineData("Proxy-Authenticate", "Basic")]
+        [InlineData("Proxy-Authorization", "test")]
+        [InlineData("Range", "5/10")]
+        [InlineData("Retry-After", "20")]
+        [InlineData("Set-Cookie", "foo=bar")]
+        [InlineData("Set-Cookie2", "foo=bar")]
+        [InlineData("TE", "boo")]
+        [InlineData("Trailer", "test")]
+        [InlineData("Transfer-Encoding", "chunked")]
+        [InlineData("Transfer-Encoding", "gzip")]
+        [InlineData("Vary", "*")]
+        [InlineData("Warning", "300 - \"Be Warned!\"")]
+        [InlineData("WWW-Authenticate", "Basic")]
+        public async Task GetAsync_ForbiddenTrailingHeaders_Ignores(string name, string value)
+        {
+            string trailerName = UseVersion.Major > 1 ? name.ToLowerInvariant() : name;
+            HttpHeaderData[] headers =
+            [
+                new("cache-control", "no-cache"),
+                new("content-type", "text/plain")
+            ];
+            HttpHeaderData[] trailers =
+            [
+                new("set-cookie", "yummy"),
+                new("mycooltrailerheader", "amazingtrailer"),
+                new(trailerName, value),
+                new("server", "Loopback"),
+                new("content-md5", "Q2hlY2sgSW50ZWdyaXR5IQ=="),
+                new("accept-encoding", "identity,gzip"),
+                new(trailerName, value)
+            ];
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(UseVersion, response.Version);
+                Assert.Equal("data", await response.Content.ReadAsStringAsync());
+                Assert.Equal("no-cache", Assert.Single(response.Headers.NonValidated["cache-control"]));
+                Assert.Equal("text/plain", Assert.Single(response.Content.Headers.NonValidated["content-type"]));
+                Assert.False(response.TrailingHeaders.NonValidated.Contains(name));
+                Assert.False(response.TrailingHeaders.NonValidated.Contains("set-cookie"));
+                Assert.Equal(4, response.TrailingHeaders.NonValidated.Count);
+                Assert.Equal("amazingtrailer", Assert.Single(response.TrailingHeaders.NonValidated["mycooltrailerheader"]));
+                Assert.Equal("Loopback", Assert.Single(response.TrailingHeaders.NonValidated["server"]));
+                Assert.Equal("Q2hlY2sgSW50ZWdyaXR5IQ==", Assert.Single(response.TrailingHeaders.NonValidated["content-md5"]));
+                Assert.Equal("identity,gzip", Assert.Single(response.TrailingHeaders.NonValidated["accept-encoding"]));
+            }, async server => await AcceptConnectionAndSendResponseAsync(server, DataBytes, headers, trailers));
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "HTTP/1 trailers are not supported by most major browsers")]
@@ -1293,65 +1367,6 @@ namespace System.Net.Http.Functional.Tests
                     catch { }
                 });
         }
-
-        [Theory]
-        [InlineData("Age", "1")]
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy authorisation header.")]
-        [InlineData("Authorization", "Basic YWxhZGRpbjpvcGVuc2VzYW1l")]
-        [InlineData("Cache-Control", "no-cache")]
-        [InlineData("Content-Encoding", "gzip")]
-        [InlineData("Content-Length", "22")]
-        [InlineData("Content-type", "foo/bar")]
-        [InlineData("Content-Range", "bytes 200-1000/67589")]
-        [InlineData("Date", "Wed, 21 Oct 2015 07:28:00 GMT")]
-        [InlineData("Expect", "100-continue")]
-        [InlineData("Expires", "Wed, 21 Oct 2015 07:28:00 GMT")]
-        [InlineData("Host", "foo")]
-        [InlineData("If-Match", "Wed, 21 Oct 2015 07:28:00 GMT")]
-        [InlineData("If-Modified-Since", "Wed, 21 Oct 2015 07:28:00 GMT")]
-        [InlineData("If-None-Match", "*")]
-        [InlineData("If-Range", "Wed, 21 Oct 2015 07:28:00 GMT")]
-        [InlineData("If-Unmodified-Since", "Wed, 21 Oct 2015 07:28:00 GMT")]
-        [InlineData("Location", "/index.html")]
-        [InlineData("Max-Forwards", "2")]
-        [InlineData("Pragma", "no-cache")]
-        [InlineData("Range", "5/10")]
-        [InlineData("Retry-After", "20")]
-        [InlineData("Set-Cookie", "foo=bar")]
-        [InlineData("TE", "boo")]
-        [InlineData("Transfer-Encoding", "chunked")]
-        [InlineData("Transfer-Encoding", "gzip")]
-        [InlineData("Vary", "*")]
-        [InlineData("Warning", "300 - \"Be Warned!\"")]
-        public async Task GetAsync_ForbiddenTrailingHeaders_Ignores(string name, string value)
-        {
-            await LoopbackServer.CreateClientAndServerAsync(async url =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.GetAsync(url);
-                    Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
-                    Assert.False(response.TrailingHeaders.TryGetValues(name, out IEnumerable<string> values));
-                    Assert.Contains("Loopback", response.TrailingHeaders.GetValues("Server"));
-                }
-            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                "HTTP/1.1 200 OK\r\n" +
-                LoopbackServer.CorsHeaders +
-                "Connection: close\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                $"Trailer: Set-Cookie, MyCoolTrailerHeader, {name}, Hello\r\n" +
-                "\r\n" +
-                "4\r\n" +
-                "data\r\n" +
-                "0\r\n" +
-                "Set-Cookie: yummy\r\n" +
-                "MyCoolTrailerHeader: amazingtrailer\r\n" +
-                $"{name}: {value}\r\n" +
-                "Server: Loopback\r\n" +
-                $"{name}: {value}\r\n" +
-                "\r\n"));
-        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
@@ -1388,7 +1403,43 @@ namespace System.Net.Http.Functional.Tests
             }
 
             // Additional trailing header frame.
-            await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: TrailingHeaders, endStream: true);
+            await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: trailers, endStream: true);
+        }
+
+        [Fact]
+        public async Task GetAsync_IndexedForbiddenTrailingHeaders_Ignores()
+        {
+            const int StaticAcceptEncodingIndex = 16;
+            const int StaticAgeIndex = 21;
+            const int StaticSetCookieIndex = 55;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(uri);
+
+                Assert.Equal(UseVersion, response.Version);
+                Assert.False(response.TrailingHeaders.NonValidated.Contains("age"));
+                Assert.False(response.TrailingHeaders.NonValidated.Contains("set-cookie"));
+                Assert.Equal(2, response.TrailingHeaders.NonValidated.Count);
+                Assert.Equal("gzip, deflate", Assert.Single(response.TrailingHeaders.NonValidated["accept-encoding"]));
+                Assert.Equal("kept", Assert.Single(response.TrailingHeaders.NonValidated["x-trailer"]));
+            }, async server =>
+            {
+                await using Http2LoopbackConnection connection = (Http2LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseHeadersAsync(streamId);
+                await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
+
+                byte[] headerBlock = new byte[256];
+                int written = HPackEncoder.EncodeHeader(StaticAgeIndex, headerBlock);
+                written += HPackEncoder.EncodeHeader(StaticSetCookieIndex, "one", HPackFlags.None, headerBlock.AsSpan(written));
+                written += HPackEncoder.EncodeHeader(StaticAcceptEncodingIndex, headerBlock.AsSpan(written));
+                written += HPackEncoder.EncodeHeader("set-cookie", "two", HPackFlags.NewIndexed, headerBlock.AsSpan(written));
+                written += HPackEncoder.EncodeHeader(HPackEncoder.SmallestDynamicIndex, headerBlock.AsSpan(written));
+                written += HPackEncoder.EncodeHeader("x-trailer", "kept", HPackFlags.None, headerBlock.AsSpan(written));
+                await connection.WriteFrameAsync(new HeadersFrame(headerBlock.AsMemory(0, written), FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId));
+            });
         }
 
         [Fact]
@@ -1448,6 +1499,43 @@ namespace System.Net.Http.Functional.Tests
 
             await stream.SendResponseHeadersAsync(statusCode: null, headers: trailers);
             stream.Stream.CompleteWrites();
+        }
+
+        [Fact]
+        public async Task GetAsync_IndexedForbiddenTrailingHeaders_Ignores()
+        {
+            const int StaticAgeIndex = 2;
+            const int StaticSetCookieIndex = 14;
+            const int StaticAcceptEncodingIndex = 31;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(uri);
+
+                Assert.Equal(UseVersion, response.Version);
+                Assert.False(response.TrailingHeaders.NonValidated.Contains("age"));
+                Assert.False(response.TrailingHeaders.NonValidated.Contains("set-cookie"));
+                Assert.Equal(2, response.TrailingHeaders.NonValidated.Count);
+                Assert.Equal("gzip, deflate, br", Assert.Single(response.TrailingHeaders.NonValidated["accept-encoding"]));
+                Assert.Equal("kept", Assert.Single(response.TrailingHeaders.NonValidated["x-trailer"]));
+            }, async server =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                _ = await stream.ReadRequestDataAsync();
+                await stream.SendResponseHeadersAsync(statusCode: HttpStatusCode.OK);
+
+                byte[] headerBlock = new byte[256];
+                int written = QPackTestEncoder.EncodePrefix(headerBlock, requiredInsertCount: 0, deltaBase: 0);
+                written += QPackTestEncoder.EncodeHeader(headerBlock.AsSpan(written), StaticAgeIndex);
+                written += QPackTestEncoder.EncodeHeader(headerBlock.AsSpan(written), StaticSetCookieIndex);
+                written += QPackTestEncoder.EncodeHeader(headerBlock.AsSpan(written), StaticSetCookieIndex, "one", valueEncoding: null);
+                written += QPackTestEncoder.EncodeHeader(headerBlock.AsSpan(written), StaticAcceptEncodingIndex);
+                written += QPackTestEncoder.EncodeHeader(headerBlock.AsSpan(written), "x-trailer", "kept", valueEncoding: null);
+                await stream.SendFrameAsync(Http3LoopbackStream.HeadersFrame, headerBlock.AsMemory(0, written));
+                stream.Stream.CompleteWrites();
+            });
         }
 
         [Theory]
