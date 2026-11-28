@@ -519,8 +519,8 @@ int LinearScan::BuildNode(GenTree* tree)
                 buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~SRBM_RAX);
                 BuildUse(addr, availableIntRegs & ~SRBM_RAX);
                 BuildUse(data, availableIntRegs & ~SRBM_RAX);
-                BuildDef(tree, SRBM_RAX);
                 buildInternalRegisterUses();
+                BuildDef(tree, SRBM_RAX);
                 srcCount = 2;
                 assert(dstCount == 1);
                 break;
