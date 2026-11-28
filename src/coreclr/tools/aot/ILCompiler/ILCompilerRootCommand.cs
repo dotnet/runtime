@@ -156,6 +156,8 @@ namespace ILCompiler
             new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "PInvoke to call directly" };
         public Option<string[]> DirectPInvokeLists { get; } =
             new("--directpinvokelist") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "File with list of PInvokes to call directly" };
+        public Option<bool> DirectPInvokeRespectPlatformAttributes { get; } =
+            new("--directpinvoke-respect-platform-attributes") { Description = "Resolve PInvokes excluded by SupportedOSPlatform or UnsupportedOSPlatform attributes at runtime instead of calling directly (browser and wasi only)" };
         public Option<string[]> RootedAssemblies { get; } =
             new("--root") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Fully generate given assembly" };
         public Option<string[]> ConditionallyRootedAssemblies { get; } =
@@ -264,6 +266,7 @@ namespace ILCompiler
             Options.Add(WarningsAsErrorsDisable);
             Options.Add(DirectPInvokes);
             Options.Add(DirectPInvokeLists);
+            Options.Add(DirectPInvokeRespectPlatformAttributes);
             Options.Add(MaxGenericCycleDepth);
             Options.Add(MaxGenericCycleBreadth);
             Options.Add(RootedAssemblies);
