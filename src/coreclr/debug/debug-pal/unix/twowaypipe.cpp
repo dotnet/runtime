@@ -3,6 +3,7 @@
 
 #include <pal.h>
 #include "volatile.h"
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -33,6 +34,25 @@ static void AbortPipeServerImpl()
 
 // Defined here and extern-declared in dbgtransportsession.h for use by Debugger::CleanupTransportSocket().
 void (*g_pfnAbortTransportCallback)(void) = nullptr;
+
+// Records why open() failed as the thread's last error, so that callers can use GetLastError() as the
+// methods below document. ENOENT in Connect() means the target has no transport pipe at the expected path.
+static void SetLastErrorFromOpenErrno(int openErrno)
+{
+    switch (openErrno)
+    {
+    case ENOENT:
+        SetLastError(ERROR_FILE_NOT_FOUND);
+        break;
+    case EACCES:
+    case EPERM:
+        SetLastError(ERROR_ACCESS_DENIED);
+        break;
+    default:
+        SetLastError(ERROR_OPEN_FAILED);
+        break;
+    }
+}
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
@@ -95,14 +115,17 @@ bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
     m_outboundPipe = open(m_outPipeName, O_WRONLY);
     if (m_outboundPipe == INVALID_PIPE)
     {
+        SetLastErrorFromOpenErrno(errno);
         return false;
     }
 
     m_inboundPipe = open(m_inPipeName, O_RDONLY);
     if (m_inboundPipe == INVALID_PIPE)
     {
+        int openErrno = errno;
         close(m_outboundPipe);
         m_outboundPipe = INVALID_PIPE;
+        SetLastErrorFromOpenErrno(openErrno);
         return false;
     }
 
