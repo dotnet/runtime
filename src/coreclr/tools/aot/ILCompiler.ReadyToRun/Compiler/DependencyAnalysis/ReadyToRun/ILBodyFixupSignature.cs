@@ -54,10 +54,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// Returns the method a compiled method's own IL body fixup is created for, or null if the compiled method cannot have one.
         /// </summary>
+        /// <remarks>
+        /// A compiler-generated async thunk has no IL header at runtime, so it is checked using the other variant of
+        /// the same method. Both variants hash the same metadata IL and impl flags, so the check still fails if the
+        /// method's body or async-ness changes.
+        /// </remarks>
         public static MethodDesc GetSignatureMethodForCompiledMethod(MethodDesc compiledMethod)
         {
             MethodDesc typicalDef = compiledMethod.GetTypicalMethodDefinition();
-            return typicalDef is EcmaMethod or AsyncMethodVariant ? typicalDef : null;
+            if (typicalDef is not (EcmaMethod or AsyncMethodVariant))
+                return null;
+
+            if (typicalDef.IsCompilerGeneratedILBodyForAsync())
+            {
+                if (typicalDef is AsyncMethodVariant)
+                    return typicalDef.GetPrimaryMethodDesc();
+
+                // Only Task-returning runtime-async methods have a thunk and an async variant. The others only exist in
+                // CoreLib and are [BypassReadyToRun].
+                Debug.Assert(typicalDef.Signature.ReturnsTaskOrValueTask());
+                return typicalDef.GetAsyncVariant();
+            }
+
+            return typicalDef;
         }
 
         public override int ClassCode => 308579267;

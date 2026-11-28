@@ -168,6 +168,11 @@ namespace Internal.IL
             Debug.Assert(!_compilationModuleGroup.VersionsWithMethodBody(method) &&
                     _compilationModuleGroup.CrossModuleInlineable(method));
 
+            // The wrapped IL is the metadata IL, which for a Task-returning runtime-async method is the body of its
+            // async variant, not of its thunk. Thunks are never compiled outside the version bubble or inlined
+            // because their IL has a catch clause, so they must never get here.
+            Debug.Assert(!NeedsTaskReturningThunk(method));
+
             if (!wrappedMethodIL.Initialize(_manifestMutableModule, EcmaMethodIL.Create((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition())))
             {
                 // If we could not initialize the wrapped method IL, we should store a null.

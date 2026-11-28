@@ -869,14 +869,14 @@ namespace Internal.JitInterface
                 }
 
                 var typicalDef = MethodBeingCompiled.GetTypicalMethodDefinition();
-                if (ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(MethodBeingCompiled) is not null)
+                if (ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(MethodBeingCompiled) is MethodDesc ilBodySignatureMethod)
                 {
                     var ecmaMethod = (EcmaMethod)typicalDef.GetPrimaryMethodDesc();
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == typicalDef.Context.SystemModule) ||
                         (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(MethodBeingCompiled) &&
                             _compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(MethodBeingCompiled)))
                     {
-                        ISymbolNode ilBodyNode = _compilation.SymbolNodeFactory.CheckILBodyFixupSignature(typicalDef);
+                        ISymbolNode ilBodyNode = _compilation.SymbolNodeFactory.CheckILBodyFixupSignature(ilBodySignatureMethod);
                         AddPrecodeFixup(ilBodyNode);
                     }
 

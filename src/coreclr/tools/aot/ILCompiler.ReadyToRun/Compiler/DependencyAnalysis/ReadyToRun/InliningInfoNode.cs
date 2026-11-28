@@ -89,8 +89,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     inlinerIdentity = ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(inliner);
 
-                    // Cross-module inliners are encoded by their own Check_IL_Body import. Thunks and stubs don't have one.
-                    if (inlinerIdentity is null || inlinerIdentity.IsCompilerGeneratedILBodyForAsync())
+                    // Cross-module inliners are encoded by their own Check_IL_Body import. Stubs don't have one.
+                    if (inlinerIdentity is null)
                         continue;
                 }
                 else
