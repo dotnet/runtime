@@ -11,6 +11,7 @@ using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System
 {
@@ -1782,31 +1783,31 @@ namespace System
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetEnCFieldAddr")]
-        private static partial void* GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD);
+        private static partial void GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD, ByteRefOnStack fieldAddr);
 
         // implementation of CORINFO_HELP_GETFIELDADDR
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
+        internal static unsafe ref byte GetFieldAddr(object tgt, void* pFD)
         {
-            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD);
-            if (addr == null)
-                throw new NullReferenceException();
-            return addr;
+            if (tgt == null)
+                ThrowHelpers.ThrowNullReferenceException();
+            ByteRef fieldAddr = default;
+            GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD, ByteRefOnStack.Create(ref fieldAddr));
+            return ref fieldAddr.Value;
         }
 
         // implementation of CORINFO_HELP_GETSTATICFIELDADDR
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe void* GetStaticFieldAddr(void* pFD)
+        internal static unsafe ref byte GetStaticFieldAddr(void* pFD)
         {
             object? nullTarget = null;
-            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD);
-            if (addr == null)
-                throw new NullReferenceException();
-            return addr;
+            ByteRef fieldAddr = default;
+            GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD, ByteRefOnStack.Create(ref fieldAddr));
+            return ref fieldAddr.Value;
         }
     }
 

@@ -1,0 +1,8 @@
+{
+  "changes": [
+    {
+      "document": "AddStaticFieldCollectible.cs",
+      "update": "AddStaticFieldCollectible_v1.cs"
+    }
+  ]
+}

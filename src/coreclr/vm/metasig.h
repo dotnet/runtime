@@ -171,8 +171,8 @@
 // static methods:
 DEFINE_METASIG_T(SM(Int_RuntimeTypeHandle_IntPtr_RetException, i g(RT_TYPE_HANDLE) I, C(EXCEPTION)))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
-DEFINE_METASIG(SM(VoidPtr_RetVoidPtr, P(v), P(v)))
-DEFINE_METASIG(SM(Obj_VoidPtr_RetVoidPtr, j P(v), P(v)))
+DEFINE_METASIG(SM(VoidPtr_RetRefByte, P(v), r(b)))
+DEFINE_METASIG(SM(Obj_VoidPtr_RetRefByte, j P(v), r(b)))
 DEFINE_METASIG(SM(Obj_RefBool_RetVoid, j r(F), v))
 DEFINE_METASIG(SM(Obj_IntPtr_IntPtr_Int_RetIntPtr, j I I i, I))
 DEFINE_METASIG_T(SM(PtrObj_PtrExInfo_RetVoid, P(j) P(g(EXINFO)), v))

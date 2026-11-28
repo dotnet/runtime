@@ -447,6 +447,41 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported), nameof(ApplyUpdateUtil.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/138256", typeof(PlatformDetection), nameof(PlatformDetection.IsCheckedRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/138256", typeof(PlatformDetection), nameof(PlatformDetection.IsDebugRuntime))]
+        public static void TestAddStaticFieldCollectible()
+        {
+            // The test assembly is loaded again into a collectible AssemblyLoadContext and updated there. Code that
+            // accesses the added static fields must not go through the statics base of the collectible type: the
+            // added fields are not part of it. The updated methods read each added field before writing it, and a
+            // precise-init type that is first touched after the update gets its static constructor run before
+            // another type reads its added field.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                string path = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticFieldCollectible).Assembly.Location;
+                var alc = new System.Runtime.Loader.AssemblyLoadContext(nameof(TestAddStaticFieldCollectible), isCollectible: true);
+                Assembly assm = alc.LoadFromAssemblyPath(path);
+                Type type = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.AddStaticFieldCollectible", throwOnError: true);
+                MethodInfo next = type.GetMethod("Next");
+                MethodInfo name = type.GetMethod("Name");
+                MethodInfo read = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.AddStaticFieldCollectibleReader", throwOnError: true).GetMethod("Read");
+                // Load the type before the update, without running its static constructor, so that the field the
+                // update adds to it is an EnC field rather than part of its layout.
+                Assert.NotNull(assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.AddStaticFieldCollectibleInit", throwOnError: true));
+
+                Assert.Equal(1, next.Invoke(null, null));
+                Assert.Equal("none", name.Invoke(null, null));
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                Assert.Equal(2, next.Invoke(null, null));
+                Assert.Equal(4, next.Invoke(null, null));
+                Assert.Equal("added", name.Invoke(null, null));
+                Assert.Equal(42, read.Invoke(null, null));
+            });
+        }
+
         // FieldRVA update tests are not supported on the Mono runtime.
         //[ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
         //[ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
