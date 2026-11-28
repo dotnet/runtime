@@ -115,5 +115,22 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, pNative));
             Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, pNative));
         }
+
+        [ConditionalTheory(typeof(GetObjectForNativeVariantTests), nameof(GetObjectForNativeVariantTests.IsScalarVariantMarshallingSupported))]
+        [InlineData(true, (short)-1)]
+        [InlineData(false, (short)0)]
+        public unsafe void GetNativeVariantForObject_Boolean_ReturnsVariantBool(bool value, short expectedRawValue)
+        {
+            // VT_BOOL owns no native resources.
+            ComVariant variant = default;
+            Marshal.GetNativeVariantForObject(value, (nint)(&variant));
+            Assert.Equal(VarEnum.VT_BOOL, variant.VarType);
+            Assert.Equal(expectedRawValue, variant.GetRawDataRef<short>());
+
+            ComVariant genericVariant = default;
+            Marshal.GetNativeVariantForObject<bool>(value, (nint)(&genericVariant));
+            Assert.Equal(VarEnum.VT_BOOL, genericVariant.VarType);
+            Assert.Equal(expectedRawValue, genericVariant.GetRawDataRef<short>());
+        }
     }
 }

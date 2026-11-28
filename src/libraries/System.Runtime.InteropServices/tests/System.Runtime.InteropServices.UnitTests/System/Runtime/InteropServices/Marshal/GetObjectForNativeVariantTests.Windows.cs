@@ -493,6 +493,21 @@ namespace System.Runtime.InteropServices.Tests
             };
         }
 
+        public static bool IsScalarVariantMarshallingSupported => PlatformDetection.IsBuiltInComEnabled || PlatformDetection.IsNativeAot;
+
+        [ConditionalTheory(nameof(IsScalarVariantMarshallingSupported))]
+        [InlineData((short)0, false)]
+        [InlineData((short)-1, true)]
+        [InlineData((short)1, true)]
+        [InlineData(short.MinValue, true)]
+        [InlineData(short.MaxValue, true)]
+        public unsafe void GetObjectForNativeVariant_Boolean_ReturnsExpected(short rawValue, bool expected)
+        {
+            // VT_BOOL owns no native resources.
+            Marshalling.ComVariant variant = Marshalling.ComVariant.CreateRaw(VarEnum.VT_BOOL, rawValue);
+            Assert.Equal(expected, Marshal.GetObjectForNativeVariant((nint)(&variant)));
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
         [MemberData(nameof(GetObjectForNativeVariant_TestData))]

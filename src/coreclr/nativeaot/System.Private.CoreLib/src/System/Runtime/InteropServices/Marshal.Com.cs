@@ -321,7 +321,7 @@ namespace System.Runtime.InteropServices
                 case VarEnum.VT_UI8: return data->As<ulong>();
                 case VarEnum.VT_INT: return data->As<int>();
                 case VarEnum.VT_UINT: return data->As<uint>();
-                case VarEnum.VT_BOOL: return data->As<short>() != -1;
+                case VarEnum.VT_BOOL: return data->As<bool>();
                 case VarEnum.VT_ERROR: return data->As<int>();
                 case VarEnum.VT_R4: return data->As<float>();
                 case VarEnum.VT_R8: return data->As<double>();
