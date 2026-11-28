@@ -634,7 +634,7 @@ namespace System.Net.Http.QPack
 
                 if (_huffman)
                 {
-                    int decodedLength = Huffman.Decode(new ReadOnlySpan<byte>(_stringOctets, 0, _stringLength), ref dst);
+                    int decodedLength = Huffman.Decode(new ReadOnlySpan<byte>(_stringOctets, 0, _stringLength), ref dst, Pool);
                     if (decodedLength > _maxHeadersLength)
                     {
                         throw new QPackDecodingException(SR.Format(SR.net_http_headers_exceeded_length, _maxHeadersLength));
