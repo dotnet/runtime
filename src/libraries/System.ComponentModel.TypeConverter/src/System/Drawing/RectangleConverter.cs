@@ -44,10 +44,10 @@ namespace System.Drawing
                 }
 
                 TypeConverter converter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
-                int x = (int)converter.ConvertFromString(context, culture, strValue[ranges[0]])!;
-                int y = (int)converter.ConvertFromString(context, culture, strValue[ranges[1]])!;
-                int width = (int)converter.ConvertFromString(context, culture, strValue[ranges[2]])!;
-                int height = (int)converter.ConvertFromString(context, culture, strValue[ranges[3]])!;
+                int x = (int)converter.ConvertFromString(context, culture, text[ranges[0]].ToString())!;
+                int y = (int)converter.ConvertFromString(context, culture, text[ranges[1]].ToString())!;
+                int width = (int)converter.ConvertFromString(context, culture, text[ranges[2]].ToString())!;
+                int height = (int)converter.ConvertFromString(context, culture, text[ranges[3]].ToString())!;
 
                 return new Rectangle(x, y, width, height);
             }
