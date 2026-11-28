@@ -1913,6 +1913,190 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.ToString(4, 2)); // Length + start index > builder.Length
         }
 
+        public static IEnumerable<object[]> TryFormat_TestData()
+        {
+            yield return new object[] { new StringBuilder(), Range.All };
+            yield return new object[] { new StringBuilder("Hello"), Range.All };
+            yield return new object[] { new StringBuilder("Hello"), 1..4 };
+            yield return new object[] { new StringBuilder("Hello"), 5..5 };
+            yield return new object[] { new StringBuilder("Hello"), ^2.. };
+            yield return new object[] { StringBuilderWithMultipleChunks(), Range.All };
+            yield return new object[] { StringBuilderWithMultipleChunks(), 15..25 };
+            yield return new object[] { new StringBuilder("héllo 世界 \U0001F600"), Range.All };
+            yield return new object[] { new StringBuilder("héllo 世界 \U0001F600"), 2..8 };
+            yield return new object[] { new StringBuilder(2).Append("ab").Append("cd").Append("\U0001F600").Append("ef"), Range.All };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryFormat_TestData))]
+        public static void TryFormat_Char(StringBuilder builder, Range sourceRange)
+        {
+            (int offset, int length) = sourceRange.GetOffsetAndLength(builder.Length);
+            string expected = builder.ToString(offset, length);
+
+            // Exact and larger destinations succeed.
+            foreach (int extra in new[] { 0, 1, 10 })
+            {
+                char[] destination = new char[expected.Length + extra];
+                Assert.True(builder.TryFormat(destination, sourceRange, out int charsWritten));
+                Assert.Equal(expected, new string(destination, 0, charsWritten));
+
+                if (sourceRange.Equals(Range.All))
+                {
+                    Array.Clear(destination);
+                    Assert.True(builder.TryFormat(destination, out charsWritten));
+                    Assert.Equal(expected, new string(destination, 0, charsWritten));
+
+                    Array.Clear(destination);
+                    Assert.True(((ISpanFormattable)builder).TryFormat(destination, out charsWritten, "X", CultureInfo.InvariantCulture));
+                    Assert.Equal(expected, new string(destination, 0, charsWritten));
+                }
+            }
+
+            // Smaller destinations fail without writing.
+            for (int size = 0; size < expected.Length; size++)
+            {
+                Assert.False(builder.TryFormat(new char[size], sourceRange, out int charsWritten));
+                Assert.Equal(0, charsWritten);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TryFormat_TestData))]
+        public static void TryFormat_Utf8(StringBuilder builder, Range sourceRange)
+        {
+            (int offset, int length) = sourceRange.GetOffsetAndLength(builder.Length);
+            byte[] expected = Encoding.UTF8.GetBytes(builder.ToString(offset, length));
+
+            // Exact and larger destinations succeed.
+            foreach (int extra in new[] { 0, 1, 10 })
+            {
+                byte[] destination = new byte[expected.Length + extra];
+                Assert.True(builder.TryFormat(destination, sourceRange, out int bytesWritten));
+                Assert.Equal(expected, destination.AsSpan(0, bytesWritten).ToArray());
+
+                if (sourceRange.Equals(Range.All))
+                {
+                    Array.Clear(destination);
+                    Assert.True(builder.TryFormat(destination, out bytesWritten));
+                    Assert.Equal(expected, destination.AsSpan(0, bytesWritten).ToArray());
+
+                    Array.Clear(destination);
+                    Assert.True(((IUtf8SpanFormattable)builder).TryFormat(destination, out bytesWritten, "X", CultureInfo.InvariantCulture));
+                    Assert.Equal(expected, destination.AsSpan(0, bytesWritten).ToArray());
+                }
+            }
+
+            // Smaller destinations fail without reporting any bytes written.
+            for (int size = 0; size < expected.Length; size++)
+            {
+                Assert.False(builder.TryFormat(new byte[size], sourceRange, out int bytesWritten));
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [Fact]
+        public static void TryFormat_Utf8_SurrogatePairSplitAcrossChunks()
+        {
+            // Force the high and low surrogates of U+1F600 into different chunks.
+            var builder = new StringBuilder(3);
+            builder.Append("ab").Append('\uD83D');
+            builder.Append('\uDE00').Append("cd");
+
+            ReadOnlyMemory<char>[] chunks = GetChunks(builder);
+            Assert.True(chunks.Length > 1);
+            Assert.Equal('\uD83D', chunks[0].Span[^1]);
+            Assert.Equal('\uDE00', chunks[1].Span[0]);
+
+            byte[] destination = new byte[16];
+            Assert.True(builder.TryFormat(destination, out int bytesWritten));
+            Assert.Equal("ab\U0001F600cd"u8.ToArray(), destination.AsSpan(0, bytesWritten).ToArray());
+
+            // The pair is only written when it fits in its entirety.
+            Assert.False(builder.TryFormat(new byte[5], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [InlineData("\uD83D", "�")]
+        [InlineData("\uDE00", "�")]
+        [InlineData("a\uD83Db", "a�b")]
+        [InlineData("a\uDE00\uD83Db", "a��b")]
+        public static void TryFormat_Utf8_InvalidSurrogates_WritesReplacementCharacter(string value, string expected)
+        {
+            var builder = new StringBuilder(value);
+            byte[] destination = new byte[32];
+            Assert.True(builder.TryFormat(destination, out int bytesWritten));
+            Assert.Equal(Encoding.UTF8.GetBytes(expected), destination.AsSpan(0, bytesWritten).ToArray());
+        }
+
+        [Fact]
+        public static void TryFormat_Utf8_RangeSplittingSurrogatePair_WritesReplacementCharacter()
+        {
+            var builder = new StringBuilder(2).Append("a").Append("\U0001F600").Append("b");
+            byte[] destination = new byte[16];
+
+            Assert.True(builder.TryFormat(destination, 0..2, out int bytesWritten));
+            Assert.Equal("a�"u8.ToArray(), destination.AsSpan(0, bytesWritten).ToArray());
+
+            Assert.True(builder.TryFormat(destination, 2..4, out bytesWritten));
+            Assert.Equal("�b"u8.ToArray(), destination.AsSpan(0, bytesWritten).ToArray());
+        }
+
+        [Fact]
+        public static void TryFormat_InvalidRange_ThrowsArgumentOutOfRangeException()
+        {
+            var builder = new StringBuilder("Hello");
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.TryFormat(new char[10], 0..6, out _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.TryFormat(new char[10], 4..2, out _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.TryFormat(new char[10], ^6.., out _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.TryFormat(new byte[10], 0..6, out _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.TryFormat(new byte[10], 4..2, out _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.TryFormat(new byte[10], ^6.., out _));
+        }
+
+        [Fact]
+        public static void IFormattable_ToString_IgnoresFormatAndProvider()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            IFormattable formattable = builder;
+            Assert.Equal(s_chunkSplitSource, formattable.ToString("X", CultureInfo.InvariantCulture));
+            Assert.Equal(s_chunkSplitSource, formattable.ToString(null, null));
+            Assert.Equal($"[{s_chunkSplitSource,35:X}]", string.Format(CultureInfo.InvariantCulture, "[{0,35:X}]", builder));
+        }
+
+        [Fact]
+        public static void Formatting_UsesBuilderContents()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            Assert.Equal($"[{s_chunkSplitSource}]", $"[{builder}]");
+            Assert.Equal($"{s_chunkSplitSource},{s_chunkSplitSource}", string.Join(",", builder, builder));
+
+            byte[] utf8 = new byte[64];
+            Assert.True(Unicode.Utf8.TryWrite(utf8, $"[{builder}]", out int bytesWritten));
+            Assert.Equal(Encoding.UTF8.GetBytes($"[{s_chunkSplitSource}]"), utf8.AsSpan(0, bytesWritten).ToArray());
+        }
+
+        [Theory]
+        [InlineData(100)] // Formatted value fits in the current chunk
+        [InlineData(4)] // Formatted value doesn't fit in the current chunk
+        public static void Append_InterpolatedSelf_AppendsCurrentContents(int capacity)
+        {
+            var builder = new StringBuilder(capacity).Append("xyz");
+            builder.Append($"aa{builder}bb");
+            Assert.Equal("xyzaaxyzaabb", builder.ToString());
+        }
+
+        private static ReadOnlyMemory<char>[] GetChunks(StringBuilder builder)
+        {
+            var chunks = new List<ReadOnlyMemory<char>>();
+            foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+            {
+                chunks.Add(chunk);
+            }
+            return chunks.ToArray();
+        }
+
         public class CustomFormatter : ICustomFormatter, IFormatProvider
         {
             public string Format(string format, object arg, IFormatProvider formatProvider) => "abc";
