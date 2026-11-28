@@ -10060,7 +10060,7 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
         default:
-            return LsraStat::STAT_FREE;
+            return LsraStat::STAT_FREE_OR_CHEAPER_SPILL;
     }
 }
 
@@ -10284,11 +10284,11 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
 //
 void LinearScan::dumpLsraStatsSummary(FILE* file)
 {
-    unsigned sumStats[LsraStat::STAT_FREE] = {0};
-    weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
+    unsigned sumStats[LsraStat::STAT_FREE_OR_CHEAPER_SPILL] = {0};
+    weight_t wtdStats[LsraStat::STAT_FREE_OR_CHEAPER_SPILL] = {0.0};
 
     // Iterate for block 0
-    for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+    for (int statIndex = 0; statIndex < LsraStat::STAT_FREE_OR_CHEAPER_SPILL; statIndex++)
     {
         unsigned lsraStat = blockInfo[0].stats[statIndex];
         sumStats[statIndex] += lsraStat;
@@ -10303,7 +10303,7 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
             continue;
         }
 
-        for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+        for (int statIndex = 0; statIndex < LsraStat::STAT_FREE_OR_CHEAPER_SPILL; statIndex++)
         {
             unsigned lsraStat = blockInfo[block->bbNum].stats[statIndex];
             sumStats[statIndex] += lsraStat;
@@ -10311,7 +10311,7 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
         }
     }
 
-    for (int regSelectI = 0; regSelectI < LsraStat::STAT_FREE; regSelectI++)
+    for (int regSelectI = 0; regSelectI < LsraStat::STAT_FREE_OR_CHEAPER_SPILL; regSelectI++)
     {
         fprintf(file, ", %s %u %sWt %f", getStatName(regSelectI), sumStats[regSelectI], getStatName(regSelectI),
                 wtdStats[regSelectI]);
@@ -12661,23 +12661,64 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
 }
 
 // ----------------------------------------------------------
-//  try_FREE: Apply the FREE heuristic.
+//  try_FREE_OR_CHEAPER_SPILL: Apply the FREE_OR_CHEAPER_SPILL heuristic.
 //
-void LinearScan::RegisterSelection::try_FREE()
+//  Release dispatch skips free-register heuristics when no free candidates remain.
+//  DEBUG allows JitLsraOrdering to reorder them, so each must check for itself.
+//
+void LinearScan::RegisterSelection::try_FREE_OR_CHEAPER_SPILL()
 {
     assert(!found);
-#ifdef DEBUG
-    // We try the "free" heuristics only if we have free candidates and this is
-    // guarded by a check in Release mode.
-    // In Debug mode, JitLsraOrdering can reorder the heuristics and we can come
-    // here in any order, hence we should check if it is RBM_NONE or not.
+    // JitLsraOrdering can invoke this after other heuristics have narrowed the candidates.
+    freeCandidates &= candidates;
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
-#endif
 
-    found = applySelection(FREE, freeCandidates);
+    // When no free register covers the range, consider evicting a cheaper
+    // callee-saved occupant. Let the normal spill-selection heuristics choose
+    // the register.
+    if (preferCalleeSave && refPosition->IsActualRef() && !currentInterval->isWriteThru
+#ifdef TARGET_ARM64
+        && !refPosition->needsConsecutive
+#endif
+    )
+    {
+        SingleTypeRegSet calleeSaves = linearScan->calleeSaveRegs(currentInterval->registerType) & candidates;
+        if (((freeCandidates & calleeSaves) == RBM_NONE) && (calleeSaves != RBM_NONE))
+        {
+            bool anyFreeCovers = false;
+            for (SingleTypeRegSet freeRegs = freeCandidates; freeRegs != RBM_NONE;)
+            {
+                regNumber freeReg = genFirstRegNumFromMaskAndToggle(freeRegs, regType);
+                if (getRegisterCoverageEnd(freeReg) > lastLocation)
+                {
+                    anyFreeCovers = true;
+                    break;
+                }
+            }
+            if (!anyFreeCovers)
+            {
+                weight_t thisWeight = linearScan->getWeight(refPosition);
+                for (SingleTypeRegSet busyCallees = calleeSaves; busyCallees != RBM_NONE;)
+                {
+                    regNumber busyReg = genFirstRegNumFromMaskAndToggle(busyCallees, regType);
+
+                    // One cheaper legal spill is enough; try_SPILL_COST chooses the best one.
+                    weight_t evictionCost;
+                    if (spillCandidateCost(busyReg, &evictionCost) && (evictionCost < thisWeight))
+                    {
+                        candidates     = calleeSaves;
+                        freeCandidates = RBM_NONE;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    found = applySelection(FREE_OR_CHEAPER_SPILL, freeCandidates);
 }
 
 // ----------------------------------------------------------
@@ -12689,7 +12730,7 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 {
     assert(!found);
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12715,7 +12756,7 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
 {
     assert(!found);
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12736,7 +12777,7 @@ void LinearScan::RegisterSelection::try_COVERS()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12758,7 +12799,7 @@ void LinearScan::RegisterSelection::try_OWN_PREFERENCE()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12777,7 +12818,7 @@ void LinearScan::RegisterSelection::try_COVERS_RELATED()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12796,7 +12837,7 @@ void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12814,7 +12855,7 @@ void LinearScan::RegisterSelection::try_CALLER_CALLEE()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12832,7 +12873,7 @@ void LinearScan::RegisterSelection::try_UNASSIGNED()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12851,7 +12892,7 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12876,7 +12917,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12954,7 +12995,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -12975,7 +13016,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     assert(!found);
 
 #ifdef DEBUG
-    // See comments in try_FREE
+    // See comments in try_FREE_OR_CHEAPER_SPILL
     if (freeCandidates == RBM_NONE)
     {
         return;
@@ -13074,6 +13115,117 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     found = applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
 }
 
+//------------------------------------------------------------------------
+// spillCandidateCost: whether the given busy register may be spilled for
+// the current RefPosition, and the effective weight of doing so. This is
+// the single computation behind try_SPILL_COST and the earlier check that
+// lets eviction compete with a non-covering free register, so the two can
+// not disagree about a candidate's eligibility or price.
+//
+// Arguments:
+//    spillCandidateRegNum - the register to consider
+//    pSpillWeight         - [out] the effective spill weight when eligible
+//
+// Return Value:
+//    true when the register is a legal spill candidate for this ref.
+//
+bool LinearScan::RegisterSelection::spillCandidateCost(regNumber spillCandidateRegNum, weight_t* pSpillWeight)
+{
+    LsraLocation thisLocation            = refPosition->nodeLocation;
+    RegRecord*   spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
+    Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
+    RefPosition* recentRefPosition       = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
+
+    // Can and should the interval in this register be spilled for this one,
+    // if we don't find a better alternative?
+
+    weight_t currentSpillWeight = 0;
+#ifdef TARGET_ARM64
+    // Reject active consecutive uses before inspecting their next reference, which may not exist.
+    if ((recentRefPosition != nullptr) && linearScan->isRefPositionActive(recentRefPosition, thisLocation) &&
+        (recentRefPosition->needsConsecutive))
+    {
+        return false;
+    }
+    else if (assignedInterval != nullptr)
+#endif
+    {
+        auto hasRequiredRef = [&](regNumber regNum) {
+            Interval* interval = linearScan->physRegs[regNum].assignedInterval;
+            return (interval != nullptr) && (linearScan->nextIntervalRef[regNum] == thisLocation) &&
+                   !interval->getNextRefPosition()->RegOptional();
+        };
+        if (hasRequiredRef(spillCandidateRegNum)
+#ifdef TARGET_ARM
+            || ((currentInterval->registerType == TYP_DOUBLE) && hasRequiredRef(REG_NEXT(spillCandidateRegNum)))
+#endif
+        )
+        {
+            return false;
+        }
+
+        if (!linearScan->isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
+        {
+            return false;
+        }
+
+        if (recentRefPosition != nullptr)
+        {
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+
+            if (reloadRefPosition != nullptr)
+            {
+                if ((recentRefPosition->RegOptional() &&
+                     !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+                {
+                    // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                    // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                    // For such cases, consider the spill cost of next refposition.
+                    // See notes in "spillInterval()".
+                    currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                }
+#ifdef TARGET_ARM64
+                else if (reloadRefPosition->needsConsecutive)
+                {
+                    // If next refposition is part of consecutive registers and there is already a register
+                    // assigned to it then try not to reassign for currentRefPosition, because with that,
+                    // other registers for the next consecutive register assignment would have to be copied
+                    // to different consecutive registers since this register is busy from this point onwards.
+                    //
+                    // Have it as a candidate, but make its spill cost higher than others.
+                    currentSpillWeight = linearScan->getWeight(reloadRefPosition) * 10;
+                }
+#endif
+            }
+        }
+    }
+#ifdef TARGET_ARM64
+    else
+    {
+        // Ideally we should not be seeing this candidate because it is not assigned to
+        // any interval. But it is possible for certain scenarios. One of them is that
+        // `refPosition` needs consecutive registers and we decided to pick a mix of free+busy
+        // registers. This candidate is part of that set and is free and hence is not assigned
+        // to any interval.
+    }
+#endif // TARGET_ARM64
+
+    // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
+    if (currentSpillWeight == 0)
+    {
+        currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
+#ifdef TARGET_ARM
+        if (currentInterval->registerType == TYP_DOUBLE)
+        {
+            currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+        }
+#endif
+    }
+
+    *pSpillWeight = currentSpillWeight;
+    return true;
+}
+
 // ----------------------------------------------------------
 //  try_SPILL_COST: Apply the SPILL_COST heuristic.
 //
@@ -13090,8 +13242,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     // The  spill weight for the best candidate we've found so far.
     weight_t bestSpillWeight = FloatingPointUtils::infinite_double();
     // True if we found registers with lower spill weight than this refPosition.
-    bool         foundLowerSpillWeight = false;
-    LsraLocation thisLocation          = refPosition->nodeLocation;
+    bool foundLowerSpillWeight = false;
 
     for (SingleTypeRegSet spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
@@ -13099,84 +13250,10 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         SingleTypeRegSet spillCandidateBit    = genSingleTypeRegMask(spillCandidateRegNum);
         spillCandidates ^= spillCandidateBit;
 
-        RegRecord*   spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
-        Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
-        RefPosition* recentRefPosition = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
-
-        // Can and should the interval in this register be spilled for this one,
-        // if we don't find a better alternative?
-
-        weight_t currentSpillWeight = 0;
-#ifdef TARGET_ARM64
-        if ((recentRefPosition != nullptr) && linearScan->isRefPositionActive(recentRefPosition, thisLocation) &&
-            (recentRefPosition->needsConsecutive))
+        weight_t currentSpillWeight;
+        if (!spillCandidateCost(spillCandidateRegNum, &currentSpillWeight))
         {
             continue;
-        }
-        else if (assignedInterval != nullptr)
-#endif
-        {
-            if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
-                !assignedInterval->getNextRefPosition()->RegOptional())
-            {
-                continue;
-            }
-            if (!linearScan->isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
-            {
-                continue;
-            }
-
-            if (recentRefPosition != nullptr)
-            {
-                RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
-
-                if (reloadRefPosition != nullptr)
-                {
-                    if ((recentRefPosition->RegOptional() &&
-                         !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
-                    {
-                        // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-                        // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-                        // For such cases, consider the spill cost of next refposition.
-                        // See notes in "spillInterval()".
-                        currentSpillWeight = linearScan->getWeight(reloadRefPosition);
-                    }
-#ifdef TARGET_ARM64
-                    else if (reloadRefPosition->needsConsecutive)
-                    {
-                        // If next refposition is part of consecutive registers and there is already a register
-                        // assigned to it then try not to reassign for currentRefPosition, because with that,
-                        // other registers for the next consecutive register assignment would have to be copied
-                        // to different consecutive registers since this register is busy from this point onwards.
-                        //
-                        // Have it as a candidate, but make its spill cost higher than others.
-                        currentSpillWeight = linearScan->getWeight(reloadRefPosition) * 10;
-                    }
-#endif
-                }
-            }
-        }
-#ifdef TARGET_ARM64
-        else
-        {
-            // Ideally we should not be seeing this candidate because it is not assigned to
-            // any interval. But it is possible for certain scenarios. One of them is that
-            // `refPosition` needs consecutive registers and we decided to pick a mix of free+busy
-            // registers. This candidate is part of that set and is free and hence is not assigned
-            // to any interval.
-        }
-#endif // TARGET_ARM64
-
-        // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
-        if (currentSpillWeight == 0)
-        {
-            currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
-#ifdef TARGET_ARM
-            if (currentInterval->registerType == TYP_DOUBLE)
-            {
-                currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
-            }
-#endif
         }
 
         if (currentSpillWeight < bestSpillWeight)
@@ -13369,6 +13446,21 @@ void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate 
     }
 }
 
+//------------------------------------------------------------------------
+// getRegisterCoverageEnd: Find the next interference, allowing a fixed use
+// at the range endpoint to use its own register.
+//
+LsraLocation LinearScan::RegisterSelection::getRegisterCoverageEnd(regNumber regNum)
+{
+    LsraLocation location =
+        Min(linearScan->getNextFixedRef(regNum, regType), linearScan->getNextIntervalRef(regNum, regType));
+    if ((location == rangeEndLocation) && rangeEndRefPosition->isFixedRefOfReg(regNum))
+    {
+        location++;
+    }
+    return location;
+}
+
 // ----------------------------------------------------------
 //  calculateCoversSets: Calculate the necessary covers set registers to be used
 //      for heuristics lke COVERS, COVERS_RELATED, COVERS_FULL.
@@ -13392,22 +13484,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
         // do need to compute the unassignedSet.
         if (!found)
         {
-            // Find the next RefPosition of the register.
-            LsraLocation nextIntervalLocation    = linearScan->getNextIntervalRef(coversCandidateRegNum, regType);
-            LsraLocation nextPhysRefLocation     = linearScan->getNextFixedRef(coversCandidateRegNum, regType);
-            LsraLocation coversCandidateLocation = Min(nextPhysRefLocation, nextIntervalLocation);
-
-            // If the nextPhysRefLocation is a fixedRef for the rangeEndRefPosition, increment it so that
-            // we don't think it isn't covering the live range.
-            // This doesn't handle the case where earlier RefPositions for this Interval are also
-            // FixedRefs of this regNum, but at least those are only interesting in the case where those
-            // are "local last uses" of the Interval - otherwise the liveRange would interfere with the reg.
-            if (coversCandidateLocation == rangeEndLocation &&
-                rangeEndRefPosition->isFixedRefOfReg(coversCandidateRegNum))
-            {
-                INDEBUG(linearScan->dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
-                coversCandidateLocation++;
-            }
+            LsraLocation coversCandidateLocation = getRegisterCoverageEnd(coversCandidateRegNum);
             if (coversCandidateLocation > rangeEndLocation)
             {
                 coversSet |= coversCandidateBit;
@@ -13885,12 +13962,22 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
     }
 #else // RELEASE
 
-    // In release, just invoke the default order
+    // FREE_OR_CHEAPER_SPILL may choose eviction instead. Dispatch the remaining heuristics using that decision.
+    IF_FOUND_GOTO_DONE
+    if (freeCandidates != RBM_NONE)
+    {
+        try_FREE_OR_CHEAPER_SPILL();
+        IF_FOUND_GOTO_DONE
+    }
+
     if (freeCandidates != RBM_NONE)
     {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
-    try_##stat();                                                                                                      \
-    IF_FOUND_GOTO_DONE
+    if constexpr (stat != FREE_OR_CHEAPER_SPILL)                                                                       \
+    {                                                                                                                  \
+        try_##stat();                                                                                                  \
+        IF_FOUND_GOTO_DONE                                                                                             \
+    }
 
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
