@@ -1767,25 +1767,41 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
-        public static void CancellationTokenSource_CancelAsync_NoRegistrations_CallbackCompletesImmediately()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static void CancellationTokenSource_CancelAsync_NoRegistrations_CallbackCompletesImmediately(bool unregisterCallback, bool createWaitHandleBeforeCancellation)
         {
-            var cts = new CancellationTokenSource();
-            Assert.True(cts.CancelAsync().IsCompletedSuccessfully);
-            Assert.True(cts.IsCancellationRequested);
+            using var cts = new CancellationTokenSource();
+            CancellationToken token = cts.Token;
+            if (unregisterCallback)
+            {
+                token.Register(() => { }).Dispose();
+            }
 
-            cts = new CancellationTokenSource();
-            cts.Token.Register(() => { }).Dispose();
+            using WaitHandle handle = createWaitHandleBeforeCancellation ? token.WaitHandle : null;
             Assert.True(cts.CancelAsync().IsCompletedSuccessfully);
             Assert.True(cts.IsCancellationRequested);
+            Assert.False(cts.TryReset());
+
+            using WaitHandle canceledHandle = token.WaitHandle;
+            Assert.True(canceledHandle.WaitOne(0));
+            Assert.False(canceledHandle.SafeWaitHandle.IsClosed);
+
+            cts.Dispose();
+            Assert.True(canceledHandle.SafeWaitHandle.IsClosed);
+            Assert.Throws<ObjectDisposedException>(() => token.WaitHandle);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously()
         {
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
+            using WaitHandle handle = cts.Token.WaitHandle;
 
-            var mres = new ManualResetEventSlim();
+            using var mres = new ManualResetEventSlim();
             cts.Token.Register(mres.Wait);
 
             Task t = cts.CancelAsync();
@@ -1793,9 +1809,14 @@ namespace System.Threading.Tasks.Tests
             Assert.True(cts.IsCancellationRequested);
 
             Assert.True(cts.CancelAsync().IsCompletedSuccessfully); // secondary call completes immediately
+            Assert.False(handle.SafeWaitHandle.IsClosed);
+            Assert.True(handle.WaitOne(0));
 
             mres.Set();
             await t;
+
+            cts.Dispose();
+            Assert.True(handle.SafeWaitHandle.IsClosed);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

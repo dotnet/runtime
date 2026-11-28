@@ -347,6 +347,8 @@ namespace System.Threading
                         }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                     }
                 }
+
+                _state = States.NotifyingCompleteState;
             }
 
             // As with Cancel, CancelAsync returns immediately if cancellation has already been requested
