@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Disabled on Android since the test is very sensitive to specific trimming behavior and Android code (interop and such) make the trimming unpredictable -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
+    <DefineConstants Condition="'$(IlcMultiModule)' == 'true'">$(DefineConstants);MULTIMODULE_BUILD</DefineConstants>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>

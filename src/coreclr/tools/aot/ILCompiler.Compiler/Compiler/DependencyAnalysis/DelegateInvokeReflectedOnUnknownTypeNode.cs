@@ -1,0 +1,30 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+
+using ILCompiler.DependencyAnalysisFramework;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    /// <summary>
+    /// Represents the Invoke method of a delegate type that is not statically known being
+    /// accessed through reflection (e.g. <c>delegateType.GetMethod("Invoke")</c>). When this node
+    /// is present, the Invoke methods of all delegate types that have metadata are made reflectable.
+    /// </summary>
+    public sealed class DelegateInvokeReflectedOnUnknownTypeNode : DependencyNodeCore<NodeFactory>
+    {
+        protected override string GetName(NodeFactory factory)
+        {
+            return "Reflectable Invoke method of an unknown delegate type";
+        }
+
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool HasConditionalStaticDependencies => false;
+        public override bool StaticDependenciesAreComputed => true;
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
+    }
+}

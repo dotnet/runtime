@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <DefineConstants>$(DefineConstants);GETTYPE_ON_DELEGATE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DelegateInvoke.cs" />
+  </ItemGroup>
+</Project>
