@@ -84,6 +84,7 @@ namespace System.Threading
         /// </summary>
         private static UnixHandleAsyncContext?[] s_registeredHandles = [];
         private static readonly Queue<int> s_registeredHandlesFreeList = [];
+        private static readonly Lock s_registeredHandlesLock = new Lock();
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.HandleEvent* _buffer;
@@ -113,7 +114,7 @@ namespace System.Threading
         {
             Debug.Assert(asyncContext.ContextIndex == -1);
 
-            lock (s_registeredHandlesFreeList)
+            lock (s_registeredHandlesLock)
             {
                 if (!s_registeredHandlesFreeList.TryDequeue(out int index))
                 {
@@ -152,7 +153,7 @@ namespace System.Threading
             Debug.Assert(asyncContext.ContextIndex >= 0);
             Debug.Assert(ReferenceEquals(s_registeredHandles[asyncContext.ContextIndex], asyncContext));
 
-            lock (s_registeredHandlesFreeList)
+            lock (s_registeredHandlesLock)
             {
                 s_registeredHandles[asyncContext.ContextIndex] = null;
                 s_registeredHandlesFreeList.Enqueue(asyncContext.ContextIndex);
