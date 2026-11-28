@@ -155,6 +155,61 @@ namespace System.IO.Tests
             PathAssert.Equal(expected.AsSpan(), Path.GetPathRoot(path.AsSpan()));
         }
 
+        [Theory, InlineData(4095), InlineData(4096)]
+        public void GetFullPath_MaxPathLength_NotTooLong(int length)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i + 1 < length; i+=2)
+                sb.Append("/a");
+            if (length % 2 == 1)
+                sb.Append("a");
+            string path = sb.ToString();
+            Assert.Equal(path, Path.GetFullPath(path));
+        }
+
+        [Fact]
+        public void GetFullPath_PathTooLong()
+        {
+            int length = 4097;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < length; i+=2)
+                sb.Append("/a");
+            if (length % 2 == 1)
+                sb.Append("a");
+            string path = sb.ToString();
+            Assert.Throws<PathTooLongException>(() => Path.GetFullPath(path));
+        }
+
+        [Fact]
+        public void GetFullPath_NameTooLong()
+        {
+            string path = "/" + new string('a', 256);
+            Assert.Throws<PathTooLongException>(() => Path.GetFullPath(path));
+        }
+
+        [Fact]
+        public void GetFullPath_PathTooLong_BasePath()
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < 4096; i+=2)
+                sb.Append("/a");
+            sb.Append("a");
+            string path = sb.ToString();
+            Assert.Throws<PathTooLongException>(() => Path.GetFullPath(path, "/home/user"));
+        }
+
+        [Fact]
+        public void GetFullPath_PathTooLong_MessageContainsPath()
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < 4096; i+=2)
+                sb.Append("/a");
+            sb.Append("a");
+            string path = sb.ToString();
+            PathTooLongException ex = Assert.Throws<PathTooLongException>(() => Path.GetFullPath(path));
+            Assert.Contains(path, ex.Message);
+        }
+
         [Fact]
         public void GetFullPath_ThrowsOnEmbeddedNulls()
         {
