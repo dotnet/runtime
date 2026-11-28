@@ -38,3 +38,7 @@ PALEXPORT __attribute__((noreturn)) void SystemNative_Exit(int32_t exitCode);
 PALEXPORT __attribute__((noreturn)) void SystemNative_Abort(void);
 
 PALEXPORT uint64_t SystemNative_GetCurrentThreadId(void);
+
+// Sends a signal to a thread of a process. Only supported on Linux; other platforms fail with ENOSYS.
+// Returns 0 on success and -1 with errno set on failure. Signal 0 only checks whether the thread exists.
+PALEXPORT int32_t SystemNative_TgKill(int32_t pid, int32_t tid, int32_t signal);

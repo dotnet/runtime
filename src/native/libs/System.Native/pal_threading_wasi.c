@@ -5,6 +5,7 @@
 #include "pal_threading.h"
 #include "pal_errno.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <limits.h>
 #include <sched.h>
@@ -86,4 +87,13 @@ void SystemNative_Abort(void)
 uint64_t SystemNative_GetCurrentThreadId(void)
 {
     return minipal_get_current_thread_id();
+}
+
+int32_t SystemNative_TgKill(int32_t pid, int32_t tid, int32_t signal)
+{
+    (void)pid;
+    (void)tid;
+    (void)signal;
+    errno = ENOSYS;
+    return -1;
 }
