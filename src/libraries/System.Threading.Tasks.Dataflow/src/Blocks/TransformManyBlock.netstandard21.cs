@@ -85,21 +85,21 @@ namespace System.Threading.Tasks.Dataflow
         /// </summary>
         /// <param name="messageWithId">The message with id.</param>
         /// <param name="outputItems">The output items to be persisted.</param>
-        private async Task StoreOutputItemsAsync(
+        private Task StoreOutputItemsAsync(
             KeyValuePair<TInput, long> messageWithId, IAsyncEnumerable<TOutput>? outputItems)
         {
             // If there's a reordering buffer, pass the data along to it.
             // The reordering buffer will handle all details, including bounding.
             if (_reorderingBuffer is not null)
             {
-                await StoreOutputItemsReorderedAsync(messageWithId.Value, outputItems).ConfigureAwait(false);
+                return StoreOutputItemsReorderedAsync(messageWithId.Value, outputItems);
             }
             // Otherwise, output the data directly.
-            else if (outputItems is not null)
+            if (outputItems is not null)
             {
-                await StoreOutputItemsNonReorderedWithIterationAsync(outputItems).ConfigureAwait(false);
+                return StoreOutputItemsNonReorderedWithIterationAsync(outputItems);
             }
-            else if (_target.IsBounded)
+            if (_target.IsBounded)
             {
                 // outputItems is null and there's no reordering buffer
                 // and we're bounding, so decrement the bounding count to
@@ -109,6 +109,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             // else there's no reordering buffer, there are no output items, and we're not bounded,
             // so there's nothing more to be done.
+            return Task.CompletedTask;
         }
 
         /// <summary>Stores the next item using the reordering buffer.</summary>
