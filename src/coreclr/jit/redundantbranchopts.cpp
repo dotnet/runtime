@@ -123,8 +123,12 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    // DFS tree is always considered invalid after RBO.
-    fgInvalidateDfsTree();
+    // Flow graph annotations remain valid if RBO made no changes.
+    //
+    if (visitor.madeChanges)
+    {
+        fgInvalidateDfsTree();
+    }
 
     // If we jump threaded, SSA and value numbers are stale and will be rebuilt
     // by the phases that follow. Recompute the flow graph annotations they need.

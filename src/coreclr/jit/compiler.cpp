@@ -4787,10 +4787,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                     DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
                 }
             }
+            else
+            {
+                fgInvalidateDfsTree();
+            }
 
-            // DFS tree is always invalid after this point.
+            // Later phases do not maintain SSA.
             //
-            fgInvalidateDfsTree();
+            fgSsaValid = false;
 
             if (doCse)
             {
