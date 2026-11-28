@@ -136,6 +136,7 @@
     <Compile Include="Serialization\ConstructorTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
     <Compile Include="JsonSourceGenerationOptionsTests.cs" />
+    <Compile Include="EmitAttributeProvidersTests.cs" />
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
     <Compile Include="Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.cs" />

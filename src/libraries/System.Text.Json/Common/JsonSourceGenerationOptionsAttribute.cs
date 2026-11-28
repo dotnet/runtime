@@ -199,5 +199,31 @@ namespace System.Text.Json.Serialization
         /// types are registered.
         /// </remarks>
         public bool InferClosedTypePolymorphism { get; set; }
+
+        /// <summary>
+        /// Specifies whether the source generator emits the run-time attribute provider metadata
+        /// for the members and constructors of the contracts generated for this context.
+        /// The default value is <see langword="true"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// By default, generated contracts lazily expose the reflection metadata of each serialized property or field
+        /// and of the deserialization constructor through <see cref="Metadata.JsonPropertyInfo.AttributeProvider"/>,
+        /// <see cref="Metadata.JsonTypeInfo.ConstructorAttributeProvider"/> and <see cref="Metadata.JsonParameterInfo.AttributeProvider"/>.
+        /// Supporting this requires the members to be preserved for reflection, which can significantly increase
+        /// the size of trimmed and Native AOT applications.
+        /// </para>
+        /// <para>
+        /// When set to <see langword="false"/>, these properties return <see langword="null"/> for contracts generated
+        /// by this context. Serialization and deserialization behavior is otherwise unchanged, since attribute-driven
+        /// configuration is resolved at compile time. Components that inspect member attributes at run time, such as
+        /// contract modifiers, <see cref="Schema.JsonSchemaExporter"/> (which reports members annotated with
+        /// <see cref="ObsoleteAttribute"/> as deprecated), or schema transformers that read attributes like
+        /// <c>DescriptionAttribute</c>, will not observe those attributes for this context.
+        /// A contract modifier can still assign <see cref="Metadata.JsonPropertyInfo.AttributeProvider"/> explicitly,
+        /// but constructor and parameter attribute providers cannot be restored.
+        /// </para>
+        /// </remarks>
+        public bool EmitAttributeProviders { get; set; } = true;
     }
 }

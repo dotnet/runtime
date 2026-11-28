@@ -428,6 +428,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """, nameof(UnsafeAccessors_GenericTypeInitOnlyProperties));
         }
 
+        [Fact]
+        public void EmitAttributeProvidersDisabled()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Person))]
+                    [JsonSerializable(typeof(Point))]
+                    [JsonSourceGenerationOptions(EmitAttributeProviders = false, IncludeFields = true)]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class Person
+                    {
+                        public string Name { get; set; }
+                        public int Age;
+                    }
+                    public class Point
+                    {
+                        public Point(int x, int y) { X = x; Y = y; }
+                        public int X { get; }
+                        public int Y { get; }
+                    }
+                }
+                """, nameof(EmitAttributeProvidersDisabled));
+        }
+
         #region Baseline comparison infrastructure
 
         private static readonly string s_baselinesRelativePath = IO.Path.Combine(

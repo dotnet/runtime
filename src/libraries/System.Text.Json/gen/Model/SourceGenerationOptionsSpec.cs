@@ -78,6 +78,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool? InferClosedTypePolymorphism { get; init; }
 
+        public required bool? EmitAttributeProviders { get; init; }
+
         public JsonNumberHandling GetEffectiveNumberHandling()
             => NumberHandling ?? (Defaults is JsonSerializerDefaults.Web ? JsonNumberHandling.AllowReadingFromString : JsonNumberHandling.Strict);
 
