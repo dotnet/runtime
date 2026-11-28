@@ -11031,6 +11031,14 @@ private:
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {
+#ifdef TARGET_ARM64
+            // SIMD locals on this frame are always aligned due to the frame
+            // arrangement of homogeneous blocks of vectors/masks.
+            if (lvaLocalIsOnUnknownSizeFrame(varNum))
+            {
+                return true;
+            }
+#endif
             // TODO-Cleanup: Can't this use the lvExactSize on the varDsc?
             int alignment = getSIMDTypeAlignment(lcl->TypeGet());
             if (alignment <= STACK_ALIGN)
