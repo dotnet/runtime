@@ -80,6 +80,8 @@ namespace System.Net.Sockets
             get => (_flags & Flags.TfoEnabled) != 0;
             set => SetFlag(Flags.TfoEnabled, value);
         }
+#elif TARGET_ANDROID
+        internal int TcpFastOpenValue { get; set; }
 #endif
 
         internal void RegisterConnectResult(SocketError error)
@@ -105,6 +107,8 @@ namespace System.Net.Sockets
             target.PreferInlineCompletions = PreferInlineCompletions;
 #if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             target.TfoEnabled = TfoEnabled;
+#elif TARGET_ANDROID
+            target.TcpFastOpenValue = TcpFastOpenValue;
 #endif
         }
 

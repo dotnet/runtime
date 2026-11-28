@@ -1063,6 +1063,10 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
     }
     else
     {
+#if defined(TARGET_ANDROID)
+        // Older Android kernels return only IPv4 packet information for IPv4 datagrams on a dual-mode socket.
+        struct cmsghdr* ipv4Fallback = NULL;
+#endif
         for (; controlMessage != NULL && controlMessage->cmsg_len > 0;
              controlMessage = GET_CMSG_NXTHDR(&header, controlMessage))
         {
@@ -1070,7 +1074,19 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
             {
                 return GetIPv6PacketInformation(controlMessage, packetInfo);
             }
+#if defined(TARGET_ANDROID)
+            if (controlMessage->cmsg_level == IPPROTO_IP && controlMessage->cmsg_type == IP_PKTINFO)
+            {
+                ipv4Fallback = controlMessage;
+            }
+#endif
         }
+#if defined(TARGET_ANDROID)
+        if (ipv4Fallback != NULL)
+        {
+            return GetIPv4PacketInformation(ipv4Fallback, packetInfo);
+        }
+#endif
     }
 
     return 0;

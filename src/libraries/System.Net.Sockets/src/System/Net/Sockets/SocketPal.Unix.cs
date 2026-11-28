@@ -1529,6 +1529,12 @@ namespace System.Net.Sockets
                 // supported by OS.
                 err = Interop.Error.SUCCESS;
             }
+#elif TARGET_ANDROID
+            if (err == Interop.Error.SUCCESS && optionLevel == SocketOptionLevel.Tcp &&
+                optionName == SocketOptionName.FastOpen)
+            {
+                handle.TcpFastOpenValue = optionValue;
+            }
 #endif
             return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
         }
@@ -1538,6 +1544,16 @@ namespace System.Net.Sockets
             fixed (byte* pinnedValue = optionValue)
             {
                 Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue != null ? optionValue.Length : 0);
+#if TARGET_ANDROID
+                if (err == Interop.Error.SUCCESS &&
+                    optionLevel == SocketOptionLevel.Tcp &&
+                    optionName == SocketOptionName.FastOpen &&
+                    optionValue is not null &&
+                    optionValue.Length >= sizeof(int))
+                {
+                    handle.TcpFastOpenValue = MemoryMarshal.Read<int>(optionValue);
+                }
+#endif
                 return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
             }
         }
@@ -1668,6 +1684,14 @@ namespace System.Net.Sockets
                 value = handle.TfoEnabled ? 1 : 0;
                 err = Interop.Error.SUCCESS;
             }
+#elif TARGET_ANDROID
+            // Linux < 3.14 (e.g. Android 7 emulators) supports setting TCP_FASTOPEN but not querying it.
+            if (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen &&
+                err == Interop.Error.ENOPROTOOPT)
+            {
+                value = handle.TcpFastOpenValue;
+                err = Interop.Error.SUCCESS;
+            }
 #endif
 
             optionValue = value;
@@ -1684,7 +1708,12 @@ namespace System.Net.Sockets
                 optLen = 0;
                 err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, null, &optLen);
             }
-            else if (optionName == SocketOptionName.Error && optionValue.Length >= sizeof(int))
+            else if (optionValue.Length >= sizeof(int) &&
+                     (optionName == SocketOptionName.Error
+#if TARGET_ANDROID
+                      || (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen)
+#endif
+                     ))
             {
                 int outError;
                 SocketError returnError = GetSockOpt(handle, optionLevel, optionName, out outError);

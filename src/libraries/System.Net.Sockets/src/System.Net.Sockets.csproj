@@ -17,6 +17,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <IsApplePlatform Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsApplePlatform>
     <DefineConstants Condition="'$(IsApplePlatform)' == 'true'">$(DefineConstants);SYSTEM_NET_SOCKETS_APPLE_PLATFORM</DefineConstants>
+    <DefineConstants Condition="'$(TargetOS)' == 'android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">
