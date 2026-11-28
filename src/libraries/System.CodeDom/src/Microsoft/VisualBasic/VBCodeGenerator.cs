@@ -9,6 +9,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Microsoft.VisualBasic
@@ -1540,28 +1541,83 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        private static bool MethodIsOverloaded(CodeMemberMethod e, CodeTypeDeclaration c)
+        private ConditionalWeakTable<CodeTypeDeclaration, MethodOverloadIndex> _methodOverloadIndexes;
+
+        private sealed class MethodOverloadIndex
+        {
+            internal long Version;
+            internal readonly Dictionary<string, (int FirstIndex, bool HasDistinct)> Methods = new(StringComparer.OrdinalIgnoreCase);
+
+            internal void Rebuild(CodeTypeMemberCollection members, long version)
+            {
+                Methods.Clear();
+                // Store positions rather than member references, so removed members are not retained.
+                // Collection edits invalidate these positions before the index can be queried again.
+                for (int memberIndex = 0; memberIndex < members.Count; memberIndex++)
+                {
+                    if (members[memberIndex] is not CodeMemberMethod method)
+                        continue;
+
+                    // New, unrelated graphs do not invalidate indexes until their methods are indexed.
+                    method.TrackMethodIdentity();
+                    if (method is CodeTypeConstructor || method is CodeConstructor || method.PrivateImplementationType != null)
+                        continue;
+
+                    if (Methods.TryGetValue(method.Name, out var existing))
+                    {
+                        if (!ReferenceEquals(members[existing.FirstIndex], method))
+                            Methods[method.Name] = (existing.FirstIndex, true);
+                    }
+                    else
+                    {
+                        Methods.Add(method.Name, (memberIndex, false));
+                    }
+                }
+                Version = version;
+            }
+        }
+
+        private bool MethodIsOverloaded(CodeMemberMethod e, CodeTypeDeclaration c)
         {
             if ((e.Attributes & MemberAttributes.Overloaded) != 0)
-            {
                 return true;
-            }
-            foreach (var current in c.Members)
+
+            CodeTypeMemberCollection members = c.Members;
+            // For small types, scanning costs less than allocating and maintaining an index.
+            if (members.Count <= 32)
             {
-                if (!(current is CodeMemberMethod))
-                    continue;
-                CodeMemberMethod meth = (CodeMemberMethod)current;
-
-                if (!(current is CodeTypeConstructor) && !(current is CodeConstructor)
-                    && meth != e
-                    && meth.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                    && meth.PrivateImplementationType == null)
+                foreach (var current in members)
                 {
-                    return true;
+                    if (current is CodeMemberMethod method &&
+                        method is not CodeConstructor && method is not CodeTypeConstructor &&
+                        !ReferenceEquals(method, e) &&
+                        method.PrivateImplementationType is null &&
+                        method.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
                 }
+
+                return false;
             }
 
-            return false;
+            members.TrackMethodIdentity();
+            long version = CodeMemberMethod.MethodIdentityVersion;
+            ConditionalWeakTable<CodeTypeDeclaration, MethodOverloadIndex> indexes =
+                _methodOverloadIndexes ??= new ConditionalWeakTable<CodeTypeDeclaration, MethodOverloadIndex>();
+            if (!indexes.TryGetValue(c, out MethodOverloadIndex index))
+            {
+                index = new MethodOverloadIndex();
+                index.Rebuild(members, version);
+                indexes.Add(c, index);
+            }
+            else if (index.Version != version)
+            {
+                index.Rebuild(members, version);
+            }
+
+            return index.Methods.TryGetValue(e.Name, out var matches) &&
+                (matches.HasDistinct || !ReferenceEquals(members[matches.FirstIndex], e));
         }
 
         protected override void GenerateSnippetMember(CodeSnippetTypeMember e)

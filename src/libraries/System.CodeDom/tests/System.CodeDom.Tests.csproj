@@ -94,6 +94,7 @@
     <Compile Include="System\CodeDom\Compiler\CodeDomProviderTests.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeProviderTests.cs" />
     <Compile Include="Microsoft\VisualBasic\VBCodeProviderTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeProviderOverloadTests.cs" />
     <Compile Include="System\CodeDom\CodeRegionDirectiveTests.cs" />
     <Compile Include="System\CodeDom\CodeLinePragmaTests.cs" />
     <Compile Include="System\CodeDom\CodeCatchClauseTests.cs" />
