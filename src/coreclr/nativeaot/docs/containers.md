@@ -6,9 +6,9 @@ Containers are a useful tool to build any kind of code, including native AOT. Th
 
 Native AOT apps can be built in containers (with multi-stage build) just like regular (CoreCLR) apps. SDK `aot` images provide the additional native toolchain dependencies required to build native AOT apps.
 
-Search for `aot` images at [dotnet/nightly/sdk](https://mcr.microsoft.com/en-us/product/dotnet/nightly/sdk/tags).
+Find released `aot` images at [dotnet/sdk](https://mcr.microsoft.com/en-us/product/dotnet/sdk/tags), for example `mcr.microsoft.com/dotnet/sdk:11.0-aot`.
 
-The [`releasesapi`](https://github.com/dotnet/dotnet-docker/blob/main/samples/releasesapi/README.md) sample demonstrates how to build native AOT apps in containers.
+The [ASP.NET Core Native AOT](https://github.com/dotnet/dotnet-docker/blob/main/samples/AspNetCoreNativeAot/README.md) sample demonstrates how to build native AOT apps in containers.
 
 ## Cross-compiling
 
@@ -16,7 +16,7 @@ For cloud native apps, build and runtime OS typically match, at least if you use
 
 The .NET build has this exact same need. We produce several [container images to enable cross-building](https://github.com/dotnet/runtime/blob/main/docs/workflow/using-docker.md#the-official-runtime-docker-images).
 
-You can use these images to build native AOT apps which work on distros as old as Ubuntu 18.04 in .NET 10, see [Linux compatibility in release notes](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md#linux-compatibility) for details. These build images are not supported, but are expected to work (since we use them to build .NET on daily basis).
+The examples below use the .NET 11 SDK with Azure Linux 4 .NET 12 cross-build images. For Linux x64 and Arm64, the .NET 11 ABI baseline is glibc 2.27 (Ubuntu 18.04); see [Libc requirements in the .NET 11 release notes](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.md#libc). ABI compatibility with an older distribution does not imply that it is supported. These build images are not supported, but are expected to work (since we use them to build .NET on daily basis).
 
 ### Containerized build
 
