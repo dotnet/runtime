@@ -195,7 +195,7 @@ protected:
     {
         numParameters = 25,
         booleanScale  = 5,
-        maxSteps      = 65, // MAX_CSE_CNT + 1 (for stopping)
+        maxSteps      = 128, // MAX_CSE_CNT + 1 (for stopping)
     };
 
     static double           s_defaultParameters[numParameters];
