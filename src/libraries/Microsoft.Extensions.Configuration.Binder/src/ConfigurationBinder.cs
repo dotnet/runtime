@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Configuration
@@ -23,6 +24,18 @@ namespace Microsoft.Extensions.Configuration
         private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
+
+        /// <summary>
+        /// Wraps an exception thrown by an <see cref="IConfigurationProvider"/> while reading a value,
+        /// so that collection binding can distinguish it from a value-conversion failure and propagate it.
+        /// </summary>
+        private sealed class ProviderReadException : Exception
+        {
+            public ProviderReadException(Exception innerException)
+                : base(innerException.Message, innerException)
+            {
+            }
+        }
 
         private readonly struct PropertyBindingData
         {
@@ -419,7 +432,18 @@ namespace Microsoft.Extensions.Configuration
             if (config is ConfigurationSection configSection)
             {
                 section = configSection;
-                isConfigurationExist = configSection.TryGetValue(key:null, out configValue);
+                try
+                {
+                    isConfigurationExist = configSection.TryGetValue(key: null, out configValue);
+                }
+                catch (Exception ex) when (isParentCollection)
+                {
+                    // Mark failures coming from the configuration provider while binding a
+                    // collection element, so the collection catch can propagate them instead
+                    // of treating them as value-conversion failures. Outside collections the
+                    // original exception must bubble up unchanged.
+                    throw new ProviderReadException(ex);
+                }
             }
             else
             {
@@ -449,6 +473,17 @@ namespace Microsoft.Extensions.Configuration
 
                 // Leaf nodes are always reinitialized
                 bindingPoint.TrySetValue(convertedValue);
+                return;
+            }
+
+            // A scalar collection element that has children but no scalar value cannot be
+            // converted. Skip it instead of adding a default-valued element, matching the
+            // source-generated binder (https://github.com/dotnet/runtime/issues/136974).
+            if (isParentCollection &&
+                !isConfigurationExist &&
+                !type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Any(p => p.SetMethod is not null) &&
+                TypeDescriptor.GetConverter(type).CanConvertFrom(typeof(string)))
+            {
                 return;
             }
 
@@ -871,6 +906,14 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
+                    if (ex is ProviderReadException providerReadException)
+                    {
+                        // Provider failures are not conversion failures; propagate the original
+                        // exception with its original stack trace (https://github.com/dotnet/runtime/issues/136974).
+                        ExceptionDispatchInfo.Capture(providerReadException.InnerException!).Throw();
+                        throw;
+                    }
+
                     if (options.ErrorOnUnknownConfiguration)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
@@ -910,6 +953,14 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
+                    if (ex is ProviderReadException providerReadException)
+                    {
+                        // Provider failures are not conversion failures; propagate the original
+                        // exception with its original stack trace (https://github.com/dotnet/runtime/issues/136974).
+                        ExceptionDispatchInfo.Capture(providerReadException.InnerException!).Throw();
+                        throw;
+                    }
+
                     if (options.ErrorOnUnknownConfiguration)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
@@ -966,6 +1017,14 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
+                    if (ex is ProviderReadException providerReadException)
+                    {
+                        // Provider failures are not conversion failures; propagate the original
+                        // exception with its original stack trace (https://github.com/dotnet/runtime/issues/136974).
+                        ExceptionDispatchInfo.Capture(providerReadException.InnerException!).Throw();
+                        throw;
+                    }
+
                     if (options.ErrorOnUnknownConfiguration)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,
@@ -1037,6 +1096,14 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
+                    if (ex is ProviderReadException providerReadException)
+                    {
+                        // Provider failures are not conversion failures; propagate the original
+                        // exception with its original stack trace (https://github.com/dotnet/runtime/issues/136974).
+                        ExceptionDispatchInfo.Capture(providerReadException.InnerException!).Throw();
+                        throw;
+                    }
+
                     if (options.ErrorOnUnknownConfiguration)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Error_GeneralErrorWhenBinding,

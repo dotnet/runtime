@@ -2636,5 +2636,81 @@ namespace Microsoft.Extensions
             Assert.Equal(new Dictionary<string, string> { ["b"] = "2" }, options.Struct.Values);
             Assert.Equal(new Dictionary<string, string> { ["c"] = "3" }, options.NullableStruct?.Values);
         }
+
+        [Fact]
+        public void GetArray_ScalarElementWithOnlyChildren_IsSkipped()
+        {
+            // A scalar collection element that has children but no scalar value cannot be converted.
+            // Both binders must skip it rather than adding a default-valued element.
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Numbers:0:Ignored"] = "x",
+                    ["Numbers:1"] = "7",
+                })
+                .Build();
+
+            Assert.Equal([7], config.GetSection("Numbers").Get<int[]>());
+        }
+
+        [Fact]
+        public void GetArray_GuidElementWithOnlyChildren_IsSkipped()
+        {
+            // Guid is a scalar type (its static Empty / read-only properties are not bindable).
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Guids:0:Ignored"] = "x",
+                    ["Guids:1"] = "11111111-1111-1111-1111-111111111111",
+                })
+                .Build();
+
+            Assert.Equal([new Guid("11111111-1111-1111-1111-111111111111")], config.GetSection("Guids").Get<Guid[]>());
+        }
+
+        [Fact]
+        public void GetArray_StringElementWithOnlyChildren_IsSkipped()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Names:0:Ignored"] = "x",
+                    ["Names:1"] = "good",
+                })
+                .Build();
+
+            Assert.Equal(["good"], config.GetSection("Names").Get<string[]>());
+        }
+
+        [Fact]
+        public void GetArray_ProviderThrowsWhileReadingElement_PropagatesException()
+        {
+            // A failure while reading a configuration provider is not a value-conversion failure.
+            // Both binders must propagate it instead of silently skipping the element.
+            IConfiguration config = new ConfigurationRoot(new List<IConfigurationProvider> { new ThrowingProvider() });
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => config.GetSection("Names").Get<string[]>());
+            Assert.Equal("Provider read failed.", exception.Message);
+        }
+
+        private sealed class ThrowingProvider : ConfigurationProvider
+        {
+            public ThrowingProvider()
+            {
+                Set("Names:0", "unused");
+                Set("Names:1", "good");
+            }
+
+            public override bool TryGet(string key, out string? value)
+            {
+                if (string.Equals(key, "Names:0", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Provider read failed.");
+                }
+
+                return base.TryGet(key, out value);
+            }
+        }
     }
 }
