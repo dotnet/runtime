@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
@@ -69,7 +70,7 @@ namespace System.Text.RegularExpressions.Tests
             throw new InvalidOperationException();
         }
 
-        internal static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
+        private static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
             string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
@@ -89,30 +90,35 @@ namespace System.Text.RegularExpressions.Tests
             var generator = new RegexGenerator();
             CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: CSharpParseOptions.Default.WithLanguageVersion(langVersion));
             GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
-            return (comp, gd.GetRunResult());
+            var runResult = gd.GetRunResult();
+            Assert.Empty(runResult.Diagnostics); // The analyzer is the one that produces diagnostics.
+            return (comp, runResult);
         }
 
         internal static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
             string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
             (Compilation comp, GeneratorDriverRunResult generatorResults) = await RunGeneratorCore(code, langVersion, additionalRefs, allowUnsafe, checkOverflow, cancellationToken);
+            comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees);
+            var withAnalyzers = comp.WithAnalyzers([new RegexGenerator.Analyzer()]);
+            // Launch the analyzer and await it after we call Emit, in order for them to run concurrently.
+            var analyzerDiagnosticsTask = withAnalyzers.GetAnalyzerDiagnosticsAsync(cancellationToken).ConfigureAwait(false);
             if (!compile)
             {
-                return generatorResults.Diagnostics;
+                return await analyzerDiagnosticsTask;
             }
 
-            comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
-            EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
-            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            EmitResult results = withAnalyzers.Compilation.Emit(Stream.Null, cancellationToken: cancellationToken);
+            ImmutableArray<Diagnostic> analyzerDiagnostics = await analyzerDiagnosticsTask;
             ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
             if (!results.Success || resultsDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
-                    string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)) + Environment.NewLine +
+                    string.Join(Environment.NewLine, resultsDiagnostics.Concat(analyzerDiagnostics)) + Environment.NewLine +
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => t.ToString())));
             }
 
-            return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
+            return analyzerDiagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
         }
 
         internal static async Task<string> GenerateSourceText(
@@ -120,11 +126,6 @@ namespace System.Text.RegularExpressions.Tests
         {
             (Compilation comp, GeneratorDriverRunResult generatorResults) = await RunGeneratorCore(code, langVersion, additionalRefs, allowUnsafe, checkOverflow, cancellationToken);
             string generatedSource = string.Concat(generatorResults.GeneratedTrees.Select(t => t.ToString()));
-
-            if (generatorResults.Diagnostics.Length != 0)
-            {
-                throw new ArgumentException(string.Join(Environment.NewLine, generatorResults.Diagnostics) + Environment.NewLine + generatedSource);
-            }
 
             return generatedSource;
         }
