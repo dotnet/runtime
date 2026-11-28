@@ -9038,7 +9038,8 @@ SKIP:
     // Note that we filter out negative values here so that the transformations
     // below are correct. E. g. "EQ(-1L, CAST_UN(int))" is always "false", but were
     // we to make it into "EQ(-1, int)", "true" becomes possible for negative inputs.
-    if (!op2->TypeIs(TYP_LONG) || ((op2->LngValue() >> 31) != 0))
+    // The AND case below only needs the constant to fit into 32 bits (unsigned).
+    if (!op2->TypeIs(TYP_LONG) || ((op2->LngValue() >> 32) != 0))
     {
         return cmp;
     }
@@ -9046,7 +9047,8 @@ SKIP:
     if (!op1->OperIs(GT_AND))
     {
         // Another interesting case: cast from int.
-        if (op1->OperIs(GT_CAST) && op1->AsCast()->CastOp()->TypeIs(TYP_INT) && !op1->gtOverflow())
+        if (op1->OperIs(GT_CAST) && op1->AsCast()->CastOp()->TypeIs(TYP_INT) && !op1->gtOverflow() &&
+            ((op2->LngValue() >> 31) == 0))
         {
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
