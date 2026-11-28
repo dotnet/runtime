@@ -3,14 +3,52 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Tests;
 using System.Linq;
 using System.Security.Authentication;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Security.Tests
 {
     public class TlsFrameHelperTests
     {
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(8)]
+        public async Task TlsRecordReadBuffer_Cancellation_PreservesConsumedBytes(int prefixLength)
+        {
+            byte[] record = [23, 3, 3, 0, 5, 1, 2, 3, 4, 5];
+            using MemoryStream transport = new(record);
+            using CancellationTokenSource cts = new();
+            using DelegateDelegatingStream stream = new(transport)
+            {
+                ReadAsyncMemoryFunc = (destination, token) =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    int read = transport.Read(destination.Span.Slice(0, Math.Min(destination.Length, prefixLength - (int)transport.Position)));
+                    if (transport.Position == prefixLength)
+                    {
+                        cts.Cancel();
+                    }
+
+                    return ValueTask.FromResult(read);
+                }
+            };
+            TlsFrameHelper.TlsRecordReadBuffer buffer = new(new byte[record.Length]);
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => buffer.FillAsync(stream, record.Length, cts.Token).AsTask());
+            Assert.Equal(record.AsSpan(0, prefixLength).ToArray(), buffer.BufferedData.ToArray());
+
+            Assert.True(await buffer.FillAsync(transport, record.Length, CancellationToken.None));
+            Assert.Equal(record, buffer.BufferedData.ToArray());
+        }
+
         [Fact]
         public void SniHelper_ValidData_Ok()
         {

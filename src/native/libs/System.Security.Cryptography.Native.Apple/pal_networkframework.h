@@ -50,7 +50,7 @@ typedef void* (*ChallengeCallback)(void* context, CFArrayRef acceptableIssuers);
 // Initializes global state
 PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteCallback writeFunc, ChallengeCallback challengeFunc);
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity);
+PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity, int32_t requireClientCert);
 PALEXPORT int32_t AppleCryptoNative_NwConnectionStart(nw_connection_t connection, void* context);
 PALEXPORT void AppleCryptoNative_NwConnectionSend(nw_connection_t connection, void* context, uint8_t* buffer, int length, CompletionCallback completionCallback);
 PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection, void* context, uint32_t length, ReadCompletionCallback readCompletionCallback);
@@ -58,7 +58,7 @@ PALEXPORT void AppleCryptoNative_NwConnectionCancel(nw_connection_t connection);
 
 PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, void* context, const uint8_t* data, int dataLength, CompletionCallback completionCallback);
 
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength);
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength, char* serverName, int32_t* serverNameLength);
 
 #ifdef __cplusplus
 }
