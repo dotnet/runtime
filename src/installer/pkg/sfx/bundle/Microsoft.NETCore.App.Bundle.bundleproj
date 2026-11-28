@@ -35,6 +35,11 @@
     <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" />
     <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" Condition="'$(TestReadyToRun)' != 'true'" />
     <BundleComponentReference Include="../installers/dotnet-host.proj" Condition="'$(TestReadyToRun)' != 'true'" />
+    <!-- The test build also builds the runtime pack; finish that build before publishing it into the bundle. -->
+    <ProjectReference Include="@(BundleComponentReference)"
+                      Condition="'$(TestReadyToRun)' == 'true'"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <Target Name="PublishToDisk">
