@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+
 namespace ILDisassembler;
 
 /// <summary>
@@ -24,12 +28,13 @@ public sealed class Options
     public bool ShowTokens { get; set; }
 
     /// <summary>
-    /// Show original source lines as comments (requires PDB).
+    /// Show original source lines as comments. Accepted for compatibility; this has no effect on the output.
     /// </summary>
     public bool ShowSource { get; set; }
 
     /// <summary>
-    /// Include references to original source lines.
+    /// Include references to original source lines (.line directives) from the portable PDB, when one is found:
+    /// embedded, at the path in the debug directory, or next to the input file.
     /// </summary>
     public bool ShowLineNumbers { get; set; }
 
@@ -54,11 +59,6 @@ public sealed class Options
     public bool NoCustomAttributes { get; set; }
 
     /// <summary>
-    /// Output custom attribute blobs in verbal form (default: binary).
-    /// </summary>
-    public bool CustomAttributesVerbal { get; set; }
-
-    /// <summary>
     /// Output the metadata from the R2R Native manifest.
     /// </summary>
     public bool R2RNativeMetadata { get; set; }
@@ -74,58 +74,39 @@ public sealed class Options
     public bool ForwardDeclarations { get; set; }
 
     /// <summary>
-    /// Output full list of types (to preserve type ordering in round-trip).
-    /// </summary>
-    public bool TypeList { get; set; }
-
-    /// <summary>
-    /// Include file headers information in the output.
-    /// </summary>
-    public bool Headers { get; set; }
-
-    /// <summary>
     /// Disassemble the specified item only (class[::method[(sig)]]).
     /// </summary>
     public string? Item { get; set; }
 
     /// <summary>
-    /// Include statistics on the image.
+    /// The name of the input file, shown in the output and in messages. A portable PDB for <see cref="ShowLineNumbers"/>
+    /// is looked for only when it is set.
     /// </summary>
-    public bool Stats { get; set; }
+    public string? InputFileName { get; set; }
 
     /// <summary>
-    /// Include list of classes defined in the module.
+    /// Opens a portable PDB file by path, or returns null if there is none. Without it, only an embedded PDB is used.
     /// </summary>
-    public bool ClassList { get; set; }
+    public Func<string, Stream?>? PdbFileStreamProvider { get; set; }
 
     /// <summary>
-    /// Show MetaData.
+    /// Also write the error messages into the output (in addition to the error writer).
     /// </summary>
-    public bool Metadata { get; set; }
+    public bool WriteErrorsToOutput { get; set; }
 
     /// <summary>
-    /// What to show with <see cref="Metadata"/> (MDHEADER, HEX, CSV, UNREX, SCHEMA, RAW, HEAPS, VALIDATE),
-    /// recognized by their first three characters.
+    /// What ends the lines of the output.
     /// </summary>
-    public string[] MetadataFilters { get; set; } = [];
+    public string NewLine { get; set; } = "\n";
 
-    /// <summary>
-    /// Output in HTML format.
-    /// </summary>
-    public bool Html { get; set; }
+    // The format of the output.
+    internal IOutputFormatter Formatter { get; set; } = PlainTextFormatter.Instance;
 
-    /// <summary>
-    /// Output in RTF format.
-    /// </summary>
-    public bool Rtf { get; set; }
+    // How custom attribute blobs and permission set blobs are shown.
+    internal ICustomAttributeDisassembler CustomAttributeDisassembler { get; set; } = ByteArrayCustomAttributeDisassembler.Instance;
 
-    /// <summary>
-    /// Use UTF-8 encoding for output (default).
-    /// </summary>
-    public bool Utf8 { get; set; } = true;
+    internal IPermissionSetDisassembler PermissionSetDisassembler { get; set; } = VerbalCustomAttributeDisassembler.Instance;
 
-    /// <summary>
-    /// Use Unicode encoding for output.
-    /// </summary>
-    public bool Unicode { get; set; }
+    // Operations over the whole image, such as the headers or statistics, that add to the disassembly.
+    internal IReadOnlyList<IMetadataDisassembler> MetadataDisassemblers { get; set; } = [];
 }

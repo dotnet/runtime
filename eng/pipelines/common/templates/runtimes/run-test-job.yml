@@ -485,6 +485,8 @@ jobs:
           scenarios:
           - ilasmroundtrip
           - managedilasmroundtrip
+          - managedildasmroundtrip
+          - managedilasmildasmroundtrip
 
     ########################################################################################################
     #

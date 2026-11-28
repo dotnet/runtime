@@ -15,7 +15,7 @@ public class DisassemblerTests
         // Disassemble this test assembly itself
         var assemblyPath = typeof(DisassemblerTests).Assembly.Location;
 
-        using var disassembler = new Disassembler(assemblyPath);
+        using var disassembler = new Disassembler(File.OpenRead(assemblyPath));
 
         var output = new StringBuilder();
         using var writer = new StringWriter(output);
@@ -36,7 +36,7 @@ public class DisassemblerTests
     {
         var assemblyPath = typeof(DisassemblerTests).Assembly.Location;
 
-        using var disassembler = new Disassembler(assemblyPath);
+        using var disassembler = new Disassembler(File.OpenRead(assemblyPath));
 
         var output = new StringBuilder();
         using var writer = new StringWriter(output);
@@ -54,7 +54,7 @@ public class DisassemblerTests
     {
         var assemblyPath = typeof(DisassemblerTests).Assembly.Location;
 
-        using var disassembler = new Disassembler(assemblyPath);
+        using var disassembler = new Disassembler(File.OpenRead(assemblyPath));
 
         var output = new StringBuilder();
         using var writer = new StringWriter(output);
