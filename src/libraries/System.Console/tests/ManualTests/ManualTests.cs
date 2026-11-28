@@ -89,6 +89,30 @@ namespace System
         }
 
         [ConditionalFact(typeof(ConsoleManualTests), nameof(ManualTestsEnabled))]
+        [PlatformSpecific(TestPlatforms.Windows)] // On Windows this mode makes the console end a line with a lone '\r'.
+        public static void ReadLineWithTreatControlCAsInput()
+        {
+            Console.TreatControlCAsInput = true;
+            try
+            {
+                // A line returned one Enter late makes the extra Enter the next line, so the second Assert fails.
+                foreach (string expectedLine in new[] { "one", "two" })
+                {
+                    Console.WriteLine($"Please type \"{expectedLine}\" (without the quotes) and press Enter. If nothing is printed, press Enter again.");
+                    string result = Console.ReadLine();
+                    Console.WriteLine($"ReadLine returned \"{result}\"");
+                    Assert.Equal(expectedLine, result);
+                }
+            }
+            finally
+            {
+                Console.TreatControlCAsInput = false;
+            }
+
+            AssertUserExpectedResults("each 'ReadLine returned' line printed after a single Enter");
+        }
+
+        [ConditionalFact(typeof(ConsoleManualTests), nameof(ManualTestsEnabled))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/40735", TestPlatforms.Windows)]
         public static void InPeek()
         {

@@ -102,6 +102,7 @@
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\ConsolePal.Windows.cs" />
+    <Compile Include="System\IO\ConsoleStreamReader.cs" />
     <Compile Include="$(CommonPath)System\Text\OSEncoding.Windows.cs"
              Link="Common\System\Text\OSEncoding.Windows.cs" />
     <Compile Include="$(CommonPath)System\Text\OSEncoder.cs"
