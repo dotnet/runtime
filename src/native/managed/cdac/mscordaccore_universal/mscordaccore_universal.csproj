@@ -25,6 +25,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.PageCache.Enabled"
+                                    Value="true"
+                                    Trim="true" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.PageCache.PageCount"
+                                    Value="32" />
+    <RuntimeHostConfigurationOption Include="Microsoft.Diagnostics.DataContractReader.PageCache.PageSize"
+                                    Value="4096" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
   </ItemGroup>
   <ItemGroup>
