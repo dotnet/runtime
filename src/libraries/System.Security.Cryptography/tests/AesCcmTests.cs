@@ -387,6 +387,43 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void Encrypt_NullSpans()
+        {
+            // NIST CCM DVPT256.rsp, case 0.
+            ReadOnlySpan<byte> key = "eda32f751456e33195f1f499cf2dc7c97ea127b6d488f211ccc5126fbb24afa6".HexToByteArray();
+            ReadOnlySpan<byte> nonce = "a544218dadd3c1".HexToByteArray();
+            ReadOnlySpan<byte> plaintext = ReadOnlySpan<byte>.Empty;
+            ReadOnlySpan<byte> aad = ReadOnlySpan<byte>.Empty;
+            ReadOnlySpan<byte> expectedTag = "469c90bb".HexToByteArray();
+            Span<byte> actualTag = new byte[expectedTag.Length];
+            Span<byte> ciphertext = Span<byte>.Empty;
+
+            using (AesCcm aesCcm = new(key))
+            {
+                aesCcm.Encrypt(nonce, plaintext, ciphertext, actualTag, aad);
+            }
+
+            AssertExtensions.SequenceEqual(expectedTag, actualTag);
+        }
+
+        [Fact]
+        public static void Decrypt_NullSpans()
+        {
+            // NIST CCM DVPT256.rsp, case 0.
+            ReadOnlySpan<byte> key = "eda32f751456e33195f1f499cf2dc7c97ea127b6d488f211ccc5126fbb24afa6".HexToByteArray();
+            ReadOnlySpan<byte> nonce = "a544218dadd3c1".HexToByteArray();
+            Span<byte> plaintext = Span<byte>.Empty;
+            ReadOnlySpan<byte> aad = ReadOnlySpan<byte>.Empty;
+            ReadOnlySpan<byte> tag = "469c90bb".HexToByteArray();
+            ReadOnlySpan<byte> ciphertext = ReadOnlySpan<byte>.Empty;
+
+            using (AesCcm aesCcm = new(key))
+            {
+                aesCcm.Decrypt(nonce, ciphertext, tag, plaintext, aad);
+            }
+        }
+
+        [Fact]
         public static void UseAfterDispose()
         {
             byte[] key = "eda32f751456e33195f1f499cf2dc7c97ea127b6d488f211ccc5126fbb24afa6".HexToByteArray();
