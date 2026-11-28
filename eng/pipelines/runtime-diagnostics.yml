@@ -2,7 +2,7 @@
 #
 # Pipeline overview:
 #
-#   CdacUnitTests      linux_x64 Debug. Builds + tests the cDAC managed-side
+#   CdacUnitTests      linux_x64 + windows_x86 Debug. Builds + tests the cDAC managed-side
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
 #                      subset). Independent of every other stage.
 #
@@ -116,9 +116,13 @@ pr:
   paths:
     include:
     - eng/pipelines/**
-    - src/native/managed/cdac/**
+    - src/coreclr/debug/daccess/dacdbiimpl.*
+    - src/coreclr/debug/di/**
+    - src/coreclr/debug/inc/dacdbiinterface.h
     - src/coreclr/debug/runtimeinfo/**
+    - src/coreclr/dlls/mscordbi/**
     - src/coreclr/vm/cdacstress.cpp
+    - src/native/managed/cdac/**
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -138,12 +142,24 @@ extends:
           buildConfig: debug
           platforms:
           - linux_x64
+          - windows_x86
           jobParameters:
             nameSuffix: CdacUnitTests
             # tools.cdactests subset builds both the UnitTests and
             # DataGeneratorTests projects (wired in eng/Subsets.props). -test
-            # runs them through their xunit harness.
-            buildArgs: -s tools.cdactests -c $(_BuildConfig) -test
+            # runs them through their xunit harness. Select the execution
+            # architecture explicitly; TargetArchitecture alone does not select the test host.
+            buildArgs: -s tools.cdactests -c $(_BuildConfig) -test /p:TestArchitectures=$(archType)
+            preBuildSteps:
+              - powershell: |
+                  . "$(Build.SourcesDirectory)\eng\common\tools.ps1"
+                  $dotnetRoot = InitializeDotNetCli -install $true -createSdkLocationFile $false
+                  $sdkVersion = $GlobalJson.tools.dotnet
+                  $runtimeConfig = Get-Content (Join-Path $dotnetRoot "sdk\$sdkVersion\dotnet.runtimeconfig.json") -Raw | ConvertFrom-Json
+                  $runtimeVersion = $runtimeConfig.runtimeOptions.framework.version
+                  InstallDotNet -dotnetRoot (Join-Path $dotnetRoot 'x86') -version $runtimeVersion -architecture x86 -runtime dotnet -noPath
+                displayName: Install x86 managed test runtime
+                condition: and(succeeded(), eq(variables['osGroup'], 'windows'), eq(variables['archType'], 'x86'))
             timeoutInMinutes: 120
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
@@ -259,6 +275,25 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 180
             postBuildSteps:
+            - script: |
+                call eng\native\init-vs-env.cmd $(archType)
+                if errorlevel 1 exit /b 1
+                "%CMakePath%" --build artifacts\obj\coreclr\windows.$(archType).Checked --target dbi_value_tests --config Checked
+                if errorlevel 1 exit /b 1
+                for %%i in ("%CMakePath%") do set "CTestPath=%%~dpictest.exe"
+                "%CTestPath%" --test-dir artifacts\obj\coreclr\windows.$(archType).Checked\dlls\mscordbi\tests -C Checked --output-on-failure --no-tests=error --output-junit "$(Build.SourcesDirectory)\artifacts\log\dbi-value-tests-$(archType).xml"
+              displayName: 'Build and run native DBI value tests'
+              condition: and(succeeded(), eq(variables['osGroup'], 'windows'), in(variables['archType'], 'x64', 'x86'))
+            - task: PublishTestResults@2
+              displayName: 'Publish native DBI value test results'
+              condition: and(succeededOrFailed(), eq(variables['osGroup'], 'windows'), in(variables['archType'], 'x64', 'x86'))
+              inputs:
+                testResultsFormat: JUnit
+                testResultsFiles: dbi-value-tests-$(archType).xml
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/log'
+                testRunTitle: 'Native DBI value tests ($(archType))'
+                failTaskOnFailedTests: true
+                failTaskOnMissingResultsFile: true
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
                 rootFolder: $(Build.SourcesDirectory)/artifacts/bin

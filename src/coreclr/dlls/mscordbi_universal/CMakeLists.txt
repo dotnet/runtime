@@ -149,3 +149,8 @@ esrp_sign(mscordbi_universal)
 # is opt-in and must not ship in the shared framework / runtime pack, mirroring the
 # mscordaccore_universal install destination.
 install_clr(TARGETS mscordbi_universal DESTINATIONS . COMPONENT debug)
+
+if(CLR_CMAKE_HOST_WIN32)
+    # The universal DBI is built even when cDAC dump enumeration replaces the legacy DAC and DBI.
+    add_subdirectory(../../debug/di/tests ../mscordbi/tests EXCLUDE_FROM_ALL)
+endif()

@@ -6824,13 +6824,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* values)
+    public int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, ulong* values)
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
-        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        IPlatformAgnosticContext? ctx = null;
         try
         {
+            ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             if (contextBuffer.pContextBytes is null)
                 throw new ArgumentNullException(nameof(contextBuffer));
             if (nRegs > 0 && (regs is null || values is null))
@@ -6857,7 +6858,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 #if DEBUG
-        if (_legacy is not null && contextBuffer.pContextBytes is not null && contextBuffer.contextSize >= ctx.Size)
+        if (_legacy is not null && ctx is not null && contextBuffer.pContextBytes is not null && contextBuffer.contextSize >= ctx.Size)
         {
             byte[] scratch = new byte[ctx.Size];
             new ReadOnlySpan<byte>(contextBuffer.pContextBytes, (int)ctx.Size).CopyTo(scratch);

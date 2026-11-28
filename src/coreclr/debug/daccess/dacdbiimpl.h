@@ -157,7 +157,7 @@ public:
     HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
     HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize);
 
-    HRESULT STDMETHODCALLTYPE WriteRegistersToContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, IN const TADDR * values);
+    HRESULT STDMETHODCALLTYPE WriteRegistersToContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, IN const CORDB_REGISTER * values);
     HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, OUT CORDB_REGISTER * pValues);
     HRESULT STDMETHODCALLTYPE GetAvailableRegistersMask(IN BOOL fActive, IN BOOL fQuickUnwind, IN ULONG32 regCount, OUT BYTE pAvailable[]);
     HRESULT STDMETHODCALLTYPE ConvertJitRegNumToCorDebugRegister(IN ULONG32 jitRegNum, OUT CorDebugRegister * pReg, OUT BOOL * pIsAmbientSP);

@@ -112,6 +112,8 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
                                     CordbValue*                    pExternalMemoryParent)
 {
     LOG((LF_CORDB,LL_INFO100000,"CV::CreateValueByType CreateGenericValue\n"));
+    ULONG32 size = 0;
+    IfFailThrow(pType->GetUnboxedObjectSize(&size));
     RSSmartPtr<CordbGenericValue> pGenValue;
     // A generic value
     // By using a RSSmartPtr we ensure that in both success and failure cases,
@@ -120,6 +122,7 @@ void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
     // can't delete it (but this is a detail we shouldn't rely on)
     pGenValue.Assign(new CordbGenericValue(pAppdomain,
                                            pType,
+                                           size,
                                            remoteValue,
                                            ppRemoteRegAddr));
 
@@ -291,10 +294,9 @@ ICorDebugValue* CordbValue::CreateHeapValue(CordbAppDomain* pAppDomain, VMPTR_Ob
 
 CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
 {
-    VOID* pRemoteAddr = CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)VmPtrToCookie(vmObj));
-    // This creates a local reference that has a remote address in it. Ie &pRemoteAddr is an address
-    // in the host address space and pRemoteAddr is an address in the target.
-    MemoryRange localReferenceDescription(&pRemoteAddr, sizeof(pRemoteAddr));
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(pAppDomain->GetProcess()->GetTargetInfo(&targetInfo));
+    MemoryRange localReferenceDescription(&vmObj, targetInfo.pointerSize);
     RSSmartPtr<CordbReferenceValue> pRefValue;
     IfFailThrow(CordbReferenceValue::Build(pAppDomain,
                                            NULL,
@@ -352,7 +354,7 @@ ULONG32 CordbValue::GetSizeForType(CordbType * pType, BoxedValue boxing)
         case ELEMENT_TYPE_U8:
         case ELEMENT_TYPE_R8:
         case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:        pType->GetUnboxedObjectSize(&size);                     break;
+        case ELEMENT_TYPE_U:        IfFailThrow(pType->GetUnboxedObjectSize(&size));        break;
 
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_OBJECT:
@@ -371,14 +373,16 @@ ULONG32 CordbValue::GetSizeForType(CordbType * pType, BoxedValue boxing)
                                     }
                                     if (!isUnboxedVCObject)
                                     {
+                                        IDacDbiInterface::TargetInfo targetInfo;
+                                        IfFailThrow(pType->GetProcess()->GetTargetInfo(&targetInfo));
                                         // if it's not an unboxed value type (we're in the case
                                         // for compound types), then it's a reference
                                         // and we just want to return the size of a pointer
-                                        size = sizeof(void *);
+                                        size = targetInfo.pointerSize;
                                     }
                                     else
                                     {
-                                        pType->GetUnboxedObjectSize(&size);
+                                        IfFailThrow(pType->GetUnboxedObjectSize(&size));
                                     }
                                  }                                                          break;
 
@@ -452,7 +456,17 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
 
     // Create the ICorDebugHandleValue object
-    RSInitHolder<CordbHandleValue> pHandle(new (nothrow) CordbHandleValue(m_appdomain, m_type, handleType) );
+    HRESULT hr = S_OK;
+    RSInitHolder<CordbHandleValue> pHandle;
+    EX_TRY
+    {
+        // Construction registers the value for neutering, so target lookup must precede it.
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        pHandle.Assign(new (nothrow) CordbHandleValue(m_appdomain, m_type, handleType, targetInfo.pointerSize));
+    }
+    EX_CATCH_HRESULT(hr);
+    IfFailRet(hr);
 
     if (pHandle == NULL)
     {
@@ -473,7 +487,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...
-    HRESULT hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
     hr = WORST_HR(hr, event.hr);
 
     if (SUCCEEDED(hr))
@@ -509,6 +523,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 // Arguments:
 //     input: pAppdomain      - the app domain to which the value belongs
 //            pType           - the type of the value
+//            size            - unboxed size resolved before construction
 //            remoteValue     - buffer (and size) of the remote location where
 //                              the value resides. This may be NULL if the value
 //                              is enregistered.
@@ -519,6 +534,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 //                              memory.
 CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
                                      CordbType *                   pType,
+                                     ULONG32                       size,
                                      TargetBuffer                  remoteValue,
                                      EnregisteredValueHomeHolder * ppRemoteRegAddr)
     : CordbValue(pAppdomain, pType, remoteValue.pAddress, false),
@@ -528,11 +544,6 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
     _ASSERTE(pType->m_elementType != ELEMENT_TYPE_VOID);
     _ASSERTE(pType->m_elementType < ELEMENT_TYPE_MAX);
 
-    // We can fill in the size now for generic values.
-    ULONG32 size = 0;
-    HRESULT hr;
-    hr = pType->GetUnboxedObjectSize(&size);
-    _ASSERTE (!FAILED(hr));
     m_size = size;
 
     // now instantiate the value home
@@ -550,19 +561,16 @@ CordbGenericValue::CordbGenericValue(CordbAppDomain *              pAppdomain,
 
 //
 // CordbGenericValue constructor that builds an empty generic value
-// from just an element type. Used for literal values for func evals
+// from a type and precomputed size. Used for literal values for func evals
 // only.
 // Arguments:
 //     input: pType - the type of the value
-CordbGenericValue::CordbGenericValue(CordbType * pType)
+//            size - unboxed size resolved before construction
+CordbGenericValue::CordbGenericValue(CordbType * pType, ULONG32 size)
     : CordbValue(NULL, pType, (CORDB_ADDRESS)NULL, true),
       m_pValueHome(NULL)
 {
     // The only purpose of a literal value is to hold a RS literal value.
-    ULONG32 size = 0;
-    HRESULT hr;
-    hr = pType->GetUnboxedObjectSize(&size);
-    _ASSERTE (!FAILED(hr));
     m_size = size;
 
     memset(m_pCopyOfData, 0, m_size);
@@ -737,13 +745,15 @@ bool CordbGenericValue::CopyLiteralData(BYTE *pBuffer)
 //                              remoteValue, or vmObjectHandle is non-NULL.
 //            vmObjectHandle  - a LS object handle holding the reference. This will be NULL if either
 //                              localValue, remoteValue, or ppRemoteRegAddr is non-NULL.
+//            pointerSize     - target pointer size in bytes, resolved before construction
 // Note: this may throw OOM
 CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomain,
                                          CordbType *                   pType,
                                          MemoryRange                   localValue,
                                          TargetBuffer                  remoteValue,
                                          EnregisteredValueHomeHolder * ppRemoteRegAddr,
-                                         VMPTR_OBJECTHANDLE            vmObjectHandle)
+                                         VMPTR_OBJECTHANDLE            vmObjectHandle,
+                                         ULONG32                       pointerSize)
     : CordbValue(pAppdomain, pType, remoteValue.pAddress, false,
             // We'd like to change this to be a ContinueList so it gets neutered earlier,
             // but it may be a breaking change
@@ -754,7 +764,7 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
     memset(&m_info, 0, sizeof(m_info));
 
     LOG((LF_CORDB,LL_EVERYTHING,"CRV::CRV: this:0x%p\n",this));
-    m_size = sizeof(void *);
+    m_size = pointerSize;
 
     // now instantiate the value home
     NewHolder<ValueHome> pHome;
@@ -779,17 +789,17 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
 } // CordbReferenceValue::CordbReferenceValue
 
 // CordbReferenceValue constructor that builds an empty reference value
-// from just an element type. Used for literal values for func evals
-// only.
+// from a type and the target pointer size. Used only for literal values for func evals.
 // Arguments:
 //     input: pType - the type of the value
-CordbReferenceValue::CordbReferenceValue(CordbType * pType)
+//            pointerSize - target pointer size in bytes, resolved before construction
+CordbReferenceValue::CordbReferenceValue(CordbType * pType, ULONG32 pointerSize)
     : CordbValue(NULL, pType, (CORDB_ADDRESS)NULL, true, pType->GetAppDomain()->GetSweepableExitNeuterList())
 {
     memset(&m_info, 0, sizeof(m_info));
 
     // The only purpose of a literal value is to hold a RS literal value.
-    m_size = sizeof(void*);
+    m_size = pointerSize;
 
     // there is no value home for a literal
     m_valueHome.m_pHome = NULL;
@@ -805,11 +815,10 @@ bool CordbReferenceValue::CopyLiteralData(BYTE *pBuffer)
 {
     _ASSERTE(pBuffer != NULL);
 
-    // If this is a RS fabrication, then its a null reference.
+    // If this is a RS fabrication, then it's a null reference.
     if (m_isLiteral)
     {
-        void *n = NULL;
-        memcpy(pBuffer, &n, sizeof(n));
+        memset(pBuffer, 0, m_size);
         return true;
     }
     else
@@ -986,11 +995,20 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
     _ASSERTE((m_type != NULL) ||
              (!m_valueHome.ObjHandleIsNull() && (m_info.objRef == (CORDB_ADDRESS)NULL)));
 
-	EX_TRY
-	{
-        m_valueHome.m_pHome->SetValue(MemoryRange(&address, sizeof(void *)), m_type); // throws
-	}
-	EX_CATCH_HRESULT(hr);
+    IDacDbiInterface::TargetInfo targetInfo = {};
+
+    EX_TRY
+    {
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        // If the target is 32-bit, we can't set a reference to a value that doesn't fit in 32 bits.
+        if ((targetInfo.pointerSize == sizeof(ULONG32)) && (address > UINT32_MAX))
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
+        m_valueHome.m_pHome->SetValue(MemoryRange(&address, targetInfo.pointerSize), m_type); // throws
+    }
+    EX_CATCH_HRESULT(hr);
 
     if (SUCCEEDED(hr))
     {
@@ -1002,8 +1020,7 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
         if (m_info.objTypeData.elementType == ELEMENT_TYPE_STRING)
         {
             // update information about the string
-            void * pObjRef = CORDB_ADDRESS_TO_PTR(m_info.objRef);
-            InitRef(MemoryRange(&pObjRef, sizeof (void *)));
+            InitRef(MemoryRange(&m_info.objRef, targetInfo.pointerSize));
         }
 
         // All other data in m_info is no longer valid, and we may have invalidated other
@@ -1212,7 +1229,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
 
             LOG((LF_CORDB, LL_INFO1000, "DereferenceInternal: type typedbyref\n"));
 
-            TargetBuffer remoteValue(pInfo->objRef, sizeof(void *));
+            TargetBuffer remoteValue(pInfo->objRef, GetSizeForType(pRealTypeOfTypedByref, kUnboxed));
             // Create the value for what this reference points
             // to.
             EX_TRY
@@ -1268,12 +1285,15 @@ HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
     // Weak by default
     EX_TRY
     {
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(appdomain->GetProcess()->GetTargetInfo(&targetInfo));
         RSSmartPtr<CordbReferenceValue> pRefValue(new CordbReferenceValue(appdomain,
                                                                           type,
                                                                           localValue,
                                                                           remoteValue,
                                                                           ppRemoteRegAddr,
-                                                                          vmObjectHandle));
+                                                                          vmObjectHandle,
+                                                                          targetInfo.pointerSize));
         IfFailThrow(pRefValue->InitRef(localValue));
 
         pRefValue->InternalAddRef();
@@ -1327,7 +1347,9 @@ HRESULT CordbReferenceValue::BuildFromGCHandle(
     {
         CORDB_ADDRESS _handleAddr;
         IfFailThrow(pProc->GetDAC()->GetHandleAddressFromVmHandle(gcHandle, &_handleAddr));
-        remoteValue.Init(_handleAddr, sizeof(void *));
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(pProc->GetTargetInfo(&targetInfo));
+        remoteValue.Init(_handleAddr, targetInfo.pointerSize);
     }
     EX_CATCH_HRESULT(hr);
     IfFailRet(hr);
@@ -1430,8 +1452,11 @@ void CordbReferenceValue::SanityCheckPointer (CorElementType type)
 void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localValue)
 {
     HRESULT hr = S_OK;
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
     // Fill in the type since we will not be getting it from the DAC
     m_info.objTypeData.elementType = type;
+    m_info.objRef = 0;
 
     // First get the objRef
     if (localValue.StartAddress() != NULL)
@@ -1466,10 +1491,8 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
         //                                          | object addr   |---------
         //                                           ---------------    |
 
-        _ASSERTE(localValue.Size() == sizeof(void *));
-        void * pObjRef = NULL;
-        localCopy(&pObjRef, localValue);
-        m_info.objRef = PTR_TO_CORDB_ADDRESS(pObjRef);
+        _ASSERTE(localValue.Size() == targetInfo.pointerSize);
+        localCopy(&m_info.objRef, localValue);
     }
     else
     {
@@ -1478,12 +1501,13 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
         // do some preinitialization in case we get an exception
         EX_TRY
         {
-            m_valueHome.m_pHome->GetValue(MemoryRange(&(m_info.objRef), sizeof(void*)));  // throws
+            m_info.objRef = 0; // Zero-extend addresses read from 32-bit targets.
+            m_valueHome.m_pHome->GetValue(MemoryRange(&m_info.objRef, targetInfo.pointerSize));  // throws
         }
         EX_CATCH_HRESULT(hr);
         if (FAILED(hr))
         {
-            m_info.objRef = (CORDB_ADDRESS)NULL;
+            m_info.objRef = 0;
             m_info.objRefBad = TRUE;
             ThrowHR(hr);
         }
@@ -1518,26 +1542,24 @@ void PreInitObjectData(DacDbiObjectData * pObjectData, CORDB_ADDRESS objAddress,
 // array or string
 // Arguments:
 //     input:  pProcess      - process to which the object belongs
-//             objectAddress - pointer to the TypedByRef object (this is the value of the object reference
-//                             or handle.
+//             objectAddress - target address of the object (the value of the object reference or handle)
 //             type          - the type of the object referenced
-//             vmAppDomain   - appdomain to which the object belongs
-//     output: pInfo         - filled with information about the object to which the TypedByRef refers.
+//             vmAppdomain   - appdomain to which the object belongs
+//     output: pInfo         - filled with information about the referenced object
 // Note: Throws
 /* static */
 void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
-                                        void *                    objectAddress,
+                                        CORDB_ADDRESS             objectAddress,
                                         CorElementType            type,
                                         VMPTR_AppDomain           vmAppdomain,
                                         DacDbiObjectData * pInfo)
 {
     IDacDbiInterface *pInterface = pProcess->GetDAC();
-    CORDB_ADDRESS objTargetAddr = PTR_TO_CORDB_ADDRESS(objectAddress);
 
     // make sure we don't end up with old garbage values in case the reference is bad
-    PreInitObjectData(pInfo, objTargetAddr, type);
+    PreInitObjectData(pInfo, objectAddress, type);
     BOOL isValidRef = FALSE;
-    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, &isValidRef, &pInfo->objSize, &pInfo->objOffsetToVars, &pInfo->objTypeData));
+    IfFailThrow(pInterface->GetBasicObjectInfo(objectAddress, &isValidRef, &pInfo->objSize, &pInfo->objOffsetToVars, &pInfo->objTypeData));
     pInfo->objRefBad = !isValidRef;
 
     if (!pInfo->objRefBad)
@@ -1545,13 +1567,13 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
         // for certain referent types, we need a bit more information:
         if (pInfo->objTypeData.elementType == ELEMENT_TYPE_STRING)
         {
-            IfFailThrow(pInterface->GetStringData(objTargetAddr, &pInfo->stringInfo.length, &pInfo->stringInfo.offsetToStringBase));
+            IfFailThrow(pInterface->GetStringData(objectAddress, &pInfo->stringInfo.length, &pInfo->stringInfo.offsetToStringBase));
         }
         else if ((pInfo->objTypeData.elementType == ELEMENT_TYPE_ARRAY) ||
                  (pInfo->objTypeData.elementType == ELEMENT_TYPE_SZARRAY))
         {
             BOOL isValidArray = FALSE;
-            IfFailThrow(pInterface->GetArrayData(objTargetAddr, &isValidArray, &pInfo->arrayInfo));
+            IfFailThrow(pInterface->GetArrayData(objectAddress, &isValidArray, &pInfo->arrayInfo));
             pInfo->objRefBad = !isValidArray;
         }
     }
@@ -1587,22 +1609,25 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
 } // CordbReferenceValue::GetTypedByRefData
 
 //  get the address of the object referenced
-//  Arguments: none
+//  Arguments:
+//      input: localValue - target-pointer-sized cached reference, or an empty range to read from the value home
 //  Return Value: the address of the object referenced (i.e., the value of the object ref)
 //  Note: Throws
-void * CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
+CORDB_ADDRESS CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
 {
-    void * objectAddress;
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+    CORDB_ADDRESS objectAddress = 0;
     if (localValue.StartAddress() != NULL)
     {
         // the object ref comes from a local cached copy
-        _ASSERTE(localValue.Size() == sizeof(void *));
+        _ASSERTE(localValue.Size() == targetInfo.pointerSize);
         memcpy(&objectAddress, localValue.StartAddress(), localValue.Size());
     }
     else
     {
         _ASSERTE(m_valueHome.m_pHome != NULL);
-        m_valueHome.m_pHome->GetValue(MemoryRange(&objectAddress, sizeof(void *)));   // throws
+        m_valueHome.m_pHome->GetValue(MemoryRange(&objectAddress, targetInfo.pointerSize));   // throws
     }
     return objectAddress;
 } // CordbReferenceValue::GetObjectAddress
@@ -3586,10 +3611,10 @@ HRESULT CordbBoxValue::GetObject(ICorDebugObjectValue **ppObject)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    ULONG32 size = 0;
-    m_type->GetUnboxedObjectSize(&size);
-
     HRESULT hr = S_OK;
+    ULONG32 size = 0;
+    IfFailRet(m_type->GetUnboxedObjectSize(&size));
+
     EX_TRY
     {
         m_valueHome.CreateInternalValue(m_type,
@@ -4230,13 +4255,15 @@ HRESULT CordbArrayValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadE
 // constructor
 // Arguments:
 //     input:
-//         pAppDomain  - app domain to which the value belongs
+//         pAppdomain  - app domain to which the value belongs
 //         pType       - type information for the value
 //         handleType  - indicates whether we are constructing a strong or weak handle
+//         pointerSize - target pointer size in bytes, resolved before construction
 CordbHandleValue::CordbHandleValue(
     CordbAppDomain *   pAppdomain,
     CordbType *        pType,             // The type of object that we create handle on
-    CorDebugHandleType handleType)         // strong or weak handle
+    CorDebugHandleType handleType,         // strong or weak handle
+    ULONG32           pointerSize)
     : CordbValue(pAppdomain, pType, (CORDB_ADDRESS)NULL, false,
                     pAppdomain->GetSweepableExitNeuterList()
                 )
@@ -4245,7 +4272,7 @@ CordbHandleValue::CordbHandleValue(
     m_fCanBeValid = TRUE;
 
     m_handleType = handleType;
-    m_size = sizeof(void*);
+    m_size = pointerSize;
 } // CordbHandleValue::CordbHandleValue
 
 //-----------------------------------------------------------------------------
@@ -4396,15 +4423,17 @@ HRESULT CordbHandleValue::RefreshHandleValue()
     _ASSERTE (type != ELEMENT_TYPE_MVAR);
 
     CordbProcess * pProcess = GetProcess();
-    void * objectAddress = NULL;
+    CORDB_ADDRESS objectAddress = 0;
     CORDB_ADDRESS objectHandle = 0;
 
     EX_TRY
     {
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(pProcess->GetTargetInfo(&targetInfo));
         IfFailThrow(pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmHandle, &objectHandle));
         if (type != ELEMENT_TYPE_TYPEDBYREF)
         {
-            pProcess->SafeReadBuffer(TargetBuffer(objectHandle, sizeof(void *)), (BYTE *)&objectAddress);
+            pProcess->SafeReadBuffer(TargetBuffer(objectHandle, targetInfo.pointerSize), (BYTE *)&objectAddress);
         }
     }
     EX_CATCH_HRESULT(hr);

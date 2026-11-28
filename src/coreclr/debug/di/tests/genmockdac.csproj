@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <UseAppHost>false</UseAppHost>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="genmockdac.cs" />
+  </ItemGroup>
+</Project>

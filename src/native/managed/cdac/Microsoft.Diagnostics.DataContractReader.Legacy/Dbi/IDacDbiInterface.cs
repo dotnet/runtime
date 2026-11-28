@@ -1110,7 +1110,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTargetContextSize(uint contextFlags, uint* pSize);
 
     [PreserveSig]
-    int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* values);
+    int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, ulong* values);
 
     [PreserveSig]
     int ReadRegistersFromContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, ulong* pValues);
