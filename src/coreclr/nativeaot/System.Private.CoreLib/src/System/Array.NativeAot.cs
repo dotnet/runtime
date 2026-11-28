@@ -34,10 +34,10 @@ namespace System
         private int _numComponents;
 #pragma warning restore
 
-        public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
+        public int Length => checked((int)this.GetArrayData().Length);
 
         // This could return a length greater than int.MaxValue
-        internal nuint NativeLength => Unsafe.As<RawArrayData>(this).Length;
+        internal nuint NativeLength => this.GetArrayData().Length;
 
         public long LongLength => (long)NativeLength;
 
@@ -279,7 +279,7 @@ namespace System
         private unsafe ref int GetMultiDimensionalArrayBounds()
         {
             Debug.Assert(!this.GetMethodTable()->IsSzArray);
-            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
+            return ref Unsafe.As<byte, int>(ref this.GetArrayData().Data);
         }
 
         private unsafe int GetMultiDimensionalArrayRank()
