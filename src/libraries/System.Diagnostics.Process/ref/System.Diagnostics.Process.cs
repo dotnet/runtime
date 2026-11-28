@@ -355,6 +355,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool KillOnParentExit { get { throw null; } set { } }
+        public bool? KillTreeOnRunCancellation { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]

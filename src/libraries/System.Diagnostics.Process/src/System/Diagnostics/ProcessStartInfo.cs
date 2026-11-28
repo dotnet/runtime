@@ -322,6 +322,46 @@ namespace System.Diagnostics
         [SupportedOSPlatform("windows")]
         public bool KillOnParentExit { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether <c>Process.Run</c> methods terminate the entire process tree,
+        /// rather than only the started process, when the operation times out, is canceled, or fails to capture output.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property is honored only by <see cref="Process.Run(ProcessStartInfo, TimeSpan?)"/>,
+        /// <see cref="Process.RunAsync(ProcessStartInfo, System.Threading.CancellationToken)"/>,
+        /// <see cref="Process.RunAndCaptureText(ProcessStartInfo, TimeSpan?)"/>, and
+        /// <see cref="Process.RunAndCaptureTextAsync(ProcessStartInfo, System.Threading.CancellationToken)"/>.
+        /// Other APIs that start processes ignore it.
+        /// </para>
+        /// <para>
+        /// Successful completion does not terminate descendants that are still running.
+        /// </para>
+        /// <para>
+        /// On Windows, when tree termination may be required, the process is started in a new job.
+        /// Descendants that explicitly break away from the job are not terminated.
+        /// Job creation or assignment failures are reported as exceptions.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// <see langword="true"/> to terminate the process and its descendants; <see langword="false"/> or <see langword="null"/>
+        /// to terminate only the process. The default is <see langword="null"/>.
+        /// </value>
+        public bool? KillTreeOnRunCancellation
+        {
+            get;
+            set
+            {
+                if (value is true)
+                {
+#pragma warning disable CA1416 // Process.Run* methods that use these funcs are unsupported on the same platforms
+                    Process.EnsureEntireProcessTreeFuncs();
+#pragma warning restore CA1416
+                }
+                field = value;
+            }
+        }
+
         public Encoding? StandardInputEncoding { get; set; }
 
         public Encoding? StandardErrorEncoding { get; set; }

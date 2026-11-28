@@ -1260,7 +1260,17 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
+#if TARGET_WINDOWS
         public bool Start()
+            => Start(processTreeJob: null);
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private bool Start(Interop.Kernel32.SafeJobHandle? processTreeJob)
+#else
+        public bool Start()
+#endif
         {
             Close();
 
@@ -1294,7 +1304,11 @@ namespace System.Diagnostics
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
 
+#if TARGET_WINDOWS
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles, processTreeJob))
+#else
                 if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))
+#endif
                 {
                     return false;
                 }
