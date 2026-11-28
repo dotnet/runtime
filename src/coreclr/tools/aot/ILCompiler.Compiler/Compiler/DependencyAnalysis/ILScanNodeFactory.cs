@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ILScanNodeFactory : NodeFactory
     {
         public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, InteropStubManager interopStubManager, NameMangler nameMangler, PreinitializationManager preinitManager, TypeMapManager typeMapManager)
-            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider(), new LazyDictionaryLayoutProvider(), new InlinedThreadStatics(), new ExternSymbolsImportedNodeProvider(), preinitManager, new DevirtualizationManager(), ObjectDataInterner.Null, typeMapManager)
+            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider(), new LazyDictionaryLayoutProvider(), new InlinedThreadStatics(), new ExternSymbolsImportedNodeProvider(), preinitManager, new DevirtualizationManager(), ObjectDataInterner.Null, typeMapManager, relativeInterfaceMaps: false)
         {
         }
 

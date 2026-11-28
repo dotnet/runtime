@@ -26,6 +26,7 @@ namespace ILCompiler
         protected SecurityMitigationOptions _mitigationOptions;
         protected bool _dehydrate;
         protected bool _useDwarf5;
+        protected bool _relativeInterfaceMaps;
         protected TypeMapManager _typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
 
         partial void InitializePartial()
@@ -127,6 +128,12 @@ namespace ILCompiler
         public CompilationBuilder UseDwarf5(bool value)
         {
             _useDwarf5 = value;
+            return this;
+        }
+
+        public CompilationBuilder UseRelativeInterfaceMaps(bool value)
+        {
+            _relativeInterfaceMaps = value;
             return this;
         }
 

@@ -18,7 +18,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static unsafe MethodTable* GetOrdinalInterface(MethodTable* pType, ushort interfaceIndex)
         {
             Debug.Assert(interfaceIndex < pType->NumInterfaces);
-            return pType->InterfaceMap[interfaceIndex];
+            return pType->GetInterface(interfaceIndex);
         }
 
         public static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)

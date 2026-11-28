@@ -439,7 +439,7 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            return new RuntimeTypeHandle(typeHandle.ToMethodTable()->InterfaceMap[index]);
+            return new RuntimeTypeHandle(typeHandle.ToMethodTable()->GetInterface(index));
         }
 
         [Intrinsic]
