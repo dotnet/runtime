@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Enumeration;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -496,6 +497,8 @@ namespace System.IO
                     {
                         if (isDirectory)
                         {
+                            // Since this is a recursive call, we have to ensure that we have sufficient stack space.
+                            RuntimeHelpers.EnsureSufficientExecutionStack();
                             RemoveDirectoryRecursive(childPath);
                         }
                         else
