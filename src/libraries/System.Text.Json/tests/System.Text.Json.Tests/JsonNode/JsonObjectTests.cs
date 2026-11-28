@@ -1699,7 +1699,7 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        public static void JsonObject_DuplicatePropertyThrows(string jsonPayload, bool isValidJson = false)
+        public static void JsonObject_DuplicatePropertyRespectsOptions(string jsonPayload, bool isValidJson = false)
         {
             AssertDuplicatePropertyThrows<JsonObject>(jsonPayload, isValidJson);
             AssertDuplicatePropertyThrows<JsonNode>(jsonPayload, isValidJson);
@@ -1707,7 +1707,7 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        public static void JsonObject_DuplicatePropertyThrows_NestedInArray(string jsonPayload, bool isValidJson = false)
+        public static void JsonObject_DuplicatePropertyRespectsOptions_NestedInArray(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $"[{jsonPayload}]";
             AssertDuplicatePropertyThrows<JsonArray>(jsonPayload, isValidJson);
@@ -1716,7 +1716,7 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        public static void JsonObject_DuplicatePropertyThrows_NestedDeeply(string jsonPayload, bool isValidJson = false)
+        public static void JsonObject_DuplicatePropertyRespectsOptions_NestedDeeply(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
             AssertDuplicatePropertyThrows<JsonObject>(jsonPayload, isValidJson);
@@ -1740,12 +1740,33 @@ namespace System.Text.Json.Nodes.Tests
                     () => JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties),
                     "Duplicate property");
 
-                // Default options don't throw on deserialize but will throw when accessed
+                // Default options permit duplicate properties, with the last value winning.
                 T node = JsonSerializer.Deserialize<T>(jsonPayload);
-                AssertExtensions.ThrowsContains<ArgumentException>(
-                    () => JsonNode.DeepEquals(node, node),
-                    "An item with the same key has already been added.");
+                Assert.True(JsonNode.DeepEquals(node, node));
             }
+        }
+
+        [Fact]
+        public static void ParsedDuplicatePropertyUsesLastValueAndFirstPosition()
+        {
+            JsonArray array = (JsonArray)JsonNode.Parse("""[{"foo":1,"bar":2,"foo":3}]""")!;
+            JsonObject obj = (JsonObject)array[0]!;
+
+            Assert.Equal(2, obj.Count);
+            Assert.Equal(3, obj["foo"]!.GetValue<int>());
+            Assert.Equal(new[] { "foo", "bar" }, obj.Select(property => property.Key));
+            Assert.Equal("$[0].foo", obj["foo"]!.GetPath());
+        }
+
+        [Fact]
+        public static void ParsedDuplicatePropertyCaseInsensitiveUsesFirstCasing()
+        {
+            JsonNodeOptions options = new() { PropertyNameCaseInsensitive = true };
+            JsonObject obj = (JsonObject)JsonNode.Parse("""{"Name":1,"other":2,"nAME":3}""", nodeOptions: options)!;
+
+            Assert.Equal(2, obj.Count);
+            Assert.Equal(3, obj["name"]!.GetValue<int>());
+            Assert.Equal(new[] { "Name", "other" }, obj.Select(property => property.Key));
         }
 
         [Fact]
