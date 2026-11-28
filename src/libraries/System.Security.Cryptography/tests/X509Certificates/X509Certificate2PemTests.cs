@@ -374,7 +374,7 @@ MII
             Assert.IsType<ArgumentException>(inner.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -436,7 +436,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void CreateFromEncryptedPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =

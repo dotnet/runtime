@@ -17,8 +17,6 @@ namespace System.Security.Cryptography.Tests
         protected override CngExportPolicies ExportPolicies => CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport;
     }
 
-    // ML-KEM as of Windows build 27881 does not have PKCS#8 exports, so we cannot implement encrypted exports.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/116304")]
     [ConditionalClass(typeof(MLKem), nameof(MLKem.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class MLKemCngExportableTests : MLKemCngTests
@@ -103,7 +101,15 @@ namespace System.Security.Cryptography.Tests
 
     public abstract class MLKemCngTests : MLKemBaseTests
     {
+        private const int NTE_NOT_SUPPORTED = unchecked((int)0x80090029);
+
         protected abstract CngExportPolicies ExportPolicies { get; }
+
+        protected override void AssertExportPkcs8FromPublicKey(Action export)
+        {
+            CryptographicException ce = Assert.ThrowsAny<CryptographicException>(export);
+            Assert.Equal(NTE_NOT_SUPPORTED, ce.HResult);
+        }
 
         public override MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
