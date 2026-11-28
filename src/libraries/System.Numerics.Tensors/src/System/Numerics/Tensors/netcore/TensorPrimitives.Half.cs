@@ -170,6 +170,24 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryBinaryBitwiseInvokeHalfAsInt16<T, TOp>(T x, ReadOnlySpan<T> y, Span<T> destination)
+            where TOp : struct, IBinaryOperator<short>
+        {
+            Debug.Assert(typeof(T) == typeof(Half));
+
+            if (TOp.Vectorizable) // not checking IsVectorizable(y) because there's no runtime overhead to the Half<=>short conversion
+            {
+                InvokeScalarSpanIntoSpan<short, TOp>(
+                    BitConverter.HalfToInt16Bits((Half)(object)x!),
+                    Rename<T, short>(y),
+                    Rename<T, short>(destination));
+                return true;
+            }
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryAggregateInvokeHalfAsInt16<T, TOp>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where TOp : struct, IAggregationOperator<float>
         {
