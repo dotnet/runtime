@@ -230,6 +230,42 @@ namespace System.Data.OleDb.Tests
             });
         }
 
+        [OuterLoop]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
+        public void GetChars_ZeroLengthAtEndOfBuffer_ReturnsZero()
+        {
+            RunTest((reader) => {
+                reader.Read();
+                var buffer = new char[3];
+                Assert.Equal(0, reader.GetChars(1, 0, buffer, buffer.Length, 0));
+            });
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
+        public void GetChars_NonZeroLengthAtEndOfBuffer_Throws()
+        {
+            RunTest((reader) => {
+                reader.Read();
+                var buffer = new char[3];
+                Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetChars(1, 0, buffer, buffer.Length, 1));
+            });
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
+        [InlineData(-1, 0)]
+        [InlineData(4, 0)]
+        [InlineData(-1, 1)]
+        public void GetChars_BufferIndexOutsideBuffer_Throws(int bufferIndex, int length)
+        {
+            RunTest((reader) => {
+                reader.Read();
+                var buffer = new char[3];
+                Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetChars(1, 0, buffer, bufferIndex, length));
+            });
+        }
+
         [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetEnumerator_BadType_Throws()
         {
