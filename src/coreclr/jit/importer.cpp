@@ -3075,6 +3075,27 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return -1;
     }
 
+    // A boxed Nullable<T> is null iff its hasValue field is false, so a null check
+    // of the box only needs that field. Fold it here when impImportAndPushBoxForNullable
+    // would otherwise expand the box inline, since that allocation may not be removed
+    // later (e.g. when it is in a loop). Elsewhere the box is a CORINFO_HELP_BOX_NULLABLE
+    // call, and gtFoldBoxNullable folds the null check.
+    //
+    auto isFoldableNullableBox = [&]() {
+        return (opts == BoxPatterns::None) && !this->opts.OptimizationDisabled() && !compCurBB->isRunRarely() &&
+               (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX_NULLABLE) &&
+               !eeIsSharedInst(pResolvedToken->hClass);
+    };
+
+    auto pushNullableHasValueCheck = [&](genTreeOps oper) {
+        // Boxing allows the "initclass" flag, but not volatile/unaligned flags
+        GenTreeFlags indirFlags  = GTF_EMPTY;
+        GenTree*     nullableObj = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, GTF_IND_INITCLASS, &indirFlags);
+        static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+        GenTree* hasValue = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj, indirFlags);
+        impPushOnStack(gtNewOperNode(oper, TYP_INT, hasValue, gtNewIconNode(0)), typeInfo(TYP_INT));
+    };
+
     switch (codeAddr[0])
     {
         case CEE_UNBOX_ANY:
@@ -3181,6 +3202,30 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     impPopStack();
                     impPushOnStack(gtNewTrue(), typeInfo(TYP_INT));
                     return 0;
+                }
+
+                if (isFoldableNullableBox())
+                {
+                    JITDUMP("\n Importing BOX(Nullable); BR_TRUE/FALSE as hasValue check\n")
+
+                    pushNullableHasValueCheck(GT_NE);
+                    return 0;
+                }
+            }
+            break;
+
+        case CEE_LDNULL:
+            // box(Nullable) + ldnull + ceq/cgt_un, e.g. "value == null" for a T that is a Nullable
+            if ((codeAddr + 3 <= codeEndp) && isFoldableNullableBox())
+            {
+                const OPCODE cmpOpcode = impGetNonPrefixOpcode(codeAddr + 1, codeEndp);
+                if ((cmpOpcode == CEE_CEQ) || (cmpOpcode == CEE_CGT_UN))
+                {
+                    JITDUMP("\n Importing BOX(Nullable); LDNULL; %s as hasValue check\n",
+                            (cmpOpcode == CEE_CEQ) ? "CEQ" : "CGT_UN");
+
+                    pushNullableHasValueCheck((cmpOpcode == CEE_CEQ) ? GT_EQ : GT_NE);
+                    return 3;
                 }
             }
             break;
