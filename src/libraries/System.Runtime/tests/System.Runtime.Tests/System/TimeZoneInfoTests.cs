@@ -2713,6 +2713,215 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> PosixRuleAfterLastTransition_TestData()
+        {
+            // Southern hemisphere zone (Australia/Lord_Howe). The last explicit transition starts daylight saving time late in the year,
+            // which is how files generated with "zic -b fat" hand over to the POSIX rule.
+            yield return new object[]
+            {
+                "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0",
+                new[] { "2036-10-04T15:30:00,1", "2037-04-04T15:00:00,0", "2037-10-03T15:30:00,1" },
+                new[]
+                {
+                    "U,2037-10-03T15:29:59,10:30,False",
+                    "U,2037-10-03T15:30:00,11:00,True",
+                    "U,2037-12-31T12:59:59,11:00,True",
+                    "U,2037-12-31T13:00:00,11:00,True",
+                    "U,2038-01-01T00:00:00,11:00,True",
+                    "U,2038-04-03T14:59:59,11:00,True",
+                    "U,2038-04-03T15:00:00,10:30,False",
+                    "L,2037-12-31T23:30:00,2037-12-31T12:30:00",
+                    "L,2038-01-01T00:30:00,2037-12-31T13:30:00",
+                }
+            };
+
+            // Same zone, with the last explicit transition ending daylight saving time early in the year,
+            // which is how files generated with "zic -b slim" hand over to the POSIX rule.
+            yield return new object[]
+            {
+                "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0",
+                new[] { "2007-03-24T15:00:00,0", "2007-10-27T15:30:00,1", "2008-04-05T15:00:00,0" },
+                new[]
+                {
+                    "U,2008-04-05T14:59:59,11:00,True",
+                    "U,2008-04-05T15:00:00,10:30,False",
+                    "U,2008-07-01T00:00:00,10:30,False",
+                    "U,2008-10-04T15:29:59,10:30,False",
+                    "U,2008-10-04T15:30:00,11:00,True",
+                    "U,2008-12-31T13:00:00,11:00,True",
+                    "L,2008-07-01T12:00:00,2008-07-01T01:30:00",
+                    "L,2008-12-31T23:30:00,2008-12-31T12:30:00",
+                }
+            };
+
+            // Northern hemisphere zone (America/New_York), with the last explicit transition starting daylight saving time.
+            yield return new object[]
+            {
+                "EST5EDT,M3.2.0,M11.1.0",
+                new[] { "2006-04-02T07:00:00,1", "2006-10-29T06:00:00,0", "2007-03-11T07:00:00,1" },
+                new[]
+                {
+                    "U,2007-03-11T06:59:59,-05:00,False",
+                    "U,2007-03-11T07:00:00,-04:00,True",
+                    "U,2007-07-01T00:00:00,-04:00,True",
+                    "U,2007-11-04T05:59:59,-04:00,True",
+                    "U,2007-11-04T06:00:00,-05:00,False",
+                    "U,2008-03-09T07:00:00,-04:00,True",
+                    "L,2007-07-01T12:00:00,2007-07-01T16:00:00",
+                }
+            };
+        }
+
+        [Fact]
+        public static void FromSerializedString_PosixRuleAfterLastTransition_ContinuesRecurringTransitions()
+        {
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "LordHoweSerialized", new TimeSpan(10, 30, 0), "Lord Howe", "Lord Howe Standard Time");
+
+            DateTime standardStart = new DateTime(2037, 4, 4, 15, 0, 0, DateTimeKind.Utc);
+            DateTime daylightStart = new DateTime(2037, 10, 3, 15, 30, 0, DateTimeKind.Utc);
+            DateTime maxDate = DateTime.MaxValue;
+            int utc = (int)DateTimeKind.Utc;
+            int unspecified = (int)DateTimeKind.Unspecified;
+            long transitionTimeTicks = TimeSpan.FromHours(2).Ticks;
+            long daylightDeltaTicks = TimeSpan.FromMinutes(30).Ticks;
+
+            // Simulate Unix serialization: an exact UTC standard-time interval followed by a recurring
+            // rule that starts at the last explicit transition.
+            string trailer =
+                $"!1;2;{standardStart.Ticks};{utc};{daylightStart.AddTicks(-1).Ticks};{utc};0;0;1;D;D;" +
+                $"{daylightStart.Ticks};{utc};{maxDate.Ticks};{unspecified};{daylightDeltaTicks};0;0;" +
+                $"W;{transitionTimeTicks};10;1;{(int)DayOfWeek.Sunday};" +
+                $"W;{transitionTimeTicks};4;1;{(int)DayOfWeek.Sunday};";
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseZone.ToSerializedString() + trailer);
+
+            DateTimeOffset beforeAprilTransition = new DateTimeOffset(2038, 4, 3, 14, 59, 59, TimeSpan.Zero);
+            DateTimeOffset afterAprilTransition = new DateTimeOffset(2038, 4, 3, 15, 0, 0, TimeSpan.Zero);
+            DateTimeOffset handoffYearEnd = new DateTimeOffset(2037, 12, 31, 13, 0, 0, TimeSpan.Zero);
+
+            Assert.Equal(TimeSpan.FromHours(11), zone.GetUtcOffset(handoffYearEnd));
+            Assert.True(zone.IsDaylightSavingTime(handoffYearEnd));
+            Assert.True(zone.IsDaylightSavingTime(beforeAprilTransition));
+            Assert.Equal(TimeSpan.FromHours(10) + TimeSpan.FromMinutes(30), zone.GetUtcOffset(afterAprilTransition));
+            Assert.False(zone.IsDaylightSavingTime(afterAprilTransition));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [MemberData(nameof(PosixRuleAfterLastTransition_TestData))]
+        public static void PosixRuleAfterLastTransition_ContinuesFromLastTransitionState(string posixRule, string[] transitions, string[] expectations)
+        {
+            string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
+            File.WriteAllBytes(zoneFilePath, CreateTZifFile(posixRule, transitions));
+
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
+                psi.Environment.Add("TZ", zoneFilePath);
+
+                RemoteExecutor.Invoke(static (string expectationList) =>
+                {
+                    TimeZoneInfo local = TimeZoneInfo.Local;
+
+                    foreach (string expectation in expectationList.Split('|'))
+                    {
+                        string[] parts = expectation.Split(',');
+                        DateTime dateTime = DateTime.Parse(parts[1], CultureInfo.InvariantCulture);
+
+                        if (parts[0] == "U")
+                        {
+                            DateTimeOffset utc = new DateTimeOffset(dateTime, TimeSpan.Zero);
+                            Assert.True(TimeSpan.Parse(parts[2], CultureInfo.InvariantCulture) == local.GetUtcOffset(utc), $"Offset at {expectation}");
+                            Assert.True(bool.Parse(parts[3]) == local.IsDaylightSavingTime(utc), $"Daylight saving at {expectation}");
+                        }
+                        else
+                        {
+                            Assert.False(local.IsAmbiguousTime(dateTime), $"Ambiguous at {expectation}");
+                            Assert.Equal(DateTime.Parse(parts[2], CultureInfo.InvariantCulture), TimeZoneInfo.ConvertTimeToUtc(dateTime, local));
+                        }
+                    }
+                }, string.Join("|", expectations), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }
+            finally
+            {
+                try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
+            }
+        }
+
+        // Creates a TZif version 2 file with the given transitions ("utc-time,type", where type 0 is standard time and 1 is daylight saving time)
+        // followed by the given POSIX rule. Both local time types are derived from the POSIX rule.
+        private static byte[] CreateTZifFile(string posixRule, string[] transitions)
+        {
+            Match match = Regex.Match(posixRule, @"^(?:<[^>]+>|[A-Za-z]+)([+-]?\d+(?::\d+)?)(?:<[^>]+>|[A-Za-z]+)([+-]?\d+(?::\d+)?)?,");
+            Assert.True(match.Success);
+            TimeSpan standardOffset = -ParseOffset(match.Groups[1].Value);
+            TimeSpan daylightOffset = match.Groups[2].Success ? -ParseOffset(match.Groups[2].Value) : standardOffset + TimeSpan.FromHours(1);
+
+            using MemoryStream stream = new MemoryStream();
+
+            // Version 1 header and data block with no transitions and a single local time type.
+            WriteHeader(stream, transitionCount: 0, typeCount: 1, abbreviationLength: 0);
+            stream.Write(new byte[6]);
+
+            WriteHeader(stream, transitions.Length, typeCount: 2, abbreviationLength: 4);
+            foreach (string transition in transitions)
+            {
+                DateTimeOffset time = new DateTimeOffset(DateTime.Parse(transition.Split(',')[0], CultureInfo.InvariantCulture), TimeSpan.Zero);
+                WriteBigEndian(stream, time.ToUnixTimeSeconds(), 8);
+            }
+            foreach (string transition in transitions)
+            {
+                stream.WriteByte(byte.Parse(transition.Split(',')[1], CultureInfo.InvariantCulture));
+            }
+
+            WriteLocalTimeType(stream, standardOffset, isDst: false, abbreviationIndex: 0);
+            WriteLocalTimeType(stream, daylightOffset, isDst: true, abbreviationIndex: 2);
+            stream.Write("S\0D\0"u8);
+            stream.Write(new byte[4]); // standard/wall and UT/local indicators
+
+            stream.WriteByte((byte)'\n');
+            stream.Write(System.Text.Encoding.ASCII.GetBytes(posixRule));
+            stream.WriteByte((byte)'\n');
+
+            return stream.ToArray();
+
+            static TimeSpan ParseOffset(string value)
+            {
+                bool negative = value.StartsWith('-');
+                string[] parts = value.TrimStart('+', '-').Split(':');
+                TimeSpan offset = new TimeSpan(int.Parse(parts[0], CultureInfo.InvariantCulture), parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0, 0);
+                return negative ? -offset : offset;
+            }
+
+            static void WriteHeader(Stream stream, int transitionCount, int typeCount, int abbreviationLength)
+            {
+                stream.Write("TZif2"u8);
+                stream.Write(new byte[15]);
+                WriteBigEndian(stream, transitionCount == 0 ? 0 : typeCount, 4); // UT/local indicators
+                WriteBigEndian(stream, transitionCount == 0 ? 0 : typeCount, 4); // standard/wall indicators
+                WriteBigEndian(stream, 0, 4); // leap seconds
+                WriteBigEndian(stream, transitionCount, 4);
+                WriteBigEndian(stream, typeCount, 4);
+                WriteBigEndian(stream, abbreviationLength, 4);
+            }
+
+            static void WriteLocalTimeType(Stream stream, TimeSpan offset, bool isDst, byte abbreviationIndex)
+            {
+                WriteBigEndian(stream, (long)offset.TotalSeconds, 4);
+                stream.WriteByte(isDst ? (byte)1 : (byte)0);
+                stream.WriteByte(abbreviationIndex);
+            }
+
+            static void WriteBigEndian(Stream stream, long value, int byteCount)
+            {
+                for (int i = byteCount - 1; i >= 0; i--)
+                {
+                    stream.WriteByte((byte)(value >> (8 * i)));
+                }
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ArbitraryTZ_UsedAsLocal()
