@@ -179,14 +179,6 @@ public:
     }
 
 
-#ifdef TARGET_ARM64
-    LPCUTF8 GetJitStressCodePlacement() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_jitStressCodePlacement;
-    }
-#endif
-
     inline bool ShouldPrestubGC(MethodDesc* pMethodInfo) const
     {
         WRAPPER_NO_CONTRACT;
@@ -480,9 +472,6 @@ private: //----------------------------------------------------------------
     static void DestroyMethList(MethodNamesList* list);
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
-#ifdef TARGET_ARM64
-    LPUTF8 m_jitStressCodePlacement = nullptr;
-#endif
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub
     MethodNamesList* pInvokeHalt;      // list of methods on which to break when hit prestub

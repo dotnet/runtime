@@ -266,8 +266,8 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
 {
 #if USE_LAZY_PREFERRED_RANGE
 
-#ifdef _DEBUG
-    // If GetForceRelocs is enabled we don't constrain the pMinAddr
+#if defined(_DEBUG) && (!defined(TARGET_ARM64) || defined(FEATURE_PORTABLE_ENTRYPOINTS))
+    // Normally ForceRelocs skips preferred placement. ARM64 uses this range for its near/far heap stress.
     if (PEDecoder::GetForceRelocs())
         return;
 #endif

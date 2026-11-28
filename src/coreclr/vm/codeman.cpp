@@ -2582,8 +2582,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         if (loAddr != NULL || hiAddr != NULL)
         {
 #ifdef _DEBUG
-            // Always exercise the fallback path in the caller when forced relocs are turned on
-            if (PEDecoder::GetForceRelocs())
+            if (pInfo->HasRequiredRange() && PEDecoder::GetForceRelocs())
                 return NULL;
 #endif
             pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(reserveSize, loAddr, hiAddr);
@@ -2709,6 +2708,10 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllo
     , m_isCollectible{ false }
     , m_isInterpreted{ false }
     , m_isOptimizedCode{ false }
+#ifdef _DEBUG
+    // The jump-stub caller requires its range. A range set later for placement stress is only a preference.
+    , m_hasRequiredRange{ loAddr != nullptr || hiAddr != nullptr }
+#endif
 {
     CONTRACTL
     {
@@ -3117,11 +3120,11 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
 #endif // FEATURE_INTERPRETER
     {
 #if defined(_DEBUG) && defined(TARGET_ARM64) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
-        LPCUTF8 farMethod = g_pConfig->GetJitStressCodePlacement();
-        if (farMethod != nullptr && !requestInfo.IsDynamicDomain())
+        if (PEDecoder::GetForceRelocs() && !requestInfo.IsDynamicDomain())
         {
-            LPCUTF8 name = pMD->GetName();
-            requestInfo.SetStressCodeRange(name != nullptr && strcmp(farMethod, name) == 0);
+            // Mix near and far methods in the same loader. Retries and instantiations of a
+            // method stay in the same range, so a run of far methods can reuse the estimate.
+            requestInfo.SetStressCodeRange((RidFromToken(pMD->GetMemberDef()) & 1) != 0);
         }
 #endif
         requestInfo.SetReserveForJumpStubs(reserveForJumpStubs);

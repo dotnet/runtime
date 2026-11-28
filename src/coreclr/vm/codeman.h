@@ -451,6 +451,9 @@ class CodeHeapRequestInfo final
     bool         m_isCollectible;
     bool         m_isInterpreted;
     bool         m_isOptimizedCode;
+#ifdef _DEBUG
+    bool         m_hasRequiredRange;
+#endif
 
 public:
     CodeHeapRequestInfo(MethodDesc* pMD);
@@ -471,6 +474,10 @@ public:
 
     // Requests for specific memory ranges return NULL instead of throwing OutOfMemoryException if the request cannot be satisfied.
     bool   IsSpecificMemoryRangeRequested()     { return m_loAddr != NULL || m_hiAddr != NULL; }
+
+#ifdef _DEBUG
+    bool   HasRequiredRange() const             { return m_hasRequiredRange;   }
+#endif
 
     bool   IsCollectible()                      { return m_isCollectible;      }
 

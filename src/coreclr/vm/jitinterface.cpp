@@ -12106,28 +12106,22 @@ void CEEJitInfo::recordRelocation(void *       location,
         INT64 sourcePage = (UINT_PTR)location >> 12;
         INT64 targetPage = (UINT_PTR)target >> 12;
         INT64 pages = targetPage - sourcePage;
-#ifdef _DEBUG
-        static ConfigDWORD forcePageRelocOverflow;
-        if (m_fAllowOptionalRelocs &&
-            (PEDecoder::GetForceRelocs() || forcePageRelocOverflow.val(CLRConfig::INTERNAL_JitForcePageRelocOverflow)))
+        bool fits = FitsInArm64PageDelta(pages);
+#ifdef LOGGING
+        if (!m_fPageRelocOverflow)
         {
-            // Exercise the range check on the first pass. Optional relocs are disabled on retry.
-            pages = 1 << 20;
+            LOG((LF_JIT, LL_INFO10000, "Page relocation %s %s %p\n", fits ? "applied" : "overflow",
+                 m_pMethodBeingCompiled->m_pszDebugMethodName, m_pMethodBeingCompiled));
         }
 #endif
-        if (!FitsInArm64PageDelta(pages))
+        if (!fits)
         {
             if (m_fAllowOptionalRelocs)
             {
                 // The instruction address is known only after allocation. Discard this
                 // compilation and use absolute cell addresses on the retry.
-                // Stress can force the retry even when the actual pages are in range.
-                if (!FitsInArm64PageDelta(targetPage - sourcePage))
-                {
-                    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-                    allocator->m_pageRelocSourcePage.StoreWithoutBarrier((UINT_PTR)sourcePage);
-                }
-
+                LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
+                allocator->m_pageRelocSourcePage.StoreWithoutBarrier((UINT_PTR)sourcePage);
                 m_fPageRelocOverflow = TRUE;
                 break;
             }
@@ -12883,6 +12877,9 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     // Once misses occur, track placement until allocation returns to the preferred range.
     // Refresh even on an absolute-address retry, which can land in a different heap.
     UINT_PTR sourcePage = (UINT_PTR)start >> 12;
+    LOG((LF_JIT, LL_INFO10000, "Code placement %s %s %p\n",
+         ExecutableAllocator::IsPreferredExecutableRange(start) ? "near" : "far",
+         m_pMethodBeingCompiled->m_pszDebugMethodName, m_pMethodBeingCompiled));
     if (m_pageRelocSourcePage != 0 && m_pageRelocSourcePage != sourcePage)
     {
         UINT_PTR nextHint = ExecutableAllocator::IsPreferredExecutableRange(start) ? 0 : sourcePage;
