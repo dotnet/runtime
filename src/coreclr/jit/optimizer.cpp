@@ -4960,6 +4960,36 @@ bool Compiler::optHoistCandidate(
     return true;
 }
 
+//------------------------------------------------------------------------
+// optVNLoopMayContainBlock: Conservatively check whether a loop computed for value
+//    numbering contains a block.
+//
+// Arguments:
+//   loop  - a loop from the value numbering loop structure
+//   block - the block to check
+//
+// Return Value:
+//   false only if the block is known not to be in the loop.
+//
+// Remarks:
+//   Uses the block to loop map built during value numbering, which is keyed by bbID and
+//   so remains valid if a later DFS (e.g. for incremental SSA during CSE) renumbers the
+//   blocks. Blocks created after value numbering are assumed to be in the loop.
+//
+bool Compiler::optVNLoopMayContainBlock(FlowGraphNaturalLoop* loop, BasicBlock* block)
+{
+    assert(m_blockToLoop != nullptr);
+    assert(m_blockToLoop->GetLoops() == vnStore->GetLoops());
+
+    if (!m_blockToLoop->IsKnownBlock(block))
+    {
+        assert(!"Block was created after value numbering");
+        return true;
+    }
+
+    return m_blockToLoop->IsInLoop(loop, block);
+}
+
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)
 {
     // If it is not a VN, is not loop-invariant.
@@ -4985,6 +5015,14 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     VNFuncApp      funcApp;
     VNPhiDef       phiDef;
     VNMemoryPhiDef memoryPhiDef;
+
+    // Loop indices in memory and opaque VNs refer to the loops computed for value numbering.
+    // Use those rather than m_loops, which is cleared once RBO runs. Anything that can't be
+    // located in that loop structure is conservatively treated as loop variant.
+    FlowGraphNaturalLoops* const vnLoops = vnStore->GetLoops();
+    assert(vnLoops != nullptr);
+    assert(loop->GetDfsTree() == vnLoops->GetDfsTree());
+
     if (vnStore->GetVNFunc(vn, &funcApp))
     {
         if (funcApp.FuncIs(VNF_MemOpaque))
@@ -5002,11 +5040,16 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
             {
                 res = true;
             }
+            else if (loopIndex >= vnLoops->NumLoops())
+            {
+                assert(!"MemOpaque loop index does not refer to a value numbering loop");
+                res = false;
+            }
             else
             {
-                FlowGraphNaturalLoop* otherLoop = m_loops->GetLoopByIndex(loopIndex);
+                FlowGraphNaturalLoop* otherLoop = vnLoops->GetLoopByIndex(loopIndex);
                 assert(otherLoop != nullptr);
-                res = !loop->ContainsLoop(otherLoop);
+                res = !optVNLoopMayContainBlock(loop, otherLoop->GetHeader());
             }
         }
         else if (funcApp.FuncIs(VNF_ByrefExposedStore))
@@ -5027,15 +5070,19 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                     if (i == 3)
                     {
                         const unsigned loopIndex = funcApp.GetArg(3);
-                        assert((loopIndex == ValueNumStore::NoLoop) || (loopIndex < m_loops->NumLoops()));
+                        assert((loopIndex == ValueNumStore::NoLoop) || (loopIndex < vnLoops->NumLoops()));
                         if (loopIndex == ValueNumStore::NoLoop)
                         {
                             res = true;
                         }
+                        else if (loopIndex >= vnLoops->NumLoops())
+                        {
+                            res = false;
+                        }
                         else
                         {
-                            FlowGraphNaturalLoop* otherLoop = m_loops->GetLoopByIndex(loopIndex);
-                            res                             = !loop->ContainsLoop(otherLoop);
+                            FlowGraphNaturalLoop* otherLoop = vnLoops->GetLoopByIndex(loopIndex);
+                            res                             = !optVNLoopMayContainBlock(loop, otherLoop->GetHeader());
                         }
                         break;
                     }
@@ -5055,12 +5102,12 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     else if (vnStore->GetPhiDef(vn, &phiDef))
     {
         // Is the definition within the loop?  If so, is not loop-invariant.
-        LclSsaVarDsc* ssaDef = lvaTable[phiDef.LclNum].GetPerSsaData(phiDef.SsaDef);
-        res                  = !loop->ContainsBlock(ssaDef->GetBlock());
+        BasicBlock* const defBlock = lvaTable[phiDef.LclNum].GetPerSsaData(phiDef.SsaDef)->GetBlock();
+        res                        = !optVNLoopMayContainBlock(loop, defBlock);
     }
     else if (vnStore->GetMemoryPhiDef(vn, &memoryPhiDef))
     {
-        res = !loop->ContainsBlock(memoryPhiDef.Block);
+        res = !optVNLoopMayContainBlock(loop, memoryPhiDef.Block);
     }
 
     loopVnInvariantCache->Set(vn, res);

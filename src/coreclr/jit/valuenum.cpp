@@ -11969,7 +11969,13 @@ PhaseStatus Compiler::fgValueNumber()
     assert(m_dfsTree != nullptr);
     assert(m_loops != nullptr);
 
+    // The loop indices recorded in memory and opaque VNs refer to these loops. Later phases
+    // may consult this map (and the loops it references) for as long as value numbers are
+    // considered valid, even after m_loops has been cleared, to conservatively assess
+    // whether a VN depends on a loop. Flow changes made after value numbering only remove
+    // edges, so these loops can only over-approximate the current ones.
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
+    vnStore->SetLoops(m_loops);
     // Compute the side effects of loops.
     optComputeLoopSideEffects();
 

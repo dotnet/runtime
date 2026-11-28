@@ -870,6 +870,12 @@ public:
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
 
+    // Same as above, but may express the upper limit symbolically in terms of "preferredBoundVN".
+    static Range GetRangeFromAssertions(Compiler*        comp,
+                                        ValueNum         vn,
+                                        ValueNum         preferredBoundVN,
+                                        ASSERT_VALARG_TP assertions);
+
     // Compute the range from the given type
     static Range GetRangeFromType(var_types type);
 

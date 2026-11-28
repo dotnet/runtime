@@ -88,19 +88,132 @@ static Range GetRange(Compiler*        comp,
 }
 
 //------------------------------------------------------------------------
+// optIsBoundInvariantInLoopsOf: Check whether "bndVN" is invariant in every loop whose
+//    header phi may be reached when walking the SSA definitions of a value.
+//
+// Arguments:
+//   xVN   - value number of the value whose definitions would be walked.
+//   bndVN - value number of the bound.
+//
+// Return Value:
+//   true if the bound is known to have the same value on every iteration of those loops.
+//
+// Remarks:
+//   The SSA walk can relate X to the bound via facts established on a previous iteration
+//   (e.g. on a loop backedge). That is only sound when the bound cannot change between
+//   iterations.
+//
+//   Uses the loop structure computed for the most recent value numbering, whose loop
+//   indices also tag memory and opaque VNs. Flow changes since then (RBO without jump
+//   threading, branch folding in assertion prop) only remove edges, so these loops may
+//   be larger than the current ones but never smaller, which is conservative here.
+//
+bool Compiler::optIsBoundInvariantInLoopsOf(ValueNum xVN, ValueNum bndVN)
+{
+    // The block to loop map must describe the loops that value numbering used.
+    FlowGraphNaturalLoops* const vnLoops = vnStore->GetLoops();
+    if ((vnLoops == nullptr) || (m_blockToLoop == nullptr) || (m_blockToLoop->GetLoops() != vnLoops))
+    {
+        assert(!"Block to loop map does not describe the value numbering loops");
+        return false;
+    }
+
+    // Irreducible cycles are not natural loops, so we can't tell whether the bound
+    // varies across their iterations.
+    if (vnLoops->ImproperLoopHeaders() > 0)
+    {
+        return false;
+    }
+
+    ArrayStack<ValueNum>            toVisit(getAllocator(CMK_AssertionProp));
+    ValueNumStore::SmallValueNumSet visited;
+    toVisit.Push(xVN);
+    visited.Add(this, xVN);
+
+    int budget = 64;
+    while (toVisit.Height() > 0)
+    {
+        if (--budget < 0)
+        {
+            return false;
+        }
+
+        ValueNum  vn = toVisit.Pop();
+        VNPhiDef  phiDef;
+        VNFuncApp funcApp;
+        if (vnStore->GetPhiDef(vn, &phiDef))
+        {
+            BasicBlock* defBlock = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef)->GetBlock();
+            if (!m_blockToLoop->IsKnownBlock(defBlock))
+            {
+                assert(!"Phi def block was created after value numbering");
+                return false;
+            }
+
+            FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(defBlock);
+            if ((loop != nullptr) && (loop->GetHeader() == defBlock))
+            {
+                VNSet invariantCache(getAllocator(CMK_AssertionProp));
+                if (!optVNIsLoopInvariant(bndVN, loop, &invariantCache))
+                {
+                    return false;
+                }
+            }
+
+            for (unsigned i = 0; i < phiDef.NumArgs; i++)
+            {
+                ValueNum argVN = vnStore->VNPhiDefToVN(phiDef, i);
+                if (visited.Add(this, argVN))
+                {
+                    toVisit.Push(argVN);
+                }
+            }
+        }
+        else if (vnStore->GetVNFunc(vn, &funcApp))
+        {
+            // MemOpaque's only argument is a loop index, not a value number, and it has no
+            // SSA definitions to walk.
+            if (funcApp.FuncIs(VNF_MemOpaque))
+            {
+                continue;
+            }
+
+            for (unsigned i = 0; i < funcApp.GetArity(); i++)
+            {
+                // MapStore's 4th argument is a loop index, not a value number.
+                if (funcApp.FuncIs(VNF_MapStore) && (i == 3))
+                {
+                    break;
+                }
+
+                ValueNum argVN = funcApp.GetArg(i);
+                if (!vnStore->IsVNConstant(argVN) && visited.Add(this, argVN))
+                {
+                    toVisit.Push(argVN);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // GetBoundMinusXRange: Compute the range of "Bnd - X" (e.g. "span.Length - i") from
 //    the range of X computed relative to "Bnd".
 //
 // Arguments:
-//   comp  - the Compiler object.
-//   tree  - either the SUB node or a local defined by it.
-//   block - the BasicBlock in which "tree" is being evaluated.
-//   bndVN - the never negative checked bound.
+//   comp       - the Compiler object.
+//   tree       - either the SUB node or a local defined by it.
+//   block      - the BasicBlock in which "tree" is being evaluated.
+//   bndVN      - the never negative checked bound.
+//   assertions - assertions live at "tree".
 //
 // Return Value:
 //    Range of "tree", or an unknown range.
 //
-static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* block, ValueNum bndVN)
+static Range GetBoundMinusXRange(
+    Compiler* comp, GenTree* tree, BasicBlock* block, ValueNum bndVN, ASSERT_VALARG_TP assertions)
 {
     // Walk through local copies, e.g. CSE uses "tmp = cse" and defs "tmp = COMMA(STORE(cse, Bnd - X), cse)".
     // SSA copy chains are acyclic (they end at a PHI or a non-local value), so this terminates.
@@ -125,14 +238,29 @@ static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* bloc
 
     // X in [lo, Bnd + k] with lo >= 0 and k <= 0 means that "Bnd - X" can't overflow and is in [-k, Bnd - lo].
     // k == INT32_MIN is excluded since "-k" would overflow.
-    Range        xRange = GetRange(comp, tree->gtGetOp2(), block, BitVecOps::UninitVal(), /*fast*/ false, bndVN);
-    const Limit& xLo    = xRange.LowerLimit();
-    const Limit& xHi    = xRange.UpperLimit();
-    if (xLo.IsConstant() && (xLo.GetConstant() >= 0) && xHi.IsBinOpArray() && (xHi.vn == bndVN) &&
-        (xHi.GetConstant() <= 0) && (xHi.GetConstant() > INT32_MIN))
+    auto isBoundedByBnd = [bndVN](const Range& xRange) {
+        const Limit& xLo = xRange.LowerLimit();
+        const Limit& xHi = xRange.UpperLimit();
+        return xLo.IsConstant() && (xLo.GetConstant() >= 0) && xHi.IsBinOpArray() && (xHi.vn == bndVN) &&
+               (xHi.GetConstant() <= 0) && (xHi.GetConstant() > INT32_MIN);
+    };
+
+    // First try facts that hold at this point.
+    ValueNum xVN    = comp->vnStore->VNConservativeNormalValue(tree->gtGetOp2()->gtVNPair);
+    Range    xRange = RangeCheck::GetRangeFromAssertions(comp, xVN, bndVN, assertions);
+
+    // Otherwise walk X's SSA definitions, but only if the bound can't change across the
+    // iterations that walk spans (it may vary even when its VN is not itself a phi, e.g.
+    // the length of a loop-carried array).
+    if (!isBoundedByBnd(xRange) && comp->optIsBoundInvariantInLoopsOf(xVN, bndVN))
     {
-        return Range(Limit(Limit::keConstant, -xHi.GetConstant()),
-                     Limit(Limit::keBinOpArray, bndVN, -xLo.GetConstant()));
+        xRange = GetRange(comp, tree->gtGetOp2(), block, BitVecOps::UninitVal(), /*fast*/ false, bndVN);
+    }
+
+    if (isBoundedByBnd(xRange))
+    {
+        return Range(Limit(Limit::keConstant, -xRange.UpperLimit().GetConstant()),
+                     Limit(Limit::keBinOpArray, bndVN, -xRange.LowerLimit().GetConstant()));
     }
     return Limit(Limit::keUnknown);
 }
@@ -4830,7 +4958,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     if (vnStore->IsVNBinFunc(op1VN, VNF_SUB, &bndVN) &&
                         optIsNeverNegativeCheckedBound(bndVN, assertions))
                     {
-                        op1Rng = GetBoundMinusXRange(this, op1, block, bndVN);
+                        op1Rng = GetBoundMinusXRange(this, op1, block, bndVN, assertions);
                     }
 
                     if (op1Rng.LowerLimit().IsUnknown())

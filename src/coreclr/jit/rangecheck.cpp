@@ -608,6 +608,38 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VAL
 }
 
 //------------------------------------------------------------------------
+// GetRangeFromAssertions: Same as GetRangeFromAssertions, but the upper limit may be expressed
+//    symbolically in terms of a preferred bound, e.g. "len - 1" for "i < len".
+//
+// Arguments:
+//    comp             - the compiler instance
+//    vn               - the value number to analyze range for
+//    preferredBoundVN - the never negative bound to express the upper limit with
+//    assertions       - the assertions to use
+//
+// Return Value:
+//    The computed range
+//
+Range RangeCheck::GetRangeFromAssertions(Compiler*        comp,
+                                         ValueNum         vn,
+                                         ValueNum         preferredBoundVN,
+                                         ASSERT_VALARG_TP assertions)
+{
+    Range range = GetRangeFromAssertions(comp, vn, assertions);
+    if ((vn == ValueNumStore::NoVN) || (preferredBoundVN == ValueNumStore::NoVN))
+    {
+        return range;
+    }
+
+    if (range.LowerLimit().IsUnknown())
+    {
+        range = GetRangeFromType(comp->vnStore->TypeOfVN(vn));
+    }
+    MergeEdgeAssertions(comp, vn, preferredBoundVN, assertions, &range);
+    return range;
+}
+
+//------------------------------------------------------------------------
 // GetRangeFromAssertionsWorker: Cheaper version of TryGetRange that is based purely on assertions
 //    and does not require a full range analysis based on SSA.
 //

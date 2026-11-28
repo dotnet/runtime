@@ -358,6 +358,10 @@ public:
 private:
     Compiler* m_compiler;
 
+    // Loops computed for the most recent value numbering pass. Loop indices in memory and
+    // opaque VNs refer to these loops.
+    class FlowGraphNaturalLoops* m_loops = nullptr;
+
     // For allocations.  (Other things?)
     CompAllocator m_alloc;
 
@@ -1137,6 +1141,18 @@ public:
 
     // Returns nullptr if the given value number is not dependent on memory defined in a loop.
     class FlowGraphNaturalLoop* LoopOfVN(ValueNum vn);
+
+    // The loops computed for the most recent value numbering pass; loop indices in memory
+    // and opaque VNs refer to these. Remains usable while value numbers are valid.
+    class FlowGraphNaturalLoops* GetLoops() const
+    {
+        return m_loops;
+    }
+
+    void SetLoops(class FlowGraphNaturalLoops* loops)
+    {
+        m_loops = loops;
+    }
 
     // Returns true iff the VN represents a constant.
     bool IsVNConstant(ValueNum vn);
