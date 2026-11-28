@@ -2302,7 +2302,8 @@ public:
     bool isConstant : 1;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    // True if this is a special interval for saving the upper half of a large vector.
+    // True if this interval represents the upper portion of a large vector.
+    // Such intervals are used at ABI boundaries where only part of a vector register is non-volatile.
     bool isUpperVector : 1;
     // This is a convenience method to avoid ifdef's everywhere this is used.
     bool IsUpperVector() const
@@ -2310,7 +2311,26 @@ public:
         return isUpperVector;
     }
 
-    // True if this interval has been partially spilled
+    // This is used for intervals that represent a large vector value, and have some accompanying interval with
+    // isUpperVector == true.
+    //
+    // These intervals are in one of two states:
+    //  1. The upper vector has been spilled to another location (another callee-saved register, or the stack) (true)
+    //  2. The upper vector is in its original register location (false)
+    // At a RefTypeUpperVectorSave position, a transition occurs from 2 => 1.
+    // At a RefTypeUpperVectorRestore position, a transition occurs from 1 => 2.
+    //
+    // In state 1, the location of the upper vector value is tracked by the accompanying interval.
+    // In state 2, the location of the upper vector value is tracked by the original variable's interval.
+    //
+    // Architecture-specific notes:
+    // * In Arm64-NEON, the ABI will require the bottom 64 bits of v8-v15 to be non-volatile across a call. The
+    //   registers are 128 bits, so the top half can be stashed in the non-volatile 64-bit portion of another available
+    //   register and restored from there, to avoid spilling to the stack.
+    // * In Arm64-SVE, Z registers overlap the NEON V registers, meaning the bottom 64 bits of z8-z15 still need to be
+    //   preserved in the same way as NEON. However, the same stashing trick cannot be used here. For standard PCS
+    //   calls, this implementation therefore spills these vectors to the stack.
+    //
     bool isPartiallySpilled : 1;
 #else
     bool IsUpperVector() const

@@ -5888,13 +5888,13 @@ void LinearScan::allocateRegisters()
         }
 #ifdef FEATURE_SIMD
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        else if (currentInterval->isUpperVector)
+        else if (refType == RefTypeUpperVectorSave)
         {
-            // This is a save or restore of the upper half of a large vector lclVar.
-            Interval* lclVarInterval = currentInterval->relatedInterval;
-            assert(lclVarInterval->isLocalVar);
-            if (refType == RefTypeUpperVectorSave)
+            if (currentInterval->isUpperVector)
             {
+                // This is a save of the upper half of a large vector lclVar.
+                Interval* lclVarInterval = currentInterval->relatedInterval;
+                assert(lclVarInterval->isLocalVar);
                 assert(currentInterval->recentRefPosition == &currentRefPosition);
 
                 // For a given RefTypeUpperVectorSave, there should be a matching RefTypeUpperVectorRestore
@@ -5961,7 +5961,17 @@ void LinearScan::allocateRegisters()
 
                     allocate = false;
                 }
-#if defined(TARGET_XARCH)
+#if defined(TARGET_ARM64)
+                else if (lclVarInterval->registerType == TYP_SIMD)
+                {
+                    // A standard AAPCS call does not preserve any complete scalable vector register. Unlike a
+                    // fixed-width vector's upper half, a scalable vector cannot be kept in the preserved portion
+                    // of another register, so always save it to its unknown-size stack home.
+                    setIntervalAsSpilled(currentInterval);
+                    lclVarInterval->isPartiallySpilled = true;
+                    allocate                           = false;
+                }
+#elif defined(TARGET_XARCH)
                 else if (lclVarInterval->registerType == TYP_SIMD64)
                 {
                     allocate                           = false;
@@ -5973,39 +5983,42 @@ void LinearScan::allocateRegisters()
                     lclVarInterval->isPartiallySpilled = true;
                 }
             }
-            else if (refType == RefTypeUpperVectorRestore)
+            else
             {
-                assert(currentInterval->isUpperVector);
-                if (lclVarInterval->isPartiallySpilled)
+                assert(!currentInterval->isLocalVar);
+                // This is a save marker on a non-local vector temporary, so spill it at the previous RefPosition.
+                // We may want to consider allocating two callee-save registers for this case, but it happens rarely
+                // enough that it may not warrant the additional complexity.
+                if (assignedRegister != REG_NA)
                 {
-                    lclVarInterval->isPartiallySpilled = false;
+                    RegRecord* regRecord        = getRegisterRecord(assignedRegister);
+                    Interval*  assignedInterval = regRecord->assignedInterval;
+                    unassignPhysReg(regRecord, currentInterval->firstRefPosition);
+                    if (assignedInterval->isConstant)
+                    {
+                        clearConstantReg(assignedRegister, assignedInterval->registerType);
+                    }
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
                 }
-                else
-                {
-                    allocate = false;
-                }
+                currentRefPosition.registerAssignment = RBM_NONE;
+                continue;
             }
         }
-        else if (refType == RefTypeUpperVectorSave)
+        else if (refType == RefTypeUpperVectorRestore)
         {
-            assert(!currentInterval->isLocalVar);
-            // Note that this case looks a lot like the case below, but in this case we need to spill
-            // at the previous RefPosition.
-            // We may want to consider allocating two callee-save registers for this case, but it happens rarely
-            // enough that it may not warrant the additional complexity.
-            if (assignedRegister != REG_NA)
+            assert(currentInterval->isUpperVector);
+            Interval* lclVarInterval = currentInterval->relatedInterval;
+            assert(lclVarInterval->isLocalVar);
+
+            allocate                           = lclVarInterval->isPartiallySpilled;
+            lclVarInterval->isPartiallySpilled = false;
+#ifdef TARGET_ARM64
+            if (lclVarInterval->registerType == TYP_SIMD)
             {
-                RegRecord* regRecord        = getRegisterRecord(assignedRegister);
-                Interval*  assignedInterval = regRecord->assignedInterval;
-                unassignPhysReg(regRecord, currentInterval->firstRefPosition);
-                if (assignedInterval->isConstant)
-                {
-                    clearConstantReg(assignedRegister, assignedInterval->registerType);
-                }
-                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
+                // Scalable upper-save intervals always restore directly from the stack home.
+                allocate = false;
             }
-            currentRefPosition.registerAssignment = RBM_NONE;
-            continue;
+#endif
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #endif // FEATURE_SIMD
@@ -7477,12 +7490,13 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclVarInterval->varNum);
     assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()));
 
-    // On Arm64, we must always have a register to save the upper half,
-    // while on x86 we can spill directly to memory.
+    // Fixed-width vectors on Arm64 require a register to extract the upper half. Scalable vectors can be stored
+    // directly to their unknown-size stack home, as can fixed-width vectors on x86.
     regNumber spillReg = refPosition->assignedReg();
 #ifdef TARGET_ARM64
-    bool spillToMem = refPosition->spillAfter;
-    assert(spillReg != REG_NA);
+    const bool isScalableVector = varDsc->GetRegisterType() == TYP_SIMD;
+    bool       spillToMem       = isScalableVector || refPosition->spillAfter;
+    assert(isScalableVector || (spillReg != REG_NA));
 #else
     bool spillToMem = (spillReg == REG_NA);
     assert(!refPosition->spillAfter);
@@ -7574,7 +7588,17 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     regNumber restoreReg = upperVectorInterval->physReg;
     SetLsraAdded(simdUpperRestore);
 
-    if (restoreReg == REG_NA)
+#ifdef TARGET_ARM64
+    if (varDsc->GetRegisterType() == TYP_SIMD)
+    {
+        // Scalable vectors are restored directly from their unknown-size stack home.
+        assert(restoreReg == REG_NA);
+        assert(lclVarInterval->isSpilled);
+        simdUpperRestore->gtFlags |= GTF_SPILLED;
+    }
+    else
+#endif
+        if (restoreReg == REG_NA)
     {
         // We need a stack location for this.
         assert(lclVarInterval->isSpilled);
@@ -10736,6 +10760,14 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
             hasDest = false;
         }
     }
+#ifdef TARGET_ARM64
+    if ((mode == LSRA_DUMP_POST) && hasDest && ((tree->gtFlags & GTF_SPILLED) != 0) && tree->TypeIs(TYP_SIMD) &&
+        tree->OperIs(GT_INTRINSIC) && (tree->AsIntrinsic()->gtIntrinsicName == NI_SIMD_UpperRestore))
+    {
+        assert(!tree->gtHasReg(m_compiler));
+        hasDest = false;
+    }
+#endif
     if (hasDest)
     {
         if (mode == LinearScan::LSRA_DUMP_POST && tree->gtFlags & GTF_SPILLED)
