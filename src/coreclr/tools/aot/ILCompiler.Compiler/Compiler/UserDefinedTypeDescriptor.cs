@@ -577,18 +577,26 @@ namespace ILCompiler
             else if (type.IsInterface)
             {
                 // Allows debuggers to vtcast the types and see the real instance types.
-                classTypeDescriptor.BaseClassId = GetTypeIndex(type.Context.GetWellKnownType(WellKnownType.Object), true);
+                DefType objectType = type.Context.GetWellKnownType(WellKnownType.Object);
+                classTypeDescriptor.BaseClassId = GetTypeIndex(objectType, true);
+
+                // Interfaces have no instance size of their own, but must be at least as large as their base class.
+                classTypeDescriptor.InstanceSize = (ulong)objectType.InstanceByteCount.AsInt;
             }
 
             List<DataFieldDescriptor> fieldsDescs = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> nonGcStaticFields = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> gcStaticFields = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> threadStaticFields = new List<DataFieldDescriptor>();
-            List<StaticDataFieldDescriptor> staticsDescs = new List<StaticDataFieldDescriptor>();
+
+            // The static fields are emitted grouped by storage region, so the descriptors of their locations
+            // are grouped the same way to keep them in the same order as the fields they describe.
+            List<StaticDataFieldDescriptor> nonGcStaticsDescs = new List<StaticDataFieldDescriptor>();
+            List<StaticDataFieldDescriptor> gcStaticsDescs = new List<StaticDataFieldDescriptor>();
+            List<StaticDataFieldDescriptor> threadStaticsDescs = new List<StaticDataFieldDescriptor>();
 
             Utf8String nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
             Utf8String gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
-            Utf8String threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
             bool isNativeAOT = Abi == TargetAbi.NativeAot;
 
             bool hasNonGcStatics = NodeFactory.MetadataManager.HasNonGcStaticBase(defType);
@@ -685,17 +693,19 @@ namespace ILCompiler
                         field.Offset = 0xFFFFFFFF;
 
                         if (fieldDesc.IsThreadStatic) {
-                            staticDesc.StaticDataName = threadStaticDataName;
-                            staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
+                            // The storage of thread statics is looked up at runtime for the current thread,
+                            // which a location expression can't describe. The field has no location.
+                            staticDesc.StaticDataName = default;
+                            threadStaticsDescs.Add(staticDesc);
                         } else if (fieldDesc.HasGCStaticBase) {
                             staticDesc.StaticDataName = gcStaticDataName;
                             staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
+                            gcStaticsDescs.Add(staticDesc);
                         } else {
                             staticDesc.StaticDataName = nonGcStaticDataName;
                             staticDesc.IsStaticDataInObject = 0;
+                            nonGcStaticsDescs.Add(staticDesc);
                         }
-
-                        staticsDescs.Add(staticDesc);
                     }
 
                     if (fieldDesc.IsThreadStatic)
@@ -730,11 +740,7 @@ namespace ILCompiler
                 fields[i] = fieldsDescs[i];
             }
 
-            StaticDataFieldDescriptor[] statics = new StaticDataFieldDescriptor[staticsDescs.Count];
-            for (int i = 0; i < staticsDescs.Count; ++i)
-            {
-                statics[i] = staticsDescs[i];
-            }
+            StaticDataFieldDescriptor[] statics = [.. nonGcStaticsDescs, .. gcStaticsDescs, .. threadStaticsDescs];
 
             LayoutInt instanceSize = defType.IsValueType ? defType.InstanceFieldSize : defType.InstanceByteCount;
             int instanceSizeEmit = instanceSize.IsIndeterminate ? 0xBAAD : instanceSize.AsInt;

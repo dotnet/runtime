@@ -265,13 +265,15 @@ namespace ILCompiler.ObjectWriter
 
             if (_sections[methodSymbol.SectionIndex] is UnixSectionDefinition section)
             {
+                MethodDesc method = (debugNode as IMethodNode)?.Method;
+
                 _dwarfBuilder.EmitSubprogramInfo(
                     methodName,
                     section.SymbolName,
                     methodSymbol.Value,
                     methodSymbol.Size,
                     methodTypeIndex,
-                    debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
+                    debugNode.GetDebugVars().Select(debugVar => (debugVar, GetDwarfVarTypeIndex(method, debugNode, debugVar))),
                     clauses ?? [],
                     frameInfos ?? []);
 
@@ -284,6 +286,21 @@ namespace ILCompiler.ObjectWriter
                         debugNode.GetNativeSequencePoints());
                 }
             }
+        }
+
+        // Debuggers expect the this parameter to have the type of the object pointer of the
+        // member function declaration, they treat it as a pointer to find the members of the class.
+        private uint GetDwarfVarTypeIndex(MethodDesc method, INodeWithDebugInfo debugNode, DebugVarInfoMetadata debugVar)
+        {
+            if (method is { Signature.IsStatic: false } &&
+                !debugNode.IsStateMachineMoveNextMethod &&
+                debugVar.IsParameter &&
+                debugVar.DebugVarInfo.VarNumber == 0)
+            {
+                return GetThisVarTypeIndex(method);
+            }
+
+            return GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar);
         }
 
         private protected override void EmitDebugSections(IDictionary<Utf8String, SymbolDefinition> definedSymbols)

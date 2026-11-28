@@ -216,6 +216,12 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (DwarfStaticVariableInfo staticField in _staticFields)
                 {
+                    // Static fields without a static base, like thread statics, have no location.
+                    if (staticField.Name.IsNull)
+                    {
+                        continue;
+                    }
+
                     (Utf8String sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
                     if (!sectionSymbolName.IsNull)
                     {
@@ -378,16 +384,10 @@ namespace ILCompiler.ObjectWriter
             // Create corresponding class info
             ClassTypeDescriptor arrayClassDescriptor = classDescriptor;
 
+            // The number of elements is described by the _numComponents field of the System.Array base class.
+            // The field is padded to the pointer size before the bounds or the elements.
             List<DataFieldDescriptor> fieldDescriptors = new();
-            ulong fieldOffset = _targetPointerSize;
-
-            fieldDescriptors.Add(new DataFieldDescriptor
-            {
-                FieldTypeIndex = GetPrimitiveTypeIndex(TypeFlags.Int32),
-                Offset = fieldOffset,
-                Name = new Utf8String("m_NumComponents"u8),
-            });
-            fieldOffset += _targetPointerSize;
+            ulong fieldOffset = 2u * _targetPointerSize;
 
             if (arrayDescriptor.IsMultiDimensional != 0)
             {
@@ -416,7 +416,7 @@ namespace ILCompiler.ObjectWriter
             ClassFieldsTypeDescriptor fieldsTypeDesc = new ClassFieldsTypeDescriptor
             {
                 Size = _targetPointerSize,
-                FieldsCount = arrayDescriptor.IsMultiDimensional != 0 ? 3 : 2,
+                FieldsCount = fieldDescriptors.Count,
             };
 
             return GetCompleteClassTypeIndex(arrayClassDescriptor, fieldsTypeDesc, fieldDescriptors.ToArray(), null);
