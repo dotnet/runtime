@@ -32086,12 +32086,12 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 // Return Value:
 //    The GenTreeFieldList node.
 //
-GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount)
+GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount, var_types fieldType)
 {
     unsigned   lclNum    = op->AsLclVar()->GetLclNum();
     LclVarDsc* opVarDsc  = lvaGetDesc(lclNum);
     unsigned   fieldSize = opVarDsc->lvExactSize() / fieldCount;
-    var_types  fieldType = Compiler::getSIMDTypeForSize(fieldSize);
+    fieldType            = (fieldType == TYP_UNDEF) ? Compiler::getSIMDTypeForSize(fieldSize) : fieldType;
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int               offset    = 0;

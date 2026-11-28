@@ -10324,14 +10324,16 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
     {
         assert(TypeIs(TYP_STRUCT));
 #ifdef TARGET_ARM64
-        if (AsHWIntrinsic()->GetSimdSize() == 16)
+        switch (AsHWIntrinsic()->GetSimdSize())
         {
-            return TYP_SIMD16;
-        }
-        else
-        {
-            assert(AsHWIntrinsic()->GetSimdSize() == 8);
-            return TYP_SIMD8;
+            case 8:
+                return TYP_SIMD8;
+            case 16:
+                return TYP_SIMD16;
+            case SIZE_UNKNOWN:
+                return TYP_SIMD;
+            default:
+                unreached();
         }
 #elif defined(TARGET_XARCH)
         // At this time, the only multi-reg HW intrinsics all return the type of their

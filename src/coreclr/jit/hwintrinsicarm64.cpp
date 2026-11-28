@@ -1293,7 +1293,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     impStoreToTemp(tmp, op3, CHECK_SPILL_NONE);
                     op3 = gtNewLclvNode(tmp, argType);
                 }
-                op3 = gtConvertTableOpToFieldList(op3, fieldCount);
+                op3 = gtConvertTableOpToFieldList(op3, fieldCount, getSIMDTypeForSize(simdSize));
             }
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
@@ -1590,13 +1590,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType != TYP_VOID);
 
-            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-            var_types argType1 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            var_types argType2 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-
-            var_types op1BaseType = getBaseTypeOfSIMDType(argClass);
+            CORINFO_ARG_LIST_HANDLE arg1       = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2       = info.compCompHnd->getArgNext(arg1);
+            CORINFO_CLASS_HANDLE    tupleClass = info.compCompHnd->getArgClass(sig, arg1);
+            CORINFO_CLASS_HANDLE    indexClass = info.compCompHnd->getArgClass(sig, arg2);
+            var_types               indexType  = getBaseTypeOfSIMDType(indexClass);
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -1604,11 +1602,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (op1->TypeIs(TYP_STRUCT))
             {
                 info.compNeedsConsecutiveRegisters = true;
-                unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
-                op1                                = gtConvertTableOpToFieldList(op1, fieldCount);
+                unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(tupleClass);
+                assert(fieldCount == 2);
+                op1 = gtConvertTableOpToFieldList(op1, fieldCount, getSIMDTypeForSize(simdSize));
             }
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
-            retNode->AsHWIntrinsic()->SetAuxiliaryType(op1BaseType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryType(indexType);
             break;
         }
 

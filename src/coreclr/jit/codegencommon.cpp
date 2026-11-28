@@ -7974,28 +7974,44 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
                 offset = offsets[i];
             }
 #endif
-            // Several fields could be passed in one register, copy using the register type.
-            // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
-            // it is safe to store a long register into a byte field as it is known that we have enough padding after.
-            GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
-            offset += genTypeSize(srcType);
 
-#ifdef DEBUG
-            unsigned stackHomeSize = m_compiler->lvaLclStackHomeSize(lclNum);
-#ifdef TARGET_64BIT
-            assert(offset <= stackHomeSize);
-#else  // !TARGET_64BIT
-            if (varTypeIsStruct(varDsc))
+#ifdef TARGET_ARM64
+            if (varTypeHasUnknownSize(srcType))
             {
-                assert(offset <= stackHomeSize);
+                assert(srcType == TYP_SIMD);
+                // TODO-SVE: This is not VL-agnostic and will need to be fixed for AOT. These multi-reg structures are
+                // 'Pure Scalable Types' in the ABI, which do not have an internal representation yet in the JIT.
+                // For now, we query VL from the VM and use this to calculate an actual offset for each field.
+                offset = i * m_compiler->getRuntimeVectorTByteLength();
+                GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
             }
             else
+#endif
             {
-                assert(varDsc->TypeIs(TYP_LONG));
-                assert(offset <= genTypeSize(TYP_LONG));
-            }
+
+                // Several fields could be passed in one register, copy using the register type.
+                // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
+                // it is safe to store a long register into a byte field as it is known that we have enough padding
+                // after.
+                GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
+                offset += genTypeSize(srcType);
+#ifdef DEBUG
+                unsigned stackHomeSize = m_compiler->lvaLclStackHomeSize(lclNum);
+#ifdef TARGET_64BIT
+                assert(offset <= stackHomeSize);
+#else  // !TARGET_64BIT
+                if (varTypeIsStruct(varDsc))
+                {
+                    assert(offset <= stackHomeSize);
+                }
+                else
+                {
+                    assert(varDsc->TypeIs(TYP_LONG));
+                    assert(offset <= genTypeSize(TYP_LONG));
+                }
 #endif // !TARGET_64BIT
 #endif // DEBUG
+            }
         }
     }
 
