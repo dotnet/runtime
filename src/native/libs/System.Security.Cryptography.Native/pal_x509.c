@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <dirent.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
@@ -548,6 +549,67 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
     return NULL;
 }
 
+static X509_STORE_CTX_check_issued_fn g_defaultCheckIssued = NULL;
+static pthread_mutex_t g_defaultCheckIssuedLock = PTHREAD_MUTEX_INITIALIZER;
+
+static int EnsureDefaultCheckIssued(X509_STORE* store)
+{
+    // A context initialized from a store with no check_issued callback reports OpenSSL's default one.
+    X509_STORE_CTX* ctx = X509_STORE_CTX_new();
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int ret = X509_STORE_CTX_init(ctx, store, NULL, NULL);
+
+    if (ret == 1)
+    {
+        g_defaultCheckIssued = X509_STORE_CTX_get_check_issued(ctx);
+        assert(g_defaultCheckIssued != NULL);
+    }
+
+    X509_STORE_CTX_free(ctx);
+    return ret;
+}
+
+static int CheckIssuedPreservingError(X509_STORE_CTX* ctx, OSSL4CONST X509* x, OSSL4CONST X509* issuer)
+{
+    // OpenSSL 3.0.0 through 3.0.5 set the context's error when check_issued rejects a candidate issuer for anything
+    // but a name mismatch, and report it as the final error when no issuer is accepted. That final error must stay a
+    // missing-issuer code: the managed side maps it to PartialChain and tries the AIA download only on those codes.
+    int error = X509_STORE_CTX_get_error(ctx);
+    int ret = g_defaultCheckIssued(ctx, x, issuer);
+    X509_STORE_CTX_set_error(ctx, error);
+    return ret;
+}
+
+static int SetCheckIssuedPreservingError(X509_STORE* store)
+{
+    // Only OpenSSL 3.0.0 through 3.0.5 record a rejected candidate issuer's error.
+    unsigned long version = OpenSSL_version_num();
+
+    if (version < OPENSSL_VERSION_3_0_RTM || version >= OPENSSL_VERSION_3_0_6_RTM)
+    {
+        return 1;
+    }
+
+    // Publish only successful initialization, so an allocation failure can be reported and retried.
+    int lockResult = pthread_mutex_lock(&g_defaultCheckIssuedLock);
+    assert(!lockResult && "Acquiring the check_issued mutex failed.");
+    int ret = g_defaultCheckIssued != NULL ? 1 : EnsureDefaultCheckIssued(store);
+    lockResult = pthread_mutex_unlock(&g_defaultCheckIssuedLock);
+    assert(!lockResult && "Releasing the check_issued mutex failed.");
+
+    if (ret == 1)
+    {
+        X509_STORE_set_check_issued(store, CheckIssuedPreservingError);
+    }
+
+    return ret;
+}
+
 X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, X509Stack* userTrust)
 {
     ERR_clear_error();
@@ -555,6 +617,12 @@ X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, X509Stack* userTru
 
     if (store == NULL)
     {
+        return NULL;
+    }
+
+    if (!SetCheckIssuedPreservingError(store))
+    {
+        X509_STORE_free(store);
         return NULL;
     }
 
@@ -778,6 +846,12 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
 
                 if (tmpNew == NULL)
                 {
+                    return 0;
+                }
+
+                if (!SetCheckIssuedPreservingError(tmpNew))
+                {
+                    X509_STORE_free(tmpNew);
                     return 0;
                 }
 
