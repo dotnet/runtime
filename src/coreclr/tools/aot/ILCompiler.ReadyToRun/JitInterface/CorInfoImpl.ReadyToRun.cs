@@ -535,7 +535,10 @@ namespace Internal.JitInterface
 
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
         {
-            MethodDesc asyncResumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
+            // Like the runtime, which registers R2R resumption stubs on the module's IL stub MethodTable,
+            // own the stub by a non-generic module-level type rather than the target's (possibly shared) type.
+            EcmaModule module = ((EcmaMethod)MethodBeingCompiled.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            MethodDesc asyncResumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, module.GetGlobalModuleType());
             AddResumptionStubFixup(_compilation.NodeFactory.CompiledMethodNode(asyncResumptionStub));
 
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.CompiledMethodNode(asyncResumptionStub));
