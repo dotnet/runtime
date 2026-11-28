@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -991,6 +993,338 @@ namespace System.Threading.Tests
             }
 
             await Task.WhenAll(CreateOrOpenMutex(), CreateOrOpenMutex());
+        }
+
+        private static bool IsRemoteExecutorAndPThreadNamedMutexSupported =>
+            IsRemoteExecutorAndCrossProcessNamedMutexSupported &&
+            PlatformDetection.ManagedThreadCleanupOnFinalizerThread &&
+            RuntimeInformation.ProcessArchitecture is not (Architecture.Arm or Architecture.Arm64);
+
+        [ConditionalTheory(nameof(IsRemoteExecutorAndPThreadNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public void NamedMutex_ReacquireBeforeAbandonedOwnerCleanup(bool recoverInOtherProcess, bool cleanupBeforeReacquire)
+        {
+            // Isolate the scenario because it deliberately stalls the child process's finalizer thread.
+            RemoteExecutor.Invoke(
+                (recoverInOtherProcessString, cleanupBeforeReacquireString) =>
+                {
+                    bool recoverInOtherProcess = bool.Parse(recoverInOtherProcessString);
+                    bool cleanupBeforeReacquire = bool.Parse(cleanupBeforeReacquireString);
+                    string name = Guid.NewGuid().ToString("N");
+                    using var mutex = new Mutex(false, name);
+                    using var finalizerStarted = new ManualResetEventSlim();
+                    using var releaseFinalizer = new ManualResetEventSlim();
+                    using var callbackCompleted = new ManualResetEventSlim();
+                    NativeMutexThreadState ownerState = new(mutex, callbackCompleted);
+
+                    try
+                    {
+                        // Prevent managed cleanup from retiring the dead owner's recursion count and ownership chain.
+                        CreateFinalizerBlocker(finalizerStarted, releaseFinalizer);
+                        GC.Collect();
+                        finalizerStarted.CheckedWait();
+
+                        // The foreign thread acquires once and exits without releasing. Unlike a managed Thread,
+                        // its native mutex can be recovered before its managed ownership cleanup runs.
+                        // Callback completion confirms acquisition; the recovery wait below observes native exit.
+                        CreateNativeThread(ownerState);
+                        callbackCompleted.CheckedWait();
+                        Assert.Null(ownerState.CallbackException);
+                        Assert.NotNull(ownerState.OwningThread);
+
+                        if (recoverInOtherProcess)
+                        {
+                            // Another process consumes the abandonment notification and releases the native mutex,
+                            // while this process still has the dead thread's local ownership bookkeeping.
+                            RemoteExecutor.Invoke(
+                                name =>
+                                {
+                                    using Mutex other = Mutex.OpenExisting(name);
+                                    Assert.Throws<AbandonedMutexException>(() => other.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                                    other.ReleaseMutex();
+                                },
+                                name).Dispose();
+                        }
+
+                        // Exercise cleanup before reacquisition as well as reacquisition while cleanup is still blocked.
+                        if (cleanupBeforeReacquire)
+                        {
+                            releaseFinalizer.Set();
+                            Assert.True(ownerState.OwningThread.Join(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                        }
+
+                        // Recovery elsewhere already consumed abandonment; direct recovery here must report it.
+                        // Both paths must establish new ownership rather than reuse the dead thread's recursion count.
+                        if (recoverInOtherProcess)
+                        {
+                            Assert.True(mutex.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                        }
+                        else
+                        {
+                            Assert.Throws<AbandonedMutexException>(() => mutex.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                        }
+
+                        // Releasing one recursive level must leave the original acquisition held.
+                        Assert.True(mutex.WaitOne(0));
+                        mutex.ReleaseMutex();
+
+                        // Check native mutual exclusion, not just the process-local recursion count.
+                        // Another process must remain excluded until the final release.
+                        RemoteExecutor.Invoke(
+                            name =>
+                            {
+                                using Mutex other = Mutex.OpenExisting(name);
+                                Assert.False(other.WaitOne(0));
+                            },
+                            name).Dispose();
+
+                        // Let any remaining dead-owner cleanup run while the new owner still holds the mutex.
+                        // It must not disturb that ownership or prevent the new owner's final release.
+                        releaseFinalizer.Set();
+                        Assert.True(ownerState.OwningThread.Join(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                        mutex.ReleaseMutex();
+                    }
+                    finally
+                    {
+                        // An assertion failure must not leave the child process's finalizer blocked.
+                        releaseFinalizer.Set();
+                        GC.WaitForPendingFinalizers();
+                    }
+
+                    // Closing the last handle must retire the object. A leaked dead-owner reference would
+                    // instead make this constructor reopen the previous object with createdNew == false.
+                    mutex.Dispose();
+                    using var recreated = new Mutex(initiallyOwned: true, name, out bool createdNew);
+                    Assert.True(createdNew);
+                    recreated.ReleaseMutex();
+                },
+                recoverInOtherProcess.ToString(),
+                cleanupBeforeReacquire.ToString()).Dispose();
+        }
+
+        [ConditionalTheory(nameof(IsRemoteExecutorAndPThreadNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NamedMutex_DeferredAbandonment_DoesNotModifyRecoveredMutex(bool disposeOwningHandle, bool recordRecovery)
+        {
+            // The child process has the dead owner; a second process will hold the recovered native mutex
+            // while the first process runs its deferred cleanup. Isolate the finalizer stall from the runner.
+            RemoteExecutor.Invoke(
+                (name, releaseFilePath, disposeOwningHandleString, recordRecoveryString) =>
+                {
+                    NamedWaitHandleOptions options = new() { CurrentUserOnly = false, CurrentSessionOnly = false };
+                    using Mutex mutex = new(false, $"Global\\{name}", options);
+                    // Keep the object open even in cases that close the original owning handle before cleanup.
+                    using Mutex alias = Mutex.OpenExisting($"Global\\{name}", options);
+                    using var finalizerStarted = new ManualResetEventSlim();
+                    using var releaseFinalizer = new ManualResetEventSlim();
+                    using var callbackCompleted = new ManualResetEventSlim();
+                    NativeMutexThreadState ownerState = new(mutex, callbackCompleted);
+
+                    try
+                    {
+                        // Hold back managed cleanup so native abandonment and recovery can happen first.
+                        CreateFinalizerBlocker(finalizerStarted, releaseFinalizer);
+                        GC.Collect();
+                        finalizerStarted.CheckedWait();
+
+                        // The foreign thread exits after its callback returns, abandoning the native mutex.
+                        // Its managed ownership cleanup remains pending until the finalizer is released.
+                        CreateNativeThread(ownerState);
+                        callbackCompleted.CheckedWait();
+                        Assert.Null(ownerState.CallbackException);
+                        Assert.NotNull(ownerState.OwningThread);
+
+                        // The recovery process either publishes its ownership through Mutex.WaitOne or holds
+                        // the native mutex without publishing new owner IDs. Both cases keep it locked until signaled.
+                        using (RemoteInvokeHandle recovery = RemoteExecutor.Invoke(RecoverPThreadMutex, name, releaseFilePath, recordRecoveryString))
+                        {
+                            try
+                            {
+                                // Snapshot the shared storage only after recovery has acquired the native mutex.
+                                Assert.True(SpinWait.SpinUntil(
+                                    () => File.Exists(releaseFilePath + ".ready"),
+                                    ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                                string sharedMemoryPath = $"{GlobalSharedMemoryDirectory}/{name}";
+                                byte[] sharedData = File.ReadAllBytes(sharedMemoryPath);
+                                // Cover deferred cleanup after the original owning handle has already been closed.
+                                if (bool.Parse(disposeOwningHandleString))
+                                {
+                                    mutex.Dispose();
+                                }
+
+                                // Run the dead owner's managed cleanup while the recovery process still holds the mutex.
+                                releaseFinalizer.Set();
+                                Assert.True(ownerState.OwningThread.Join(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+
+                                // Cleanup may retire only local bookkeeping, even when shared IDs still name the dead owner.
+                                // Shared bytes must remain unchanged, and the recovery process must keep us excluded.
+                                Assert.Equal(sharedData, File.ReadAllBytes(sharedMemoryPath));
+                                Assert.False(alias.WaitOne(0));
+                            }
+                            finally
+                            {
+                                // Let the recovery process release and exit even if an assertion fails.
+                                File.WriteAllText(releaseFilePath, "release");
+                            }
+                        }
+
+                        // Recovery has now released normally: acquiring must not report abandonment again,
+                        // and recursive acquisition/release must still balance correctly.
+                        Assert.True(alias.WaitOne(0));
+                        Assert.True(alias.WaitOne(0));
+                        alias.ReleaseMutex();
+                        alias.ReleaseMutex();
+                    }
+                    finally
+                    {
+                        // Always unblock and drain finalization before leaving the isolated process.
+                        releaseFinalizer.Set();
+                        GC.WaitForPendingFinalizers();
+                    }
+
+                    // Neither the disposed handle nor the dead owner's ownership reference may keep the object alive.
+                    mutex.Dispose();
+                    alias.Dispose();
+                    using Mutex recreated = new(initiallyOwned: true, $"Global\\{name}", options, out bool createdNew);
+                    Assert.True(createdNew);
+                    recreated.ReleaseMutex();
+                },
+                Guid.NewGuid().ToString("N"),
+                GetTestFilePath(),
+                disposeOwningHandle.ToString(),
+                recordRecovery.ToString()).Dispose();
+        }
+
+        private static unsafe void RecoverPThreadMutex(string name, string releaseFilePath, string recordRecoveryString)
+        {
+            const int OwnerDead = 0x10041; // Interop.Error.EOWNERDEAD
+            NamedWaitHandleOptions options = new() { CurrentUserOnly = false, CurrentSessionOnly = false };
+            using Mutex mutex = Mutex.OpenExisting($"Global\\{name}", options);
+            if (bool.Parse(recordRecoveryString))
+            {
+                // This exception reports successful acquisition of an abandoned mutex. Keep that ownership
+                // until the original process finishes its cleanup and signals us to release.
+                Assert.Throws<AbandonedMutexException>(() => mutex.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                try
+                {
+                    WaitForRelease();
+                }
+                finally
+                {
+                    mutex.ReleaseMutex();
+                }
+                return;
+            }
+
+            // We explicitly map in the underlying mutex data structures so we can simulate the
+            // "recover an abandoned mutex and acquire" and "cleanup ownership information of an abandoned mutex" race.
+            // Force the gap between native recovery and managed ownership publication: acquisition makes
+            // the pthread mutex consistent and holds it, but shared IDs still identify the dead owner.
+            // Deferred cleanup must not interpret those stale IDs as permission to alter or unlock it.
+            using MemoryMappedFile mapping = MemoryMappedFile.CreateFromFile(
+                $"{GlobalSharedMemoryDirectory}/{name}", FileMode.Open, null, 0, MemoryMappedFileAccess.ReadWrite);
+            using MemoryMappedViewAccessor view = mapping.CreateViewAccessor();
+            byte* pointer = null;
+            view.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
+            // The shared data follows the eight-byte SharedMemorySharedDataHeader.
+            void* sharedData = pointer + view.PointerOffset + sizeof(ulong);
+            bool acquired = false;
+            try
+            {
+                int result = Interop.Sys.LowLevelCrossProcessMutex_Acquire(sharedData, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                acquired = result is 0 or OwnerDead;
+                Assert.Equal(OwnerDead, result);
+                WaitForRelease();
+            }
+            finally
+            {
+                int releaseResult = acquired ? Interop.Sys.LowLevelCrossProcessMutex_Release(sharedData) : 0;
+                view.SafeMemoryMappedViewHandle.ReleasePointer();
+                Assert.Equal(0, releaseResult);
+            }
+
+            void WaitForRelease()
+            {
+                // The ready file lets the original process start cleanup only after acquisition; the release
+                // file keeps this process's native ownership intact until that cleanup has been checked.
+                File.WriteAllText(releaseFilePath + ".ready", "ready");
+                Assert.True(SpinWait.SpinUntil(
+                    () => File.Exists(releaseFilePath),
+                    ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            }
+        }
+
+        private sealed class NativeMutexThreadState(Mutex mutex, ManualResetEventSlim callbackCompleted)
+        {
+            public Mutex Mutex { get; } = mutex;
+            public ManualResetEventSlim CallbackCompleted { get; } = callbackCompleted;
+            public Thread OwningThread { get; set; }
+            public Exception CallbackException { get; set; }
+        }
+
+        private static unsafe void CreateNativeThread(NativeMutexThreadState state)
+        {
+            GCHandle handle = GCHandle.Alloc(state);
+            bool created = false;
+            try
+            {
+                created = Interop.Sys.CreateThread(1536 * 1024, &AcquireMutexOnNativeThread, GCHandle.ToIntPtr(handle));
+                Assert.True(created);
+            }
+            finally
+            {
+                if (!created)
+                {
+                    handle.Free();
+                }
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static IntPtr AcquireMutexOnNativeThread(IntPtr parameter)
+        {
+            GCHandle handle = GCHandle.FromIntPtr(parameter);
+            NativeMutexThreadState state = (NativeMutexThreadState)handle.Target;
+            try
+            {
+                state.OwningThread = Thread.CurrentThread;
+                Assert.True(state.Mutex.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+            }
+            catch (Exception ex)
+            {
+                state.CallbackException = ex;
+            }
+            finally
+            {
+                handle.Free();
+                state.CallbackCompleted.Set();
+            }
+
+            return IntPtr.Zero;
+        }
+
+        // Keep construction out of the caller's frame so the blocker can become unreachable before GC.Collect.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CreateFinalizerBlocker(ManualResetEventSlim started, ManualResetEventSlim release) =>
+            _ = new FinalizerBlocker(started, release);
+
+        private sealed class FinalizerBlocker(ManualResetEventSlim started, ManualResetEventSlim release)
+        {
+            ~FinalizerBlocker()
+            {
+                started.Set();
+                if (!release.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds))
+                {
+                    Environment.FailFast("Timed out waiting to unblock the finalizer thread.");
+                }
+            }
         }
 
         private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
