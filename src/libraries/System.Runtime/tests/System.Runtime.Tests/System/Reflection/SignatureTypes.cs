@@ -643,6 +643,7 @@ namespace System.Reflection.Tests
                     Assert.Equal(1, t.GenericTypeArguments.Length);
                     Assert.Equal(genericTypeDefinition.IsValueType, t.IsValueType);
                     Assert.Equal(genericTypeDefinition.IsEnum, t.IsEnum);
+                    Assert.Equal(genericTypeDefinition.Attributes, t.Attributes);
 
                     Type et = t.GenericTypeArguments[0];
                     Assert.True(et.IsSignatureType);
