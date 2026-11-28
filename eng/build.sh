@@ -585,6 +585,28 @@ if [[ "$useNinja" == true ]]; then
   arguments+=("/p:Ninja=true")
 fi
 
+# CI testing: use a crosstool-ng rootfs in place of the distro rootfs from the cross container.
+if [[ "$crossBuild" == 1 && -n "${ROOTFS_DIR:-}" && ! -e "$ROOTFS_DIR/etc/alpine-release" ]] &&
+   [[ "$os" == linux || ( -z "$os" && "$(uname -s)" == Linux ) ]]; then
+    ctngArch="$(basename "$ROOTFS_DIR")"
+    case "$ctngArch" in
+        x64|arm64|arm|riscv64|loongarch64)
+            export ROOTFS_DIR="/tmp/crossrootfs-crosstool-ng/$ctngArch"
+            if [[ ! -d "$ROOTFS_DIR/usr/include" ]]; then
+                sudo=
+                [[ "$(id -u)" != 0 ]] && sudo=sudo
+                $sudo tdnf install -y autoconf automake libtool gperf bison flex help2man gawk rsync patch file ncurses-devel which glibc-gconv-extra texinfo perl-FindBin perl-IPC-Cmd perl-File-Compare perl-File-Copy perl-Time-Piece
+                for attempt in 1 2 3; do
+                    "$scriptroot/common/cross/crosstool-ng-build-rootfs.sh" "$ctngArch" --rootfsdir "$ROOTFS_DIR" && break
+                    [[ "$attempt" == 3 ]] && exit 1
+                    echo "crosstool-ng-build-rootfs.sh failed (attempt $attempt of 3), retrying in 30 seconds..."
+                    sleep 30
+                done
+            fi
+            ;;
+    esac
+fi
+
 initDistroRid "$os" "$arch" "$crossBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
