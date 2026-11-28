@@ -5,6 +5,7 @@
     <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
+    <MergedWrapperProjectReference Include="arglist\vararg_calli_interp.ilproj" />
     <MergedWrapperProjectReference Include="array-il\_Arrayscomplex3.ilproj" />
     <MergedWrapperProjectReference Include="array-il\_Arrayssimple3.ilproj" />
     <MergedWrapperProjectReference Include="ConstantFolding\HandlesInAddrModes.ilproj" />
