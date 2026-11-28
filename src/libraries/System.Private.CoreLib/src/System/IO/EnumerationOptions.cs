@@ -73,10 +73,16 @@ namespace System.IO
         /// The default is simple matching where '*' is always 0 or more characters and '?' is a single character.</remarks>
         public MatchType MatchType { get; set; }
 
-        /// <summary>Gets or sets the case matching behavior.</summary>
-        /// <value>One of the enumeration values that indicates the case matching behavior.</value>
-        /// <remarks>For APIs that allow specifying a match expression, this property allows you to specify the case matching behavior.
-        /// The default is to match platform defaults, which are gleaned from the case sensitivity of the temporary folder.</remarks>
+        /// <summary>
+        /// Gets or sets the case matching behavior for entry (file and directory) name matching against the search pattern.
+        /// </summary>
+        /// <remarks>
+        /// This property affects only how entry names (file and directory names) are matched against the search pattern during enumeration.
+        /// It does not affect directory path resolution or traversal. On case-sensitive file systems
+        /// (common on Linux or when using a case-sensitive volume), directory paths must match the exact casing
+        /// regardless of this setting; on case-insensitive file systems, path resolution follows the behavior
+        /// of the underlying file system. The default is to match the platform defaults.
+        /// </remarks>
         public MatchCasing MatchCasing { get; set; }
 
         /// <summary>Gets or sets a value that indicates the maximum directory depth to recurse while enumerating, when <see cref="RecurseSubdirectories" /> is set to <see langword="true" />.</summary>
