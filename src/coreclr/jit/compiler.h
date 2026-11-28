@@ -4633,9 +4633,10 @@ public:
     //------------------------- UnknownSizeFrame ---------------------------------
 
     void lvaInitUnknownSizeFrame();
+    void SetUnknownSizeFrameUsed();
     void lvaAllocUnknownSizeLocal(unsigned varNum);
 
-    bool compUsesUnknownSizeFrame;
+    bool compUsesUnknownSizeFrame = false;
 
 #if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
     // For ARM64, the UnknownSizeFrame lives at the end of the statically

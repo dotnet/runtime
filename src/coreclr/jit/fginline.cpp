@@ -2006,6 +2006,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     compLongUsed |= InlineeCompiler->compLongUsed;
     compFloatingPointUsed |= InlineeCompiler->compFloatingPointUsed;
+    compUsesUnknownSizeFrame |= InlineeCompiler->compUsesUnknownSizeFrame;
     compLocallocUsed |= InlineeCompiler->compLocallocUsed;
     compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;

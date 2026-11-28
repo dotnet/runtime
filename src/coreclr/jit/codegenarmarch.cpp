@@ -5035,6 +5035,13 @@ void CodeGen::genUnknownSizeFrame()
     assert(m_compiler->unkSizeFrame.isFinalized);
     unsigned totalVectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
 
+    // Import conservatively requests a scalable frame before final stack requirements are known.
+    // If no scalable locals or spills need stack slots, there is no frame to allocate.
+    if (totalVectorCount == 0)
+    {
+        return;
+    }
+
     // We reserve REG_UNKBASE for addressing SVE locals. This will always point at the top of
     // of the UnknownSizeFrame and we index into it.
     // TODO-SVE: We may want this to point into the middle of the frame to reduce address
@@ -5073,7 +5080,12 @@ void CodeGen::genZeroInitializeUnknownSizeFrame()
 
     unsigned vectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
 
-    assert(vectorCount > 0);
+    // Import conservatively requests a scalable frame before final stack requirements are known.
+    // If no scalable locals or spills need stack slots, there is no frame to initialize.
+    if (vectorCount == 0)
+    {
+        return;
+    }
 
     // z9 <== {0, 0, ...}
     GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, 0, INS_OPTS_SCALABLE_B);

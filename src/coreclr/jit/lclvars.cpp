@@ -5729,13 +5729,27 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 void Compiler::lvaInitUnknownSizeFrame()
 {
 #if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
-    compUsesUnknownSizeFrame = false;
 #ifdef DEBUG
     unkSizeFrame.isFinalized = false;
 #endif
     unkSizeFrame.nMask   = 0;
     unkSizeFrame.nVector = 0;
 #endif
+}
+
+//------------------------------------------------------------------------
+// SetUnknownSizeFrameUsed: Record that the method uses an unknown-size frame.
+//
+// Notes:
+//   Unknown-size frames have the same frame requirements as localloc. In
+//   particular, they require a frame pointer because SP is adjusted by a
+//   runtime-determined amount.
+//
+void Compiler::SetUnknownSizeFrameUsed()
+{
+    compUsesUnknownSizeFrame = true;
+    compLocallocUsed         = true;
+    JITDUMP("*** Compilation requested UnknownSizeFrame ***\n");
 }
 
 //-------------------------------------------------------------------------------
@@ -5769,13 +5783,7 @@ void Compiler::lvaAllocUnknownSizeLocal(unsigned varNum)
         unreached();
     }
 
-    compUsesUnknownSizeFrame = true;
-
-    // Technically we're not using localalloc, but the space these locals use
-    // will be at the beginning of the alloca space on the stack frame. So we
-    // should set this and inherit all of its behaviour, e.g. guarantee we get
-    // a frame pointer.
-    compLocallocUsed = true;
+    SetUnknownSizeFrameUsed();
 }
 
 //------------------------------------------------------------------------
@@ -6328,6 +6336,12 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
 void Compiler::lvaAllocateUnknownSizeTemp(TempDsc* temp)
 {
     assert(varTypeHasUnknownSize(temp->tdTempType()));
+
+    // We need to have correctly predicted that an unknown sized temp was going to be
+    // allocated on the UnknownSizeFrame.
+    // Temp allocation happens late in register allocation, but the UnknownSizeFrame
+    // indexing register needs to be reserved at the beginning of register allocation.
+    assert(compUsesUnknownSizeFrame);
 
     int offset = 0;
     switch (temp->tdTempType())
