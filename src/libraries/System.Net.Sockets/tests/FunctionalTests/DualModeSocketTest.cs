@@ -880,9 +880,11 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task Socket_SendToV4IPEndPointToV4Host_Throws()
         {
+            // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
+            // https://github.com/dotnet/runtime/issues/47772
             using Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
             socket.DualMode = false;
-            await Assert.ThrowsAsync<SocketException>(
+            await Assert.ThrowsAsync<ArgumentException>(
                 () => SendToAsync(socket, new byte[1], new IPEndPoint(IPAddress.Loopback, DualModeBase.UnusedPort)));
         }
 
