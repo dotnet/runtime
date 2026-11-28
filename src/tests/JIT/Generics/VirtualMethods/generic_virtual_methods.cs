@@ -170,6 +170,69 @@ public class GenericVirtualMethodTests
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static IDevirtTarget MakeTarget() => new DevirtTarget();
+
+    [Fact]
+    public static void RuntimeLookupInlining()
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Type LateInlinee<TInlinee>()
+        {
+            return MakeTarget().GetTypeArg<TInlinee>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type LateCaller<TWrong, TRight>()
+        {
+            return LateInlinee<TRight>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Type Inlinee<TInlinee>(IDevirtTarget target)
+        {
+            return target.GetTypeArg<TInlinee>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type Caller<TWrong, TRight>()
+        {
+            return Inlinee<TRight>(new DevirtTarget());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type LateRootCaller<TWrong, TRight>()
+        {
+            return MakeTarget().GetTypeArg<TRight>();
+        }
+
+        Type immediateActual = Caller<string, object>();
+        Type lateActual = LateCaller<string, object>();
+        Type lateRootActual = LateRootCaller<string, object>();
+        Type expected = typeof(object);
+        Assert.Equal(expected, immediateActual);
+        Assert.Equal(expected, lateActual);
+        Assert.Equal(expected, lateRootActual);
+    }
+
+    private sealed class Receiver<TFirst, TSecond>
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Type CallOther(Receiver<TSecond, TFirst> other) => other.GetFirstType();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private Type GetFirstType() => MakeTarget().GetTypeArg<TFirst>();
+    }
+
+    [Fact]
+    public static void RuntimeLookupUsesInlineeReceiver()
+    {
+        var first = new Receiver<string, object>();
+        var second = new Receiver<object, string>();
+        Assert.Equal(typeof(object), first.CallOther(second));
+        Assert.Equal(typeof(string), second.CallOther(first));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ValidateCaller(string scenarioName, IBaseMethodCaller caller)
     {
         ValidateNonSharedCall(scenarioName, caller);
@@ -508,6 +571,17 @@ internal struct DerivedStructStringNoRecursion : IBase<string>
     {
         return Foo<U>;
     }
+}
+
+interface IDevirtTarget
+{
+    Type GetTypeArg<T>();
+}
+
+sealed class DevirtTarget : IDevirtTarget
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public Type GetTypeArg<T>() => typeof(T);
 }
 
 internal static class IconContextBridgeNonShared<TMethod>

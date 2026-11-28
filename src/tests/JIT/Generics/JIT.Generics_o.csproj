@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="Exceptions\GenericCatchInterfaceProgram.ilproj" />
+    <MergedWrapperProjectReference Include="VirtualMethods\BoxedGenericVirtualTailCall.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constraints\Call_instance01.cs" />
