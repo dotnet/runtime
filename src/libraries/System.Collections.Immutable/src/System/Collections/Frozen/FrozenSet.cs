@@ -103,6 +103,29 @@ namespace System.Collections.Frozen
             // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
             if (typeof(T).IsValueType && ReferenceEquals(comparer, EqualityComparer<T>.Default))
             {
+#if NET
+                // If the values are integers that all fit in a single vector, search them with a single vector comparison.
+                // (Even if they're contiguous: indexing directly into their range would be a bit cheaper still, but checking
+                // whether they are would make creating these small sets slower.)
+                if (SmallIntegralFrozenSet.CreateIfValid(source) is { } smallIntegralResult)
+                {
+                    return smallIntegralResult;
+                }
+
+                // If the values are integers that are close enough to each other, use an implementation that indexes
+                // directly into the range of values rather than searching or hashing.
+                if (DenseIntegralFrozenSet.CreateIfValid(source) is { } denseResult)
+                {
+                    return denseResult;
+                }
+
+                // If there are still few enough integers, use a hash table whose buckets are each searched with a single vector comparison.
+                if (VectorBucketsFrozenSet.CreateIfValid(source) is { } vectorBucketsResult)
+                {
+                    return vectorBucketsResult;
+                }
+#endif
+
                 if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                 {
                     // If the type is a something we know we can efficiently compare, use a specialized implementation

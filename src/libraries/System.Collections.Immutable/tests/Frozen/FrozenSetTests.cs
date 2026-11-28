@@ -452,6 +452,24 @@ namespace System.Collections.Frozen.Tests
         protected override int CreateT(int seed) => new Random(seed).Next();
     }
 
+    public class FrozenSet_Generic_Tests_int_Contiguous : FrozenSet_Generic_Tests<int>
+    {
+        protected override bool DefaultValueAllowed => true;
+
+        protected override int CreateT(int seed) => seed;
+
+        protected override bool TestLargeSizes => false; // large dense sets are covered by FrozenSet_IntegralValuesTests
+    }
+
+    public class FrozenSet_Generic_Tests_int_EveryThirdValue : FrozenSet_Generic_Tests<int>
+    {
+        protected override bool DefaultValueAllowed => true;
+
+        protected override int CreateT(int seed) => seed * 3;
+
+        protected override bool TestLargeSizes => false; // large dense sets are covered by FrozenSet_IntegralValuesTests
+    }
+
     public class FrozenSet_Generic_Tests_SimpleClass : FrozenSet_Generic_Tests<SimpleClass>
     {
         protected override SimpleClass CreateT(int seed)

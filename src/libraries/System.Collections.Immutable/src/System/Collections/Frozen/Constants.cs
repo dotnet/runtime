@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text;
 
 namespace System.Collections.Frozen
@@ -30,6 +31,14 @@ namespace System.Collections.Frozen
         /// hashing ValueTypeDefaultComparerFrozenDictionary/Set.
         /// </remarks>
         public const int MaxItemsInSmallValueTypeFrozenCollection = 10;
+
+        /// <summary>Threshold when we switch from vectorized buckets to the general hashing for integral value types.</summary>
+        /// <remarks>
+        /// This determines the threshold when we switch from VectorBucketsFrozenSet to the
+        /// Int32FrozenSet / ValueTypeDefaultComparerFrozenSet. It must not exceed 256, as
+        /// VectorBucketsFrozenSet stores item indices as bytes.
+        /// </remarks>
+        public const int MaxItemsInVectorBucketsFrozenCollection = 64;
 
         /// <summary>
         /// Whether the <typeparamref name="T"/> is known to implement <see cref="IComparable{T}"/> safely and efficiently,
@@ -70,6 +79,28 @@ namespace System.Collections.Frozen
             typeof(T) == typeof(Int128) ||
             typeof(T) == typeof(UInt128) ||
 #endif
+            typeof(T).IsEnum;
+
+        /// <summary>
+        /// Whether <typeparamref name="T"/> is an integral type or an enum, i.e. a type for which equality as defined by
+        /// <see cref="EqualityComparer{T}.Default"/> is the bitwise equality of the value.
+        /// </summary>
+        /// <remarks>
+        /// These are the integer types (and enums) among the types for which RuntimeHelpers.IsBitwiseEquatable returns true,
+        /// which can't be used here as it's internal to CoreLib and this assembly also ships as a standalone package.
+        /// </remarks>
+        public static bool IsIntegralOrEnum<T>() =>
+            typeof(T) == typeof(byte) ||
+            typeof(T) == typeof(sbyte) ||
+            typeof(T) == typeof(char) ||
+            typeof(T) == typeof(short) ||
+            typeof(T) == typeof(ushort) ||
+            typeof(T) == typeof(int) ||
+            typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(long) ||
+            typeof(T) == typeof(ulong) ||
+            typeof(T) == typeof(nint) ||
+            typeof(T) == typeof(nuint) ||
             typeof(T).IsEnum;
 
         // for these types GetHashCode returns their value casted to int, so when we receive a Dictionary/HashSet where there are key

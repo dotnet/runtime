@@ -284,6 +284,9 @@ namespace System.Collections.Frozen.Tests
             FrozenSetWorker(source.ToDictionary(i => (uint)i.Key, i => i.Value));
             FrozenSetWorker(source.ToDictionary(i => (long)i.Key, i => i.Value));
             FrozenSetWorker(source.ToDictionary(i => (ulong)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (char)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (nint)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (DayOfWeek)i.Key, i => i.Value));
             FrozenSetWorker(source.ToDictionary(i => TimeSpan.FromTicks(i.Key), i => i.Value));
             FrozenSetWorker(source.ToDictionary(i => new Guid((ushort)i.Key, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), i => i.Value));
         }
