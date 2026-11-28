@@ -147,9 +147,19 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
+  <Target Name="_WriteTrimmerFeatureSettingsStamp">
+    <WriteLinesToFile File="$(_LinkSemaphore).features"
+                      Lines="@(_TrimmerFeatureSettings->'%(Identity)=%(Value)')"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_LinkSemaphore).features" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_RunILLink"
-          DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
-          Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
+          DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink;_WriteTrimmerFeatureSettingsStamp"
+          Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath);$(_LinkSemaphore).features"
           Outputs="$(_LinkSemaphore)">
     <NETSdkInformation ResourceName="ILLinkRunning" />
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
