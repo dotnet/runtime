@@ -20,7 +20,7 @@ public sealed unsafe partial class DacDbiImpl
         MethodDescHandle mdh = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
 
         if (!rts.TryGetMethodSignature(mdh, out ReadOnlySpan<byte> signature))
-            throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_MISSING_METADATA)!;
 
         MethodSignatureHelpers.GetSignatureInfo(signature, out _, out uint numArgs);
         return numArgs;

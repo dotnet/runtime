@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
@@ -137,7 +139,128 @@ public static unsafe class EntrypointHelpers
             (threadId, context) => SetThreadContext(dataTarget, threadId, context),
             allocVirtual,
             [CoreCLRContracts.Register],
-            runtimeImageBase);
+            runtimeImageBase,
+            CreateMetadataCallback(dataTarget));
+    }
+
+    /// <summary>Creates a callback that tries the host's metadata locators in order: ICLRMetadataLocator, IXCLRDataTarget3, then ICorDebugMetaDataLocator.</summary>
+    /// <param name="dataTarget">The debugger-provided data target.</param>
+    /// <returns>A metadata callback, or <see langword="null"/> if no metadata locator is available.</returns>
+    public static ContractDescriptorTarget.GetMetadataDelegate? CreateMetadataCallback(object dataTarget)
+    {
+        ContractDescriptorTarget.GetMetadataDelegate? clrLocator = CreateCLRMetadataLocatorCallback(dataTarget);
+        ContractDescriptorTarget.GetMetadataDelegate? ixclrDataTarget = CreateIXCLRDataTargetMetadataCallback(dataTarget);
+        ContractDescriptorTarget.GetMetadataDelegate? corDebugLocator = CreateCorDebugMetadataLocatorCallback(dataTarget);
+        if (clrLocator is null && ixclrDataTarget is null && corDebugLocator is null)
+            return null;
+
+        return (string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize) =>
+        {
+            dataSize = 0;
+            int hr = HResults.E_NOTIMPL;
+            if (clrLocator is not null)
+                hr = clrLocator(path, timestamp, imageSize, rva, buffer, out dataSize);
+            if (hr < 0 && ixclrDataTarget is not null)
+                hr = ixclrDataTarget(path, timestamp, imageSize, rva, buffer, out dataSize);
+            if (hr < 0 && corDebugLocator is not null)
+                hr = corDebugLocator(path, timestamp, imageSize, rva, buffer, out dataSize);
+            return hr;
+        };
+    }
+
+    /// <summary>Creates a forwarding callback for the target's ICLRMetadataLocator, if available.</summary>
+    /// <param name="dataTarget">The debugger-provided data target.</param>
+    /// <returns>A metadata callback, or <see langword="null"/> if the interface is unavailable.</returns>
+    private static ContractDescriptorTarget.GetMetadataDelegate? CreateCLRMetadataLocatorCallback(object dataTarget)
+    {
+        if (dataTarget is not ICLRMetadataLocator locator)
+            return null;
+
+        return (string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize) =>
+        {
+            dataSize = 0;
+            fixed (char* pathPointer = path)
+            fixed (byte* bufferPointer = buffer)
+            fixed (uint* sizePointer = &dataSize)
+            {
+                return locator.GetMetadata(pathPointer, timestamp, imageSize, null, rva, 0,
+                    (uint)buffer.Length, bufferPointer, sizePointer);
+            }
+        };
+    }
+
+    /// <summary>Creates a forwarding callback for the target's IXCLRDataTarget3, if available.</summary>
+    /// <param name="dataTarget">The debugger-provided data target.</param>
+    /// <returns>A metadata callback, or <see langword="null"/> if the interface is unavailable.</returns>
+    private static ContractDescriptorTarget.GetMetadataDelegate? CreateIXCLRDataTargetMetadataCallback(object dataTarget)
+    {
+        if (dataTarget is not IXCLRDataTarget3 locator)
+            return null;
+
+        return (string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize) =>
+        {
+            dataSize = 0;
+            fixed (char* pathPointer = path)
+            fixed (byte* bufferPointer = buffer)
+            fixed (uint* sizePointer = &dataSize)
+            {
+                return locator.GetMetaData(pathPointer, timestamp, imageSize, null, rva, 0,
+                    (uint)buffer.Length, bufferPointer, sizePointer);
+            }
+        };
+    }
+
+    /// <summary>Creates a callback that reads metadata from an image located through the target's ICorDebugMetaDataLocator, if available.</summary>
+    /// <param name="dataTarget">The debugger-provided data target.</param>
+    /// <returns>A metadata callback, or <see langword="null"/> if the interface is unavailable.</returns>
+    private static ContractDescriptorTarget.GetMetadataDelegate? CreateCorDebugMetadataLocatorCallback(object dataTarget)
+    {
+        if (dataTarget is not ICorDebugMetaDataLocator locator)
+            return null;
+
+        return (string path, uint timestamp, uint imageSize, uint rva, Span<byte> buffer, out uint dataSize) =>
+        {
+            dataSize = 0;
+            const int InitialPathBufferSize = 260;
+            char[] pathBuffer = new char[InitialPathBufferSize];
+            uint pathLength = 0;
+            int hr;
+            fixed (char* pathPointer = path)
+            {
+                fixed (char* bufferPointer = pathBuffer)
+                {
+                    hr = locator.GetMetaData(pathPointer, timestamp, imageSize,
+                        (uint)pathBuffer.Length, &pathLength, bufferPointer);
+                }
+                if (pathLength > pathBuffer.Length)
+                {
+                    pathBuffer = new char[checked((int)pathLength)];
+                    fixed (char* bufferPointer = pathBuffer)
+                    {
+                        hr = locator.GetMetaData(pathPointer, timestamp, imageSize,
+                            (uint)pathBuffer.Length, &pathLength, bufferPointer);
+                    }
+                }
+            }
+            if (hr < 0)
+                return hr;
+            if (pathLength == 0 || pathLength > pathBuffer.Length)
+                return HResults.E_FAIL;
+
+            int terminator = pathBuffer.AsSpan().IndexOf('\0');
+            if (terminator <= 0 || terminator > pathLength)
+                return HResults.E_FAIL;
+
+            using FileStream stream = File.OpenRead(new string(pathBuffer, 0, terminator));
+            using PEReader peReader = new(stream);
+            PEMemoryBlock metadata = peReader.GetMetadata();
+            dataSize = (uint)metadata.Length;
+            if (metadata.Length > buffer.Length)
+                return CorDbgHResults.ERROR_INSUFFICIENT_BUFFER;
+
+            metadata.GetContent().AsSpan().CopyTo(buffer);
+            return HResults.S_OK;
+        };
     }
 
     private static int SetThreadContext(ICLRDataTarget dataTarget, uint threadId, ReadOnlySpan<byte> context)
