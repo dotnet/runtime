@@ -17,6 +17,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -1175,10 +1176,28 @@ namespace System.Net.Http.Functional.Tests
                     using HttpResponseMessage response = await SendAsync(client, request, cts.Token);
                 });
                 cancelServerCts.Cancel();
-                Assert.True(ex is HttpRequestException or TaskCanceledException);
+                try
+                {
+                    Assert.True(ex is HttpRequestException or TaskCanceledException);
 
-                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"], method: "POST");
+                    Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                    VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"], method: "POST");
+                }
+                catch (XunitException)
+                {
+                    _output.WriteLine($"Client exception: {ex}");
+                    if (ex is HttpRequestException requestException)
+                    {
+                        _output.WriteLine($"HttpRequestError: {requestException.HttpRequestError}");
+                    }
+
+                    if (ex.GetBaseException() is SocketException socketException)
+                    {
+                        _output.WriteLine($"SocketErrorCode: {socketException.SocketErrorCode}; NativeErrorCode: {socketException.NativeErrorCode}");
+                    }
+
+                    throw;
+                }
             }, async server =>
             {
                 await IgnoreExceptions(async () =>
