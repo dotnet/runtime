@@ -812,40 +812,69 @@ namespace System
                 int maxColors = TerminalFormatStringsInstance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
-                    // The values of the ConsoleColor enums unfortunately don't map to the
-                    // corresponding ANSI values.  We need to do the mapping manually.
-                    // See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-                    ReadOnlySpan<byte> consoleColorToAnsiCode =
-                    [
-                        // Dark/Normal colors
-                        0, // Black,
-                        4, // DarkBlue,
-                        2, // DarkGreen,
-                        6, // DarkCyan,
-                        1, // DarkRed,
-                        5, // DarkMagenta,
-                        3, // DarkYellow,
-                        7, // Gray,
-
-                        // Bright colors
-                        8,  // DarkGray,
-                        12, // Blue,
-                        10, // Green,
-                        14, // Cyan,
-                        9,  // Red,
-                        13, // Magenta,
-                        11, // Yellow,
-                        15  // White
-                    ];
-
-                    int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
+                    int ansiCode = ConsoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
                     WriteTerminalAnsiColorString(evaluatedString);
 
                     s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
+                    return;
                 }
             }
+
+            if (ConsoleUtils.ColorForcedByEnvironment)
+            {
+                // No setaf/setab capability: TERM=dumb, or TERM unset as in a minimal container
+                // or a child process spawned by a tool such as `dotnet watch`. FORCE_COLOR is an
+                // unconditional request for color, so emit the standard SGR sequence rather than
+                // silently dropping it. Only when explicitly forced -- if color is merely on
+                // because output isn't redirected, a missing capability genuinely means the
+                // terminal can't render escapes.
+                evaluatedString = GetDefaultAnsiColorString(foreground, ConsoleColorToAnsiCode[ccValue]);
+
+                WriteTerminalAnsiColorString(evaluatedString);
+
+                s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
+            }
+        }
+
+        /// <summary>The ANSI color index for each <see cref="ConsoleColor"/>; the enum values don't match.</summary>
+        /// <remarks>See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors</remarks>
+        private static ReadOnlySpan<byte> ConsoleColorToAnsiCode =>
+        [
+            // Dark/Normal colors
+            0, // Black,
+            4, // DarkBlue,
+            2, // DarkGreen,
+            6, // DarkCyan,
+            1, // DarkRed,
+            5, // DarkMagenta,
+            3, // DarkYellow,
+            7, // Gray,
+
+            // Bright colors
+            8,  // DarkGray,
+            12, // Blue,
+            10, // Green,
+            14, // Cyan,
+            9,  // Red,
+            13, // Magenta,
+            11, // Yellow,
+            15  // White
+        ];
+
+        /// <summary>Builds a standard SGR escape sequence, for use when terminfo offers none.</summary>
+        private static string GetDefaultAnsiColorString(bool foreground, int ansiCode)
+        {
+            Debug.Assert((uint)ansiCode <= 15);
+
+            // 30-37 dark foreground, 90-97 bright foreground,
+            // 40-47 dark background, 100-107 bright background.
+            int sgr = ansiCode < 8
+                ? (foreground ? 30 : 40) + ansiCode
+                : (foreground ? 90 : 100) + (ansiCode - 8);
+
+            return $"\u001b[{sgr}m";
         }
 
         /// <summary>Writes out the ANSI string to reset colors.</summary>
@@ -853,7 +882,13 @@ namespace System
         {
             if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteTerminalAnsiColorString(TerminalFormatStringsInstance.Reset);
+                string? reset = TerminalFormatStringsInstance.Reset;
+                if (string.IsNullOrEmpty(reset) && ConsoleUtils.ColorForcedByEnvironment)
+                {
+                    reset = "\u001b[0m"; // matches the fallback above, so forced color is still reset
+                }
+
+                WriteTerminalAnsiColorString(reset);
             }
         }
 
