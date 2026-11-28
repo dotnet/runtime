@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
             {
                 if (vt == VarEnum.VT_DISPATCH || vt == VarEnum.VT_UNKNOWN || vt == VarEnum.VT_BSTR)
                 {
-                    variant.GetRawDataRef<IntPtr>() = IntPtr.Zero;
+                    variant.GetByRefDataRef<IntPtr>() = IntPtr.Zero;
                 }
                 return;
             }
@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
             {
                 ComVariant vArray;
                 Marshal.GetNativeVariantForObject(value, (IntPtr)(void*)&vArray);
-                variant.GetRawDataRef<IntPtr>() = vArray.GetRawDataRef<IntPtr>();
+                variant.GetByRefDataRef<IntPtr>() = vArray.GetRawDataRef<IntPtr>();
                 return;
             }
 

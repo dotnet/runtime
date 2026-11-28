@@ -149,6 +149,72 @@ HRESULT STDMETHODCALLTYPE EventTest::FireEventMessage(
     return ::VariantClear(&arg);
 }
 
+HRESULT STDMETHODCALLTYPE EventTest::FireEventMessageByRef(
+    /* [in] */ BSTR message,
+    /* [out,retval] */ BSTR *result)
+{
+    if (result == nullptr)
+        return E_POINTER;
+
+    BSTR original = ::SysAllocString(message);
+    BSTR value = original;
+
+    VARIANTARG arg;
+    ::VariantInit(&arg);
+    arg.vt = VT_BSTR | VT_BYREF;
+    arg.pbstrVal = &value;
+
+    ConnectionPoint *cp = static_cast<ConnectionPoint *>(_sinkExConnection);
+    HRESULT hr = cp->FireEventImpl(DISPID_IEVENTTESTSINKEX_ONEVENTMESSAGEBYREF, &arg);
+
+    // A sink that replaces the value doesn't release the original.
+    if (value != original)
+        ::SysFreeString(original);
+
+    if (FAILED(hr))
+    {
+        ::SysFreeString(value);
+        return hr;
+    }
+
+    *result = value;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE EventTest::FireEventArrayByRef(
+    /* [out,retval] */ SAFEARRAY **result)
+{
+    if (result == nullptr)
+        return E_POINTER;
+
+    SAFEARRAY *original = ::SafeArrayCreateVector(VT_I4, 0, 0);
+    if (original == nullptr)
+        return E_OUTOFMEMORY;
+
+    SAFEARRAY *value = original;
+
+    VARIANTARG arg;
+    ::VariantInit(&arg);
+    arg.vt = VT_ARRAY | VT_I4 | VT_BYREF;
+    arg.pparray = &value;
+
+    ConnectionPoint *cp = static_cast<ConnectionPoint *>(_sinkExConnection);
+    HRESULT hr = cp->FireEventImpl(DISPID_IEVENTTESTSINKEX_ONEVENTARRAYBYREF, &arg);
+
+    // A sink that replaces the value doesn't release the original.
+    if (value != original)
+        ::SafeArrayDestroy(original);
+
+    if (FAILED(hr))
+    {
+        ::SafeArrayDestroy(value);
+        return hr;
+    }
+
+    *result = value;
+    return S_OK;
+}
+
 HRESULT STDMETHODCALLTYPE EventTest::FindConnectionPoint(
     /* [in] */ __RPC__in REFIID riid,
     /* [out] */ __RPC__deref_out_opt IConnectionPoint **ppCP)

@@ -508,6 +508,16 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
+        [ConditionalTheory(typeof(GetNativeVariantForObjectTests), nameof(GetNativeVariantForObjectTests.IsVariantMarshallingSupported))]
+        [InlineData(VarEnum.VT_BSTR)]
+        [InlineData(VarEnum.VT_UNKNOWN)]
+        [InlineData(VarEnum.VT_DISPATCH)]
+        public unsafe void GetObjectForNativeVariant_NullPointer_ReturnsNull(VarEnum vt)
+        {
+            Marshalling.ComVariant variant = Marshalling.ComVariant.CreateRaw(vt, IntPtr.Zero);
+            Assert.Null(Marshal.GetObjectForNativeVariant((nint)(&variant)));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetObjectForNativeVariant_ErrorMissing_ReturnsTypeMissing()
         {

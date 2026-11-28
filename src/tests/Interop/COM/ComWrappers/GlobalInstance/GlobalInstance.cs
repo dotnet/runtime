@@ -269,6 +269,15 @@ namespace ComWrappersTests.GlobalInstance
                 });
         }
 
+        private static unsafe void ValidateNativeVariantIsDispatch(object obj)
+        {
+            System.Runtime.InteropServices.Marshalling.ComVariant variant = default;
+            Marshal.GetNativeVariantForObject(obj, (nint)(&variant));
+            Assert.Equal(VarEnum.VT_DISPATCH, variant.VarType);
+            Assert.NotEqual(IntPtr.Zero, variant.GetRawDataRef<nint>());
+            variant.Dispose();
+        }
+
         private static void ValidateMarshalAPIs(bool validateUseRegistered)
         {
             string scenario = validateUseRegistered ? "use registered wrapper" : "fall back to runtime";
@@ -305,6 +314,12 @@ namespace ComWrappersTests.GlobalInstance
                 IntPtr unknownWrapper = Marshal.GetIUnknownForObject(dispatchObj);
                 Assert.NotEqual(IntPtr.Zero, unknownWrapper);
                 Assert.NotEqual(unknownWrapper, dispatchWrapper);
+
+                if (TestLibrary.Utilities.IsNativeAot)
+                {
+                    Console.WriteLine($" -- Validate Marshal.GetNativeVariantForObject produces VT_DISPATCH...");
+                    ValidateNativeVariantIsDispatch(dispatchObj);
+                }
             }
 
             Console.WriteLine($" -- Validate Marshal.GetObjectForIUnknown...");

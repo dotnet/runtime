@@ -176,7 +176,7 @@ namespace System.Runtime.InteropServices
                     *data = ComVariant.Create(value);
                     break;
                 case char value:
-                    *data = ComVariant.Create(value);
+                    *data = ComVariant.Create((ushort)value);
                     break;
                 case BStrWrapper value:
                     *data = ComVariant.Create(value);
@@ -217,7 +217,7 @@ namespace System.Runtime.InteropServices
                             *data = ComVariant.Create(value.ToBoolean(null));
                             break;
                         case TypeCode.Char:
-                            *data = ComVariant.Create(value.ToChar(null));
+                            *data = ComVariant.Create((ushort)value.ToChar(null));
                             break;
                         case TypeCode.SByte:
                             *data = ComVariant.Create(value.ToSByte(null));
@@ -272,7 +272,7 @@ namespace System.Runtime.InteropServices
                 case ValueType:
                     throw new NotSupportedException("VT_RECORD");
                 default:
-                    *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIDispatchForObject(obj));
+                    *data = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, GetIDispatchForObject(obj));
                     break;
             }
         }
@@ -328,9 +328,9 @@ namespace System.Runtime.InteropServices
                 case VarEnum.VT_DECIMAL: return data->As<decimal>();
                 case VarEnum.VT_CY: return decimal.FromOACurrency(data->GetRawDataRef<long>());
                 case VarEnum.VT_DATE: return data->As<DateTime>();
-                case VarEnum.VT_BSTR: return PtrToStringBSTR(data->GetRawDataRef<nint>());
-                case VarEnum.VT_UNKNOWN: return GetObjectForIUnknown(data->GetRawDataRef<nint>());
-                case VarEnum.VT_DISPATCH: return GetObjectForIUnknown(data->GetRawDataRef<nint>());
+                case VarEnum.VT_BSTR: return data->GetRawDataRef<nint>() is 0 ? null : PtrToStringBSTR(data->GetRawDataRef<nint>());
+                case VarEnum.VT_UNKNOWN:
+                case VarEnum.VT_DISPATCH: return data->GetRawDataRef<nint>() is 0 ? null : GetObjectForIUnknown(data->GetRawDataRef<nint>());
 
                 default:
                     // Other VARIANT types not supported yet.

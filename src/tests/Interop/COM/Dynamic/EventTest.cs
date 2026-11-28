@@ -50,6 +50,7 @@ namespace Dynamic
             test.DynamicEventHandler();
             test.MultipleHandlers();
             test.MultipleSources();
+            test.ByRefArguments();
             return test._rcwReference;
         }
 
@@ -229,6 +230,34 @@ namespace Dynamic
             obj.OnEvent -= h.Handler;
             obj.OnEventMessage -= h.MessageHandler;
         }
+
+        private void ByRefArguments()
+        {
+            string replacement = null;
+            OnEventMessageByRefDelegate messageHandler = (ref string message) => message = replacement;
+            obj.OnEventMessageByRef += messageHandler;
+
+            replacement = rand.Next().ToString();
+            Assert.Equal(replacement, (string)obj.FireEventMessageByRef("original"));
+
+            // Null is written back through the byref pointer into the event source's storage.
+            replacement = null;
+            Assert.Null((string)obj.FireEventMessageByRef("original"));
+
+            obj.OnEventMessageByRef -= messageHandler;
+
+            int[] expectedArray = [rand.Next(), rand.Next()];
+            OnEventArrayByRefDelegate arrayHandler = (ref int[] values) => values = expectedArray;
+            obj.OnEventArrayByRef += arrayHandler;
+
+            // The new SAFEARRAY is written back through the byref pointer into the event source's storage.
+            Assert.Equal(expectedArray, (int[])obj.FireEventArrayByRef());
+
+            obj.OnEventArrayByRef -= arrayHandler;
+        }
+
+        private delegate void OnEventMessageByRefDelegate(ref string message);
+        private delegate void OnEventArrayByRefDelegate(ref int[] values);
 
         private class DynamicEventTestHandler : System.Dynamic.DynamicObject
         {
