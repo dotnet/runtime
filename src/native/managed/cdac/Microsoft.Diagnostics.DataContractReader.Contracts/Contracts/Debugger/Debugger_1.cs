@@ -284,7 +284,7 @@ internal sealed class Debugger_1 : IDebugger
 
         if (vmThread != TargetPointer.Null)
         {
-            ThreadData threadData = _target.Contracts.Thread.GetThreadData(vmThread);
+            ThreadExceptionData threadData = _target.Contracts.Thread.GetThreadExceptionData(vmThread);
             if (threadData.IsExceptionInProgress)
             {
                 TargetPointer espOSContext = threadData.OSExceptionContextRecord;

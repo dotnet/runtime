@@ -350,7 +350,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                 }
                 else
                 {
-                    ThreadData threadData = _target.Contracts.Thread.GetThreadData(_threadAddress);
+                    ThreadExceptionData threadData = _target.Contracts.Thread.GetThreadExceptionData(_threadAddress);
                     exceptionRecord = threadData.OSExceptionRecord;
                 }
 

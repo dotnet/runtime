@@ -117,14 +117,14 @@ public class StackReferenceDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         // FirstNestedException is the previous tracker on the thread's ExInfo chain
-        // (Thread_1.GetThreadData sets it from currentExInfo.PreviousNestedInfo), so it
+        // (Thread_1.GetThreadExceptionData sets it from currentExInfo.PreviousNestedInfo), so it
         // enumerates the superseded / nested in-flight exceptions. These are held only by the
         // runtime's exception-tracking chain (the nested FileNotFoundException lives on the heap
         // as InvalidOperationException.InnerException, not as a stack local), so the ExInfo scan in
         // WalkStackReferences is what surfaces them as roots.
         HashSet<ulong> expected = new();
         HashSet<ulong> seenTrackers = new();
-        TargetPointer exInfo = crashingThread.FirstNestedException;
+        TargetPointer exInfo = Target.Contracts.Thread.GetThreadExceptionData(crashingThread.ThreadAddress).FirstNestedException;
         while (exInfo != TargetPointer.Null && seenTrackers.Add(exInfo))
         {
             exceptionContract.GetNestedExceptionInfo(exInfo, out TargetPointer next, out TargetPointer thrownObjectSlot);

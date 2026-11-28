@@ -2096,9 +2096,13 @@ public unsafe partial class EnumMemoryTests
         Mock<IThread> threads = new();
         threads.Setup(t => t.GetThreadStoreData()).Returns(new ThreadStoreData(2, new(0x2000), default, default));
         threads.Setup(t => t.GetThreadData(new TargetPointer(0x2000)))
-            .Returns(new ThreadData { ThreadAddress = new(0x2000), NextThread = new(0x2100), LastThrownObjectHandle = new(0x1000) });
+            .Returns(new ThreadData { ThreadAddress = new(0x2000), NextThread = new(0x2100) });
         threads.Setup(t => t.GetThreadData(new TargetPointer(0x2100)))
-            .Returns(new ThreadData { ThreadAddress = new(0x2100), LastThrownObjectHandle = new(0x1100) });
+            .Returns(new ThreadData { ThreadAddress = new(0x2100) });
+        threads.Setup(t => t.GetThreadExceptionData(new TargetPointer(0x2000)))
+            .Returns(new ThreadExceptionData { ThreadAddress = new(0x2000), LastThrownObjectHandle = new(0x1000) });
+        threads.Setup(t => t.GetThreadExceptionData(new TargetPointer(0x2100)))
+            .Returns(new ThreadExceptionData { ThreadAddress = new(0x2100), LastThrownObjectHandle = new(0x1100) });
         Mock<IStackWalk> stackWalk = new();
         stackWalk.Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>()))
             .Callback<ThreadData>(t => collected.Add($"stack:{t.ThreadAddress.Value:x}")).Returns([]);

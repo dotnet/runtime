@@ -47,6 +47,18 @@ internal sealed class MockExceptionInfo : TypedView
         set => WritePointerField(ThrownObjectFieldName, value);
     }
 
+    public ulong PreviousNestedInfo
+    {
+        get => ReadPointerField(PreviousNestedInfoFieldName);
+        set => WritePointerField(PreviousNestedInfoFieldName, value);
+    }
+
+    public uint ExceptionFlags
+    {
+        get => ReadUInt32Field(ExceptionFlagsFieldName);
+        set => WriteUInt32Field(ExceptionFlagsFieldName, value);
+    }
+
     public ulong ExceptionRecord
     {
         get => ReadPointerField(ExceptionRecordFieldName);

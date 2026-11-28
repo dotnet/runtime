@@ -214,12 +214,14 @@ internal sealed class MemoryEnumerator
     {
         // Collect exceptions across all threads before ordinary stack walks so their type and saved-frame
         // method names get priority in the bounded mini-metadata stream.
+        IThread thread = _collectorTarget.Target.Contracts.Thread;
         foreach (ThreadData threadData in EnumerateThreadData())
         {
-            if (threadData.LastThrownObjectHandle != TargetPointer.Null)
+            ThreadExceptionData exceptionData = thread.GetThreadExceptionData(threadData.ThreadAddress);
+            if (exceptionData.LastThrownObjectHandle != TargetPointer.Null)
             {
                 TargetPointer exceptionObject =
-                    _collectorTarget.Target.ReadPointer(threadData.LastThrownObjectHandle.Value);
+                    _collectorTarget.Target.ReadPointer(exceptionData.LastThrownObjectHandle.Value);
                 _objects.EnumerateObject(exceptionObject);
             }
         }

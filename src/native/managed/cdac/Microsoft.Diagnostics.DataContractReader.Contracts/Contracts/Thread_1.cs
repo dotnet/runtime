@@ -129,13 +129,31 @@ internal readonly struct Thread_1 : IThread
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
 
-        TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
+        return new ThreadData(
+            threadPointer,
+            thread.Id,
+            thread.OSId,
+            GetThreadState((ThreadState_1)thread.State),
+            (thread.PreemptiveGCDisabled & 0x1) != 0,
+            thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
+            thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
+            thread.Frame,
+            thread.ExposedObject.Handle,
+            thread.CurrentCustomDebuggerNotification.Handle,
+            thread.LinkNext,
+            thread.ThreadHandle,
+            thread.InteropDebuggingHijacked != 0,
+            thread.DebuggerFilterContext,
+            thread.GCFrame);
+    }
+
+    ThreadExceptionData IThread.GetThreadExceptionData(TargetPointer threadPointer)
+    {
+        var (thread, exceptionInfo, address) = GetThreadExceptionInfo(threadPointer);
         TargetPointer firstNestedException = TargetPointer.Null;
         bool hasUnhandledException = false;
-        Data.ExceptionInfo? exceptionInfo = null;
-        if (address != TargetPointer.Null)
+        if (exceptionInfo is not null)
         {
-            exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
 
             if (exceptionInfo.ThrownObject != TargetPointer.Null)
@@ -159,26 +177,12 @@ internal readonly struct Thread_1 : IThread
             lastThrownObjectHandle = thread.LastThrownObject.Handle;
         }
 
-        return new ThreadData(
+        return new ThreadExceptionData(
             threadPointer,
-            thread.Id,
-            thread.OSId,
-            GetThreadState((ThreadState_1)thread.State),
-            (thread.PreemptiveGCDisabled & 0x1) != 0,
-            thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
-            thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
-            thread.Frame,
             firstNestedException,
-            thread.ExposedObject.Handle,
             lastThrownObjectHandle,
-            thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
-            thread.LinkNext,
-            thread.ThreadHandle,
-            thread.InteropDebuggingHijacked != 0,
-            thread.DebuggerFilterContext,
-            thread.GCFrame,
             address != TargetPointer.Null,
             exceptionInfo?.ExceptionRecord ?? TargetPointer.Null,
             exceptionInfo?.ContextRecord ?? TargetPointer.Null);

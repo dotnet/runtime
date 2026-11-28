@@ -87,26 +87,12 @@ public unsafe class ExceptionStateTests
     {
         var mockThread = new Mock<IThread>();
         mockThread.Setup(t => t.GetCurrentExceptionHandle(threadAddr)).Returns(thrownObjectHandle);
-        mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
+        mockThread.Setup(t => t.GetThreadExceptionData(threadAddr)).Returns(new ThreadExceptionData(
             ThreadAddress: threadAddr,
-            Id: 1,
-            OSId: new TargetNUInt(1234),
-            State: default,
-            PreemptiveGCDisabled: false,
-            AllocContextPointer: TargetPointer.Null,
-            AllocContextLimit: TargetPointer.Null,
-            Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
-            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
             LastThrownObjectIsUnhandled: false,
             HasUnhandledException: false,
-            NextThread: TargetPointer.Null,
-            ThreadHandle: TargetPointer.Null,
-            IsInteropDebuggingHijacked: false,
-            DebuggerFilterContext: TargetPointer.Null,
-            GCFrame: TargetPointer.Null,
             IsExceptionInProgress: false,
             OSExceptionRecord: TargetPointer.Null,
             OSExceptionContextRecord: TargetPointer.Null));
@@ -183,26 +169,12 @@ public unsafe class ExceptionStateTests
 
         TargetPointer threadAddress = new(0x1000);
         var mockThread = new Mock<IThread>();
-        mockThread.Setup(t => t.GetThreadData(threadAddress)).Returns(new ThreadData(
+        mockThread.Setup(t => t.GetThreadExceptionData(threadAddress)).Returns(new ThreadExceptionData(
             ThreadAddress: threadAddress,
-            Id: 1,
-            OSId: new TargetNUInt(1234),
-            State: default,
-            PreemptiveGCDisabled: false,
-            AllocContextPointer: TargetPointer.Null,
-            AllocContextLimit: TargetPointer.Null,
-            Frame: TargetPointer.Null,
             FirstNestedException: TargetPointer.Null,
-            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: TargetPointer.Null,
-            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
             LastThrownObjectIsUnhandled: false,
             HasUnhandledException: false,
-            NextThread: TargetPointer.Null,
-            ThreadHandle: TargetPointer.Null,
-            IsInteropDebuggingHijacked: false,
-            DebuggerFilterContext: TargetPointer.Null,
-            GCFrame: TargetPointer.Null,
             IsExceptionInProgress: true,
             OSExceptionRecord: hasPreviousExceptionInfo ? TargetPointer.Null : new TargetPointer(exceptionRecord.Address),
             OSExceptionContextRecord: TargetPointer.Null));
@@ -766,26 +738,12 @@ public unsafe class ExceptionStateTests
         TargetPointer lastThrownObjectHandle = new TargetPointer(handleFragment.Address);
 
         var mockThread = new Mock<IThread>();
-        mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
+        mockThread.Setup(t => t.GetThreadExceptionData(threadAddr)).Returns(new ThreadExceptionData(
             ThreadAddress: threadAddr,
-            Id: 1,
-            OSId: new TargetNUInt(1234),
-            State: default,
-            PreemptiveGCDisabled: false,
-            AllocContextPointer: TargetPointer.Null,
-            AllocContextLimit: TargetPointer.Null,
-            Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            ExposedObjectHandle: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
-            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
             LastThrownObjectIsUnhandled: false,
             HasUnhandledException: false,
-            NextThread: TargetPointer.Null,
-            ThreadHandle: TargetPointer.Null,
-            IsInteropDebuggingHijacked: false,
-            DebuggerFilterContext: TargetPointer.Null,
-            GCFrame: TargetPointer.Null,
             IsExceptionInProgress: false,
             OSExceptionRecord: TargetPointer.Null,
             OSExceptionContextRecord: TargetPointer.Null));

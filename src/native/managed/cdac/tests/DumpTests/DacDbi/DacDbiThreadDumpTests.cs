@@ -186,7 +186,8 @@ public class DacDbiThreadDumpTests : DumpTestBase
             Assert.Equal(System.HResults.S_OK, hr);
 
             ThreadData data = threadContract.GetThreadData(current);
-            Assert.Equal(data.HasUnhandledException, hasUnhandled == Interop.BOOL.TRUE);
+            ThreadExceptionData exceptionData = threadContract.GetThreadExceptionData(current);
+            Assert.Equal(exceptionData.HasUnhandledException, hasUnhandled == Interop.BOOL.TRUE);
 
             current = data.NextThread;
         }

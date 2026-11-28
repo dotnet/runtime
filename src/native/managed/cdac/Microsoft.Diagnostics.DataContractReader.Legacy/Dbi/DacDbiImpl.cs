@@ -1264,7 +1264,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            Contracts.ThreadExceptionData threadData = _target.Contracts.Thread.GetThreadExceptionData(new TargetPointer(vmThread));
             *pResult = threadData.HasUnhandledException ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
@@ -1476,7 +1476,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer exceptionHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(threadPtr);
             if (exceptionHandle == TargetPointer.Null)
             {
-                ThreadData data = _target.Contracts.Thread.GetThreadData(threadPtr);
+                ThreadExceptionData data = _target.Contracts.Thread.GetThreadExceptionData(threadPtr);
                 if (data.LastThrownObjectIsUnhandled)
                     exceptionHandle = data.LastThrownObjectHandle;
             }

@@ -61,17 +61,20 @@ public record struct ThreadData(
     TargetPointer AllocContextPointer,
     TargetPointer AllocContextLimit,
     TargetPointer Frame,
-    TargetPointer FirstNestedException,
     TargetPointer ExposedObjectHandle,
-    TargetPointer LastThrownObjectHandle,
     TargetPointer CurrentCustomDebuggerNotificationHandle,
-    bool LastThrownObjectIsUnhandled,
-    bool HasUnhandledException,
     TargetPointer NextThread,
     TargetPointer ThreadHandle,
     bool IsInteropDebuggingHijacked,
     TargetPointer DebuggerFilterContext,
-    TargetPointer GCFrame,
+    TargetPointer GCFrame);
+
+public record struct ThreadExceptionData(
+    TargetPointer ThreadAddress,
+    TargetPointer FirstNestedException,
+    TargetPointer LastThrownObjectHandle,
+    bool LastThrownObjectIsUnhandled,
+    bool HasUnhandledException,
     bool IsExceptionInProgress,
     TargetPointer OSExceptionRecord,
     TargetPointer OSExceptionContextRecord);
@@ -85,6 +88,7 @@ public interface IThread : IContract
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
+    ThreadExceptionData GetThreadExceptionData(TargetPointer thread) => throw new NotImplementedException();
     void GetThreadAllocContext(TargetPointer thread, out long allocBytes, out long allocBytesLoh) => throw new NotImplementedException();
     void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase,
                            out TargetPointer stackLimit, out TargetPointer frameAddress) => throw new NotImplementedException();
