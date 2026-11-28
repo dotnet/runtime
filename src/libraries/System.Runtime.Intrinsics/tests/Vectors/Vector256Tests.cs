@@ -3416,6 +3416,73 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector256ByteShuffleNativeReflectionTest()
+        {
+            Vector256<byte> vector = Vector256<byte>.Zero;
+            Vector256<byte> indices = Vector256<byte>.Zero;
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                vector = vector.WithElement(index, (byte)(index + 1));
+                indices = indices.WithElement(index, (byte)(index + Vector256<byte>.Count));
+            }
+
+            Vector256<byte> expected = Vector256.ShuffleNative(vector, indices);
+            MethodInfo methodInfo = typeof(Vector256).GetMethod(nameof(Vector256.ShuffleNative), [typeof(Vector256<byte>), typeof(Vector256<byte>)]);
+            Vector256<byte> actual = (Vector256<byte>)methodInfo.Invoke(null, [vector, indices]);
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(128)]
+        [InlineData(255)]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue)]
+        public void Vector256ShuffleNativeIndirectTest(int index)
+        {
+            AssertIndirect<byte, byte>(Vector256.ShuffleNative(Vector256<byte>.One, Vector256.Create(unchecked((byte)index))), index);
+            AssertIndirect<sbyte, sbyte>(Vector256.ShuffleNative(Vector256<sbyte>.One, Vector256.Create(unchecked((sbyte)index))), index);
+            AssertIndirect<short, short>(Vector256.ShuffleNative(Vector256<short>.One, Vector256.Create(unchecked((short)index))), index);
+            AssertIndirect<ushort, ushort>(Vector256.ShuffleNative(Vector256<ushort>.One, Vector256.Create(unchecked((ushort)index))), index);
+            AssertIndirect<int, int>(Vector256.ShuffleNative(Vector256<int>.One, Vector256.Create(index)), index);
+            AssertIndirect<uint, uint>(Vector256.ShuffleNative(Vector256<uint>.One, Vector256.Create(unchecked((uint)index))), index);
+            AssertIndirect<long, long>(Vector256.ShuffleNative(Vector256<long>.One, Vector256.Create((long)index)), index);
+            AssertIndirect<ulong, ulong>(Vector256.ShuffleNative(Vector256<ulong>.One, Vector256.Create(unchecked((ulong)index))), index);
+            AssertIndirect<nint, nint>(Vector256.ShuffleNative(Vector256<nint>.One, Vector256.Create((nint)index)), index);
+            AssertIndirect<nuint, nuint>(Vector256.ShuffleNative(Vector256<nuint>.One, Vector256.Create(unchecked((nuint)index))), index);
+            AssertIndirect<float, int>(Vector256.ShuffleNative(Vector256<float>.One, Vector256.Create(index)), index);
+            AssertIndirect<double, long>(Vector256.ShuffleNative(Vector256<double>.One, Vector256.Create((long)index)), index);
+
+            static void AssertIndirect<T, TIndex>(Vector256<T> expected, int index)
+                where T : struct
+                where TIndex : struct, INumberBase<TIndex>
+            {
+                Vector256<T> vector = Vector256<T>.One;
+                Vector256<TIndex> indices = Vector256.Create(TIndex.CreateTruncating(index));
+                MethodInfo methodInfo = typeof(Vector256).GetMethod(nameof(Vector256.ShuffleNative), [typeof(Vector256<T>), typeof(Vector256<TIndex>)]);
+                Vector256<T> reflected = (Vector256<T>)methodInfo.Invoke(null, [vector, indices]);
+                Func<Vector256<T>, Vector256<TIndex>, Vector256<T>> shuffle = methodInfo.CreateDelegate<Func<Vector256<T>, Vector256<TIndex>, Vector256<T>>>();
+                Vector256<T> delegated = shuffle(vector, indices);
+
+                for (int lane = 0; lane < Vector256<T>.Count; lane++)
+                {
+                    Assert.Equal(expected.GetElement(lane), reflected.GetElement(lane));
+                    Assert.Equal(expected.GetElement(lane), delegated.GetElement(lane));
+                }
+            }
+        }
+
+        [Fact]
         public void Vector256DoubleShuffleNativeOneInputTest()
         {
             Vector256<double> vector = Vector256.Create((double)1, 2, 3, 4);
