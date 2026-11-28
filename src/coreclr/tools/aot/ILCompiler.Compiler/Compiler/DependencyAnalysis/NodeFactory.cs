@@ -345,9 +345,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub, addressTaken: true);
             });
 
-            _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
+            _gvmDependenciesNode = new NodeCache<(MethodDesc Method, TypeDesc ConstraintType), GVMDependenciesNode>(key =>
             {
-                return new GVMDependenciesNode(method);
+                return new GVMDependenciesNode(key.Method, key.ConstraintType);
             });
 
             _gvmImpls = new NodeCache<MethodDesc, GenericVirtualMethodImplNode>(method =>
@@ -1224,10 +1224,10 @@ namespace ILCompiler.DependencyAnalysis
                 return MethodEntrypoint(method);
         }
 
-        private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
-        public GVMDependenciesNode GVMDependencies(MethodDesc method)
+        private NodeCache<(MethodDesc Method, TypeDesc ConstraintType), GVMDependenciesNode> _gvmDependenciesNode;
+        public GVMDependenciesNode GVMDependencies(MethodDesc method, TypeDesc constraintType = null)
         {
-            return _gvmDependenciesNode.GetOrAdd(method);
+            return _gvmDependenciesNode.GetOrAdd((method, constraintType));
         }
 
         private NodeCache<MethodDesc, GenericVirtualMethodImplNode> _gvmImpls;

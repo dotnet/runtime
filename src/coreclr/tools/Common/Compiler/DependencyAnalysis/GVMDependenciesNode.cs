@@ -26,21 +26,34 @@ namespace ILCompiler.DependencyAnalysis
     public class GVMDependenciesNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
+        private readonly TypeDesc _constraintType;
 
         public GVMDependenciesNode(MethodDesc method)
+            : this(method, null)
+        {
+        }
+
+        /// <param name="constraintType">
+        /// Where not null, the one type whose implementation the use can reach: the canonical constraint type of a
+        /// constrained call to a static virtual, which cannot be overridden further.
+        /// </param>
+        public GVMDependenciesNode(MethodDesc method, TypeDesc constraintType)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             Debug.Assert(method.HasInstantiation);
             Debug.Assert(method.IsVirtual);
             Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()) == method.GetMethodDefinition());
+            Debug.Assert(constraintType == null || (method.Signature.IsStatic && constraintType.ConvertToCanonForm(CanonicalFormKind.Specific) == constraintType));
 
             _method = method;
+            _constraintType = constraintType;
         }
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
-        protected override string GetName(NodeFactory factory) => "__GVMDependenciesNode_" + factory.NameMangler.GetMangledMethodName(_method);
+        protected override string GetName(NodeFactory factory) => "__GVMDependenciesNode_" + factory.NameMangler.GetMangledMethodName(_method)
+            + (_constraintType != null ? "_" + factory.NameMangler.GetMangledTypeName(_constraintType) : "");
 
         public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
@@ -102,6 +115,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 TypeDesc potentialOverrideType = typeNode.Type;
                 if (!potentialOverrideType.IsDefType || potentialOverrideType.IsInterface)
+                    continue;
+
+                if (_constraintType != null && potentialOverrideType != _constraintType)
                     continue;
 
                 // If method is canonical, don't allow using it with non-canonical types - we can wait until

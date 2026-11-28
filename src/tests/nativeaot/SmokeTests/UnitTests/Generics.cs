@@ -73,6 +73,7 @@ class Generics
         Test137774Regression.Run();
         TestInterfaceGenericCornerCase.Run();
         Test115442Regression.Run();
+        TestSharedCodeConstrainedStaticGenericVirtual.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -4472,6 +4473,70 @@ class Generics
         public static void Run()
         {
             typeof(TypeBuilder<int, int>).GetMethod("Add").MakeGenericMethod(typeof(int)).Invoke(default(TypeBuilder<int, int>), []);
+        }
+    }
+
+    class TestSharedCodeConstrainedStaticGenericVirtual
+    {
+        interface IBuilder
+        {
+            static abstract int Depth { get; }
+        }
+
+        struct Root<T> : IBuilder
+        {
+            public static int Depth => 0;
+        }
+
+        struct Wrapped<T, TBuilder> : IBuilder where TBuilder : IBuilder
+        {
+            public static int Depth => TBuilder.Depth + 1;
+        }
+
+        interface IStep<T>
+        {
+            static abstract int Rebuild<TBuilt, TBuilder>() where TBuilder : IBuilder;
+        }
+
+        struct Source<T> : IStep<T>
+        {
+            public static int Rebuild<TBuilt, TBuilder>() where TBuilder : IBuilder => TBuilder.Depth;
+        }
+
+        // Each step hands its source a builder wrapping the one it was given. A constrained call from shared code can
+        // only reach the constraint type's own implementation, so the wrapping is as deep as the chain and no deeper;
+        // resolving the call against every implementer of IStep<__Canon> instead wraps without end.
+        struct Step<T, TInner> : IStep<T> where TInner : IStep<T>
+        {
+            public static int Rebuild<TBuilt, TBuilder>() where TBuilder : IBuilder => TInner.Rebuild<TBuilt, Wrapped<T, TBuilder>>();
+        }
+
+        static int Start<T, TStep>() where TStep : IStep<T> => TStep.Rebuild<object, Root<T>>();
+
+        // reached through a generic virtual method, so its dictionaries are built from templates at runtime
+        interface IRunner
+        {
+            int Run<U>();
+        }
+
+        class Runner<T, TStep> : IRunner where TStep : IStep<T>
+        {
+            public int Run<U>() => Start<T, TStep>();
+        }
+
+        static IRunner Make<T, TStep>() where TStep : IStep<T> => new Runner<T, TStep>();
+
+        public static void Run()
+        {
+            // boxed, so that each is a constructed implementer of IStep<T>
+            object[] steps = [new Source<object>(), new Step<object, Source<object>>(), new Step<object, Step<object, Source<object>>>()];
+
+            if (Make<object, Step<object, Source<object>>>().Run<object>() != 1)
+                throw new Exception();
+            if (Make<object, Step<object, Step<object, Source<object>>>>().Run<object>() != 2)
+                throw new Exception();
+
+            GC.KeepAlive(steps);
         }
     }
 
