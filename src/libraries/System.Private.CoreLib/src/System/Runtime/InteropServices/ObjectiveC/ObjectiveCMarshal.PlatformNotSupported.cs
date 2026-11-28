@@ -69,13 +69,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <summary>
         /// Initialize the Objective-C marshalling API.
         /// </summary>
-        /// <param name="callbacks">Unmanaged callbacks used by the GC to query reference tracking state.</param>
-        /// <param name="unhandledExceptionPropagationHandler">Handler for the propagation of unhandled Exceptions across a managed -> native boundary (that is, Reverse P/Invoke).</param>
-        /// <exception cref="ArgumentNullException">Thrown if any callback in <paramref name="callbacks"/> or <paramref name="unhandledExceptionPropagationHandler"/> is <c>null</c>.</exception>
+        /// <param name="callbacks">Callbacks used for reference tracking and exception propagation.</param>
+        /// <exception cref="ArgumentNullException">Thrown if any callback in <paramref name="callbacks"/> is <c>null</c>.</exception>
         /// <exception cref="InvalidOperationException">Thrown if this API has already been called.</exception>
         public static void Initialize(
-            ObjectiveCReferenceTrackingCallbacks callbacks,
-            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler)
+            in ObjectiveCReferenceTrackingCallbacks callbacks)
             => throw new PlatformNotSupportedException();
 
         /// <summary>

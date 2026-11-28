@@ -89,31 +89,32 @@ namespace ObjectiveCMarshalAPI
                 IsReferencedCallback = isReferencedCallback,
                 HaveReferencesChangedCallback = haveReferencesChangedCallback,
                 TrackedObjectEnteredFinalization = trackedObjectEnteredFinalization,
+                UnhandledExceptionPropagationHandler = OnUnhandledExceptionPropagationHandler,
             };
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    ObjectiveCMarshal.Initialize(callbacks with { BeginEndCallback = null }, OnUnhandledExceptionPropagationHandler);
+                    ObjectiveCMarshal.Initialize(callbacks with { BeginEndCallback = null });
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    ObjectiveCMarshal.Initialize(callbacks with { IsReferencedCallback = null }, OnUnhandledExceptionPropagationHandler);
+                    ObjectiveCMarshal.Initialize(callbacks with { IsReferencedCallback = null });
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    ObjectiveCMarshal.Initialize(callbacks with { HaveReferencesChangedCallback = null }, OnUnhandledExceptionPropagationHandler);
+                    ObjectiveCMarshal.Initialize(callbacks with { HaveReferencesChangedCallback = null });
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    ObjectiveCMarshal.Initialize(callbacks with { TrackedObjectEnteredFinalization = null }, OnUnhandledExceptionPropagationHandler);
+                    ObjectiveCMarshal.Initialize(callbacks with { TrackedObjectEnteredFinalization = null });
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    ObjectiveCMarshal.Initialize(callbacks, null);
+                    ObjectiveCMarshal.Initialize(callbacks with { UnhandledExceptionPropagationHandler = null });
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
@@ -236,13 +237,15 @@ namespace ObjectiveCMarshalAPI
 
             if (s_useLatestAlgorithmCallbacks)
             {
-                ObjectiveCMarshal.Initialize(new ObjectiveCReferenceTrackingCallbacks
+                ObjectiveCReferenceTrackingCallbacks callbacks = new ObjectiveCReferenceTrackingCallbacks
                 {
                     BeginEndCallback = beginEndCallback,
                     IsReferencedCallback = isReferencedCallback,
                     HaveReferencesChangedCallback = haveReferencesChangedCallback,
                     TrackedObjectEnteredFinalization = trackedObjectEnteredFinalization,
-                }, OnUnhandledExceptionPropagationHandler);
+                    UnhandledExceptionPropagationHandler = OnUnhandledExceptionPropagationHandler,
+                };
+                ObjectiveCMarshal.Initialize(in callbacks);
             }
             else
             {

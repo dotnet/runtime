@@ -6,10 +6,10 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     /// <summary>
-    /// Unmanaged callbacks used by the GC to query Objective-C reference tracking state.
+    /// Callbacks used to initialize Objective-C marshalling.
     /// </summary>
     /// <remarks>
-    /// All callbacks must be written in native code since they will be called by the GC and
+    /// The unmanaged callbacks must be written in native code since they will be called by the GC and
     /// managed code is not able to run at that time.
     /// </remarks>
     [SupportedOSPlatform("macos")]
@@ -61,5 +61,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The callback is passed the tagged memory associated with the object.
         /// </remarks>
         public delegate* unmanaged<IntPtr, void> TrackedObjectEnteredFinalization { get; set; }
+
+        /// <summary>
+        /// Gets or sets the handler for propagating unhandled exceptions across a reverse P/Invoke boundary.
+        /// </summary>
+        public ObjectiveCMarshal.UnhandledExceptionPropagationHandler UnhandledExceptionPropagationHandler { get; set; }
     }
 }

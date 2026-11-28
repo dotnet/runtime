@@ -2458,8 +2458,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
             UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
         public static void Initialize(
-            System.Runtime.InteropServices.ObjectiveC.ObjectiveCReferenceTrackingCallbacks callbacks,
-            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+            in System.Runtime.InteropServices.ObjectiveC.ObjectiveCReferenceTrackingCallbacks callbacks) => throw null;
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
@@ -2483,11 +2482,13 @@ namespace System.Runtime.InteropServices.ObjectiveC
     [System.CLSCompliantAttribute(false)]
     public partial struct ObjectiveCReferenceTrackingCallbacks
     {
+        private object _dummy;
         private int _dummyPrimitive;
         public unsafe delegate* unmanaged<void> BeginEndCallback { get { throw null; } set { } }
         public unsafe delegate* unmanaged<System.IntPtr, int> IsReferencedCallback { get { throw null; } set { } }
         public unsafe delegate* unmanaged<int> HaveReferencesChangedCallback { get { throw null; } set { } }
         public unsafe delegate* unmanaged<System.IntPtr, void> TrackedObjectEnteredFinalization { get { throw null; } set { } }
+        public System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal.UnhandledExceptionPropagationHandler UnhandledExceptionPropagationHandler { readonly get { throw null; } set { } }
     }
 }
 namespace System.Runtime.InteropServices.Marshalling
