@@ -33,7 +33,7 @@ __Deps=(
     "glibc          *            2.25      https://mirrors.kernel.org/gnu/glibc/glibc-2.25.tar.xz                                                         067bd9bb3390e79aa45911537d13c3721f1d9d3769931a30c2681bfee66f23a0"
     "glibc          arm          2.34      https://mirrors.kernel.org/gnu/glibc/glibc-2.34.tar.xz                                                         44d26a1fe20b8853a48f470ead01e4279e869ac149b195dda4e44a195d981ab2"
     "glibc          loongarch64  2.36      https://mirrors.kernel.org/gnu/glibc/glibc-2.36.tar.xz                                                         1c959fea240906226062cb4b1e7ebce71a9f0e3c0836c09e7e3423d434fcfe75"
-    "glibc          riscv64      2.27      https://mirrors.kernel.org/gnu/glibc/glibc-2.27.tar.xz                                                         5172de54318ec0b7f2735e5a91d908afe1c9ca291fec16b5374d9faadfc1fc72"
+    "glibc          riscv64      2.29      https://mirrors.kernel.org/gnu/glibc/glibc-2.29.tar.xz                                                         f3eeb8d57e25ca9fc13c2af3dae97754f9f643bc69229546828e3a240e2af04b"
     "icu            *            79.1      https://github.com/unicode-org/icu/releases/download/release-79.1/icu4c-79.1-sources.tgz                       06fa63ecb521048f8082f12ad988f6b678d90cbd88aafce24cbc94902b191d99"
     "krb5           *            1.22.3    https://kerberos.org/dist/krb5/1.22/krb5-1.22.3.tar.gz                                                         fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b"
     "linux          *            4.19.325  https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.19.325.tar.xz                                             607bed7de5cda31a443df4c8a78dbe5e8a9ad31afde2a4d28fe99ab4730e8de1"
@@ -219,6 +219,9 @@ __Prefix="$__CacheDir/x-tools/$__BuildArch-ctng$(dep ctng 3)-gcc$(dep gcc 3)-gli
 if [[ ! -f "$__Prefix/.complete" ]]; then
 rm -rf "$__Prefix"
 mkdir -p "$__WorkDir/ctng-build"
+__CtLinux="CT_LINUX_V_$(dep linux 3 | cut -d. -f1-2 | tr . _)=y"
+__CtGlibc="CT_GLIBC_V_$(dep glibc 3 | cut -d. -f1-2 | tr . _)=y"
+__CtGcc="CT_GCC_V_$(dep gcc 3 | cut -d. -f1)=y"
 cat > "$__WorkDir/ctng-build/defconfig" <<EOF
 CT_CONFIG_VERSION="4"
 CT_EXPERIMENTAL=y
@@ -233,10 +236,10 @@ CT_LOG_PROGRESS_BAR=n
 CT_OMIT_TARGET_VENDOR=y
 $__CtngArch
 CT_KERNEL_LINUX=y
-CT_LINUX_V_$(dep linux 3 | cut -d. -f1-2 | tr . _)=y
+$__CtLinux
 CT_LINUX_VERSION="$(dep linux 3)"
-CT_GLIBC_V_$(dep glibc 3 | cut -d. -f1-2 | tr . _)=y
-CT_GCC_V_$(dep gcc 3 | cut -d. -f1)=y
+$__CtGlibc
+$__CtGcc
 CT_CC_LANG_CXX=y
 # The rootfs only needs headers and libraries; don't build documentation.
 CT_GLIBC_EXTRA_CONFIG_ARRAY="MAKEINFO=:"
@@ -244,6 +247,13 @@ EOF
 (
     cd "$__WorkDir/ctng-build"
     "$__CtngSrc/ct-ng" defconfig DEFCONFIG=defconfig
+    # crosstool-ng silently falls back to its defaults for versions it can't select.
+    for __Opt in "$__CtLinux" "$__CtGlibc" "$__CtGcc"; do
+        if ! grep -qx "$__Opt" .config; then
+            echo "ERROR: crosstool-ng did not accept $__Opt for $__BuildArch." >&2
+            exit 1
+        fi
+    done
     "$__CtngSrc/ct-ng" "build.$JOBS"
 )
 touch "$__Prefix/.complete"
@@ -347,6 +357,6 @@ done
 rm -rf "$__RootfsDir"/{bin,sbin,etc,var,usr/bin,usr/sbin,usr/libexec,usr/share}
 rm -rf "$__RootfsDir"/usr/lib*/{gconv,audit,getconf}
 find "$__RootfsDir" -name '*.la' -delete
-find "$__RootfsDir" -type f \( -name '*.so*' -o -name '*.a' -o -name '*.o' \) -exec llvm-strip --strip-debug {} +
+find "$__RootfsDir" -type f \( -name '*.so*' -o -name '*.a' -o -name '*.o' \) -exec llvm-strip --strip-debug {} + 2>/dev/null || true
 
 echo "rootfs for $__BuildArch ($__Triple, glibc $(dep glibc 3), gcc $__GccVer, linux $(dep linux 3)): $__RootfsDir ($(du -sh "$__RootfsDir" | cut -f1))"
