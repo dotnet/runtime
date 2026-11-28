@@ -176,6 +176,23 @@ namespace System.Linq.Tests
             Assert.Empty(provider.Execute<IEnumerable<int>>(exp));
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ExecuteGroupingRebindsToListOverload(bool generic)
+        {
+            IGrouping<int, int> grouping = new[] { 1, 2, 3 }.GroupBy(value => 0).Single();
+            IQueryable<int> query = grouping.AsQueryable();
+            Expression<Func<IQueryable<int>, int>> lambda = source => GetCount(source);
+            var call = Expression.Call(((MethodCallExpression)lambda.Body).Method, query.Expression);
+
+            Assert.Equal(3, generic ? query.Provider.Execute<int>(call) : query.Provider.Execute(call));
+        }
+
+        private static int GetCount(IQueryable<int> source) => throw new InvalidOperationException();
+
+        private static int GetCount(IList<int> source) => source.Count;
+
         [Fact]
         public void ExecuteNonGeneric()
         {
