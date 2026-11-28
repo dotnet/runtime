@@ -1301,9 +1301,9 @@ INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                   
 INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            ZERO,              25C,        INS_TT_NONE,    Reads_DF)
 #endif // defined(TARGET_AMD64)
 INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    Reads_DF   | INS_FLAGS_HasWBit)
-INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            ZERO,              1C,         INS_TT_NONE,    Reads_DF   | INS_FLAGS_HasWBit)
+INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            ZERO,              2C,         INS_TT_NONE,    Reads_DF   | INS_FLAGS_HasWBit)
 #if defined(TARGET_AMD64)
-INST1(movsq,            "movsq",            IUM_RD, 0x00A548,                                                            ZERO,              1C,         INS_TT_NONE,    Reads_DF)
+INST1(movsq,            "movsq",            IUM_RD, 0x00A548,                                                            ZERO,              2C,         INS_TT_NONE,    Reads_DF)
 #endif // defined(TARGET_AMD64)
 
 INST1(r_stosb,          "rep stosb",        IUM_RD, 0x00AAF3,                                                            ZERO,              25C,        INS_TT_NONE,    Reads_DF   | INS_FLAGS_HasWBit)
