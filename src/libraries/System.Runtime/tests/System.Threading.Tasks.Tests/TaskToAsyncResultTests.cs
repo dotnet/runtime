@@ -152,6 +152,75 @@ namespace System.Threading.Tasks.Tests
             tcs.SetResult();
             await invoked.Task;
         }
+
+        [Fact]
+        public async Task FaultedTask_CallbackDoesNotCallEnd_NoUnobservedTaskException_Async()
+        {
+            // Regression test: if the APM callback does not call End, a faulted task must not
+            // surface via TaskScheduler.UnobservedTaskException.  In the APM pattern, exceptions
+            // are only propagated through End; skipping End (e.g. during shutdown) must be silent.
+            bool unobservedFired = false;
+            EventHandler<UnobservedTaskExceptionEventArgs> handler = (s, e) => unobservedFired = true;
+            TaskScheduler.UnobservedTaskException += handler;
+            try
+            {
+                var tcs = new TaskCompletionSource<int>();
+
+                // Callback intentionally does not call End.
+                WeakReference weakRef = await Task.Run(() =>
+                {
+                    IAsyncResult ar = TaskToAsyncResult.Begin(tcs.Task, _ => { /* no End */ }, null);
+                    tcs.SetException(new InvalidOperationException("test fault"));
+                    return new WeakReference(ar);
+                });
+
+                // Allow the callback continuation to complete, then drop all references.
+                await Task.Delay(100);
+
+                for (int i = 0; i < 5 && weakRef.IsAlive; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    await Task.Delay(100);
+                }
+
+                Assert.False(unobservedFired, "UnobservedTaskException should not fire when End is not called in APM callback");
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= handler;
+            }
+        }
+
+        [Fact]
+        public void FaultedTask_AlreadyCompleted_CallbackDoesNotCallEnd_NoUnobservedTaskException_Sync()
+        {
+            // Same regression but for the synchronous-completion path (task already faulted
+            // when Begin is called, callback fires inline).
+            bool unobservedFired = false;
+            EventHandler<UnobservedTaskExceptionEventArgs> handler = (s, e) => unobservedFired = true;
+            TaskScheduler.UnobservedTaskException += handler;
+            try
+            {
+                Task<int> faulted = Task.FromException<int>(new InvalidOperationException("test fault"));
+
+                // Callback intentionally does not call End.
+                IAsyncResult ar = TaskToAsyncResult.Begin(faulted, _ => { /* no End */ }, null);
+                Assert.True(ar.CompletedSynchronously);
+
+                ar = null;
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                Assert.False(unobservedFired, "UnobservedTaskException should not fire when End is not called in APM callback");
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= handler;
+            }
+        }
     }
 
     internal sealed class NonTaskIAsyncResult : IAsyncResult
