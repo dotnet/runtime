@@ -32,7 +32,8 @@ private:
     bool ReadMemory(void* address, void* buffer, size_t size) override
     {
         uint32_t read = 0;
-        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read));
+        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read)) &&
+            read == size;
     }
 };
 
@@ -64,6 +65,7 @@ MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, std
     m_baseAddress(baseAddress),
     m_loadBias(0),
     m_commands(nullptr),
+    m_loadCommandsValid(false),
     m_symtabCommand(nullptr),
     m_nlists(nullptr),
     m_strtabAddress(0)
@@ -190,9 +192,19 @@ MachOModule::ReadLoadCommands()
             return false;
         }
         load_command* command = m_commands;
+        size_t remaining = m_header.sizeofcmds;
 
         for (uint32_t i = 0; i < m_header.ncmds; i++)
         {
+            if (remaining < sizeof(load_command) ||
+                command->cmdsize < sizeof(load_command) || command->cmdsize > remaining ||
+                (command->cmd == LC_SYMTAB && command->cmdsize < sizeof(symtab_command)) ||
+                (command->cmd == LC_DYSYMTAB && command->cmdsize < sizeof(dysymtab_command)) ||
+                (command->cmd == LC_SEGMENT_64 && command->cmdsize < sizeof(segment_command_64)))
+            {
+                m_reader.Trace("ERROR: Invalid load command at index %u\n", i);
+                return false;
+            }
             m_reader.TraceVerbose("CMD: load command cmd %02x (%d) size %d\n", command->cmd, command->cmd, command->cmdsize);
 
             switch (command->cmd)
@@ -207,6 +219,11 @@ MachOModule::ReadLoadCommands()
 
             case LC_SEGMENT_64:
                 segment_command_64* segment = (segment_command_64*)command;
+                if (segment->nsects > (command->cmdsize - sizeof(segment_command_64)) / sizeof(section_64))
+                {
+                    m_reader.Trace("ERROR: Sections exceed load command size at index %u\n", i);
+                    return false;
+                }
                 m_segments.push_back(segment);
 
                 // Calculate the load bias for the module. This is the value to add to the vmaddr of a
@@ -245,12 +262,14 @@ MachOModule::ReadLoadCommands()
                 break;
             }
             // Get next load command
+            remaining -= command->cmdsize;
             command = (load_command*)((char*)command + command->cmdsize);
         }
         m_reader.TraceVerbose("CMD: load bias %016llx\n", m_loadBias);
+        m_loadCommandsValid = true;
     }
 
-    return true;
+    return m_loadCommandsValid;
 }
 
 bool
