@@ -2306,6 +2306,25 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
         analyses->Update(call);
     }
 
+    bool storedResultToNewTemp = false;
+    if (!call->TypeIs(TYP_VOID) && call->IsUnusedValue() && m_compiler->ShouldReportManagedReturnValues())
+    {
+        // The result is unused, but we still need it in a local to be able to
+        // report where the debugger can find the return value of the call.
+        assert(retbufArg == nullptr);
+        unsigned resultLclNum =
+            m_compiler->lvaGrabTemp(true DEBUGARG("Unused async call result reported to the debugger"));
+
+        call->ClearUnusedValue();
+        GenTree* store = m_compiler->gtNewTempStore(resultLclNum, call);
+        LIR::AsRange(block).InsertAfter(call, store);
+        storedResultToNewTemp = true;
+
+        JITDUMP("  Storing unused result of [%06u] to V%02u to be able to report it to the debugger\n",
+                Compiler::dspTreeID(call), resultLclNum);
+        DISPTREERANGE(LIR::AsRange(block), store);
+    }
+
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
     {
         assert(retbufArg == nullptr);
@@ -2314,8 +2333,9 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
         // storing to a local we can usually reuse it, except if we may need to
         // preserve its value because of an exception being thrown after
         // potential resumption. (This check is conservative, we could use liveness for it as well.)
+        // A local we just introduced above has no value that needs preserving.
         if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call) ||
-            m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block))
+            (!storedResultToNewTemp && m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block)))
         {
             LIR::Use use;
             bool     gotUse = LIR::AsRange(block).TryGetUse(call, &use);
@@ -3861,6 +3881,8 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     *remainder = m_compiler->fgSplitBlockAfterNode(block, lastNode);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
+    RecordReturnValueForDebugInfo(call, callDefInfo, *remainder);
+
     // When debug info is available, adjust the offset for the split. We have the exact
     // offset of the await call, so we can do better than
     // fgSplitBlockAfterNode. The previous block contains the call so add 1 to
@@ -3903,6 +3925,67 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
         block->GetTrueEdge()->setLikelihood(0);
         block->GetFalseEdge()->setLikelihood(1);
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::RecordReturnValueForDebugInfo:
+//   Insert a GT_RECORD_ASYNC_RETURN_VALUE node that makes the backend report
+//   where the debugger can find the return value of the specified async call.
+//
+// Parameters:
+//   call        - The async call
+//   callDefInfo - Information about the async call's definition
+//   joinBB      - The block that both the synchronous path and the resumption
+//                 path of the async call join into
+//
+// Remarks:
+//   The node is inserted in the join block since that is the first point where
+//   the return value is available both when the callee returned synchronously
+//   and when it suspended and we resumed.
+//
+void AsyncTransformation::RecordReturnValueForDebugInfo(GenTreeCall*              call,
+                                                        const CallDefinitionInfo& callDefInfo,
+                                                        BasicBlock*               joinBB)
+{
+    if (!m_compiler->ShouldReportManagedReturnValues() || (call->gtReturnType == TYP_VOID))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* def = callDefInfo.DefinitionNode;
+    if (def == nullptr)
+    {
+        return;
+    }
+
+    GenTree* value;
+    if (def->OperIs(GT_STORE_LCL_VAR))
+    {
+        value = m_compiler->gtNewLclvNode(def->GetLclNum(), m_compiler->lvaGetDesc(def)->TypeGet());
+    }
+    else if (def->OperIs(GT_STORE_LCL_FLD))
+    {
+        value = m_compiler->gtNewLclFldNode(def->GetLclNum(), def->TypeGet(), def->GetLclOffs(),
+                                            def->AsLclFld()->GetLayout());
+    }
+    else
+    {
+        // The value was defined via a return buffer pointing into the local.
+        assert(def->OperIs(GT_LCL_ADDR) && varTypeIsStruct(call->gtReturnType));
+        ClassLayout* layout =
+            (call->gtReturnType == TYP_STRUCT) ? m_compiler->typGetObjLayout(call->gtRetClsHnd) : nullptr;
+        value = m_compiler->gtNewLclFldNode(def->GetLclNum(), call->gtReturnType, def->GetLclOffs(), layout);
+    }
+
+    GenTree* record = new (m_compiler, GT_RECORD_ASYNC_RETURN_VALUE)
+        GenTreeRecordAsyncReturnValue(value, call->GetAsyncInfo().CallAsyncDebugInfo);
+    record->SetHasOrderingSideEffect();
+
+    LIR::AsRange(joinBB).InsertAtBeginning(value, record);
+
+    JITDUMP("  Recording return value of [%06u] in " FMT_BB " for debug info purposes\n", Compiler::dspTreeID(call),
+            joinBB->bbNum);
+    DISPTREERANGE(LIR::AsRange(joinBB), record);
 }
 
 //------------------------------------------------------------------------

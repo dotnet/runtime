@@ -254,6 +254,7 @@ protected:
     BasicBlock* genCreateTempLabel();
 
     void genRecordAsyncResume(GenTreeVal* asyncResume);
+    void genRecordAsyncReturnValue(GenTreeRecordAsyncReturnValue* node);
 
 private:
     void genLogLabel(BasicBlock* bb);

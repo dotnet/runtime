@@ -532,6 +532,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genRecordAsyncResume(treeNode->AsVal());
             break;
 
+        case GT_RECORD_ASYNC_RETURN_VALUE:
+            genRecordAsyncReturnValue(treeNode->AsRecordAsyncReturnValue());
+            break;
+
         case GT_FTN_ENTRY:
             genFtnEntry(treeNode);
             break;

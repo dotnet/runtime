@@ -516,6 +516,8 @@ class AsyncTransformation
                                                            BasicBlock*               suspendBB,
                                                            BasicBlock**              remainder);
 
+    void RecordReturnValueForDebugInfo(GenTreeCall* call, const CallDefinitionInfo& callDefInfo, BasicBlock* joinBB);
+
     BasicBlock* CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
     void        CreateResumption(BasicBlock*                      callBlock,
                                  GenTreeCall*                     call,

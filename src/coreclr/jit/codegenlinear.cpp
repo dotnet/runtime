@@ -1058,6 +1058,53 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
 
+//------------------------------------------------------------------------
+// genRecordAsyncReturnValue:
+//   Record where the debugger can find the return value of an async call.
+//
+// Arguments:
+//    node - GT_RECORD_ASYNC_RETURN_VALUE node
+//
+// Notes:
+//    No code is generated for this node. The operand is only used to figure
+//    out where the return value lives; if it is not a local then nothing is
+//    reported.
+//
+void CodeGen::genRecordAsyncReturnValue(GenTreeRecordAsyncReturnValue* node)
+{
+    GenTree* value = node->gtGetOp1();
+    genConsumeRegs(value);
+
+    if (!m_compiler->ShouldReportManagedReturnValues())
+    {
+        return;
+    }
+
+    if (!value->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        return;
+    }
+
+    DebugInfo di = node->gtCallDI.GetRoot();
+    if (!di.IsValid())
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* lcl    = value->AsLclVarCommon();
+    const LclVarDsc*     varDsc = m_compiler->lvaGetDesc(lcl);
+    // These nodes are only created for debuggable code where all locals live
+    // on the stack.
+    assert(!varDsc->lvIsInReg());
+
+    CodeGenInterface::EmittedCallReturnInfo info;
+    info.callILOffset = di.GetLocation().GetOffset();
+    info.returnLocation.CaptureLocation(GetEmitter());
+    info.returnValueLoc = getSiVarLoc(varDsc, (int)lcl->GetLclOffs(), (int)getCurrentStackLevel());
+
+    emittedCallReturnInfo->push_back(info);
+}
+
 #if HAS_FIXED_REGISTER_SET
 
 /*

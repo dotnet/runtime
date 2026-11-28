@@ -153,6 +153,16 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         LIR::Use::MakeDummyUse(Range(), tree, &use);
     }
 
+    if (!use.IsDummyUse() && use.User()->OperIs(GT_RECORD_ASYNC_RETURN_VALUE))
+    {
+        // The return value is only reported by its stack location, and the
+        // local is contained by lowering. These nodes only exist in debuggable
+        // code where long locals are never promoted.
+        assert(tree->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+        assert(!m_compiler->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted);
+        return tree->gtNext;
+    }
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
     if (!use.IsDummyUse())
     {

@@ -182,6 +182,7 @@ private:
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     GenTree*   LowerAsyncContinuation(GenTree* asyncCont);
+    void       LowerRecordAsyncReturnValue(GenTreeUnOp* node);
     void       LowerReturnSuspend(GenTree* retSuspend);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     unsigned   StoreFieldListToNewLocal(ClassLayout* layout, GenTreeFieldList* fieldList);

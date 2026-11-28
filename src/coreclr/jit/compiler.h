@@ -10059,6 +10059,23 @@ public:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, DebugInfo> CallSiteDebugInfoTable;
     CallSiteDebugInfoTable*                                            genCallSite2DebugInfoMap;
 
+    //------------------------------------------------------------------------
+    // ShouldReportManagedReturnValues:
+    //   Check whether the locations of return values of calls should be
+    //   reported to the debugger.
+    //
+    // Returns:
+    //   True if so.
+    //
+    // Remarks:
+    //   Managed return values are only reported for debuggable code, and only
+    //   when the debug info they are reported as part of is requested.
+    //
+    bool ShouldReportManagedReturnValues() const
+    {
+        return opts.compDbgCode && opts.compDbgInfo && opts.compScopeInfo;
+    }
+
     unsigned    genReturnLocal = BAD_VAR_NUM; // Local number for the return value when applicable.
     BasicBlock* genReturnBB    = nullptr;     // jumped to when not optimizing for speed.
 

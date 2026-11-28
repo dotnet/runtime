@@ -323,6 +323,7 @@ void GenTree::InitNodeSize()
     static_assert(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeRecordAsyncReturnValue) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
     // TODO-Throughput: This should not need to be a large node. The object info should be
@@ -2994,6 +2995,13 @@ AGAIN:
                     }
                     break;
 
+                case GT_RECORD_ASYNC_RETURN_VALUE:
+                    if (op1->AsRecordAsyncReturnValue()->gtCallDI != op2->AsRecordAsyncReturnValue()->gtCallDI)
+                    {
+                        return false;
+                    }
+                    break;
+
                 // For the ones below no extra argument matters for comparison.
                 case GT_RUNTIMELOOKUP:
                     break;
@@ -3634,6 +3642,10 @@ AGAIN:
                     hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(
                                                     tree->AsArrAddr()->GetElemClassHandle())));
                     hash = genTreeHashAdd(hash, tree->AsArrAddr()->GetFirstElemOffset());
+                    break;
+
+                case GT_RECORD_ASYNC_RETURN_VALUE:
+                    hash = genTreeHashAdd(hash, tree->AsRecordAsyncReturnValue()->gtCallDI.GetLocation().GetOffset());
                     break;
 
                 default:
@@ -9196,6 +9208,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_RECORD_ASYNC_RETURN_VALUE:
         case GT_PATCHPOINT:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
@@ -10441,7 +10454,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     // Implementation note: if not generating MRV info genCallSite2ILOffsetMap will be NULL and
     // codegen will pass DebugInfo() to emitter, which will cause emitter
     // not to emit IP mapping entry.
-    if (opts.compDbgCode && opts.compDbgInfo && di.IsValid())
+    if (ShouldReportManagedReturnValues() && di.IsValid())
     {
         // Managed Retval - IL offset of the call.  This offset is used to emit a
         // CALL_INSTRUCTION type sequence point while emitting corresponding native call.
@@ -11789,6 +11802,11 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());
                 break;
 
+            case GT_RECORD_ASYNC_RETURN_VALUE:
+                copy = new (this, GT_RECORD_ASYNC_RETURN_VALUE)
+                    GenTreeRecordAsyncReturnValue(tree->gtGetOp1(), tree->AsRecordAsyncReturnValue()->gtCallDI);
+                break;
+
             default:
                 assert(!GenTree::IsExOp(tree->OperKind()) && tree->OperIsSimple());
                 // We're in the SimpleOp case, so it's always unary or binary.
@@ -12412,6 +12430,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_INC_SATURATE:
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
+        case GT_RECORD_ASYNC_RETURN_VALUE:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
             m_edge = &m_node->AsUnOp()->gtOp1;
@@ -13700,6 +13719,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
             {
                 printf(" (%u)", tree->AsMDArr()->Dim());
+            }
+
+            if (tree->OperIs(GT_RECORD_ASYNC_RETURN_VALUE))
+            {
+                printf(" ");
+                tree->AsRecordAsyncReturnValue()->gtCallDI.Dump(true);
             }
         }
 
