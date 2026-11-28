@@ -8359,6 +8359,7 @@ public:
                                              unsigned                likelihood,
                                              const CORINFO_LOOKUP*   instParamLookup,
                                              CORINFO_METHOD_HANDLE   originalMethodHandle,
+                                             CORINFO_METHOD_HANDLE   guardedBaseMethodHandle,
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 

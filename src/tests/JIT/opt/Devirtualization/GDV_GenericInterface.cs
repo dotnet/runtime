@@ -24,11 +24,17 @@ public class Program
             AssertEquals(Test(), 42);
             AssertEquals(TestCov(), 42);
             AssertEquals(TestShared<Program>(), 42);
+            AssertEquals(TestGenericMethod<string>(_foo), typeof(string));
+            AssertEquals(TestClosedGenericMethod(_foo), typeof(int));
             Thread.Sleep(16);
         }
 
+        AssertEquals(TestGenericMethod<object>(_foo), typeof(object));
         _foo = new Foo2<Program>();
         AssertEquals(Test(), 43);
+        AssertEquals(TestGenericMethod<string>(_foo), typeof(string[]));
+        AssertEquals(TestGenericMethod<object>(_foo), typeof(object[]));
+        AssertEquals(TestClosedGenericMethod(_foo), typeof(int[]));
 
         _fooCov = new Foo1Cov<object>();
         AssertEquals(TestCov(), 43);
@@ -55,6 +61,11 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static IFoo<Program> GetIFoo() => _foo;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type TestGenericMethod<T>(IFoo<Program> receiver) => receiver.GetMethodType<T>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type TestClosedGenericMethod(IFoo<Program> receiver) => receiver.GetMethodType<int>();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int TestCov() => GetIFooCov().GetValue();
@@ -73,16 +84,19 @@ public class Program
 public interface IFoo<T>
 {
     int GetValue();
+    Type GetMethodType<TMethod>();
 }
 
 public class Foo1<T> : IFoo<T>
 {
     public int GetValue() => 42;
+    public Type GetMethodType<TMethod>() => typeof(TMethod);
 }
 
 public class Foo2<T> : IFoo<T>
 {
     public int GetValue() => 43;
+    public Type GetMethodType<TMethod>() => typeof(TMethod[]);
 }
 
 
