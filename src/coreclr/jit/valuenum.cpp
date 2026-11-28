@@ -6960,7 +6960,10 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 //    storeSize - The number of bytes being stored
 //    value     - The value being stored
 //
-void Compiler::fgValueNumberFieldStore(
+// Returns:
+//    True when the reference store is redundant and can be removed.
+//
+bool Compiler::fgValueNumberFieldStore(
     GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, ValueSize storeSize, ValueNum value)
 {
     noway_assert(fieldSeq != nullptr);
@@ -6989,6 +6992,88 @@ void Compiler::fgValueNumberFieldStore(
     }
 
     ValueNum newFieldValueVN = ValueNumStore::NoVN;
+    if (storeNode->OperIs(GT_STOREIND) && storeNode->TypeIs(TYP_REF) &&
+        ((fieldType == TYP_STRUCT) || (fieldType == TYP_REF)) && fieldSize.IsExact() && storeSize.IsExact() &&
+        (offset >= 0) && (static_cast<size_t>(offset) <= fieldSize.GetExact()) &&
+        (storeSize.GetExact() <= fieldSize.GetExact() - static_cast<unsigned>(offset)) &&
+        !storeNode->AsIndir()->IsVolatile() && ((storeNode->gtFlags & GTF_IND_NONFAULTING) != 0) &&
+        (((storeNode->AsIndir()->Addr()->gtFlags | storeNode->Data()->gtFlags) & GTF_ALL_EFFECT) == 0))
+    {
+        // The proof reads memory states, uses that liveness does not see. Memory SSA
+        // phis are pruned where the kind is dead into a block, so the entry state is
+        // only the true reaching state where the consulted kind is live in. Audit of
+        // every consulted state:
+        //  - previousField and previousValue project fgCurMemoryVN[GcHeap]. Under
+        //    matching states the shared SSA is pruned by the ByrefExposed liveness
+        //    bit, under split states by the GcHeap bit, so gcHeapStateReliable keys
+        //    on the bit that gated the consulted SSA. Projections are computed
+        //    unconditionally but conclusions are drawn only under the gate.
+        //  - The byref path compares against fgCurMemoryVN[ByrefExposed], consumed
+        //    only under byrefStateReliable.
+        //  - The stale state projection additionally consults loadMemoryVN, the state
+        //    the load itself captured. That state is reliable because it was captured
+        //    at a real, tracked memory use through normal VN processing, either the
+        //    entry state of a block the use keeps live or a state built by in-block
+        //    definitions, never the pruned entry state of a dead region.
+        const bool gcHeapStateReliable =
+            (compCurBB->bbMemoryLiveIn & memoryKindSet(byrefStatesMatchGcHeapStates ? ByrefExposed : GcHeap)) != 0;
+        const bool byrefStateReliable = (compCurBB->bbMemoryLiveIn & memoryKindSet(ByrefExposed)) != 0;
+
+        ValueNum  previousField = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
+        ValueNum  previousValue = vnStore->VNForLoad(VNK_Liberal, previousField, fieldSize, TYP_REF, offset, storeSize);
+        bool      unchanged     = gcHeapStateReliable && (previousValue == value);
+        VNFuncApp source;
+        if (!unchanged && vnStore->GetVNFunc(value, &source) && source.FuncIs(VNF_ByrefExposedLoad) &&
+            (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)))
+        {
+            ValueNum sourceAddress = source.GetArg(1);
+            ValueNum targetAddress = vnStore->VNLiberalNormalValue(storeNode->AsIndir()->Addr()->gtVNPair);
+            // Promotion can spell the read as (base + field) + offset and the store as base + total.
+            target_ssize_t sourceOffset;
+            target_ssize_t targetOffset;
+            vnStore->PeelOffsets(&sourceAddress, &sourceOffset);
+            vnStore->PeelOffsets(&targetAddress, &targetOffset);
+            if ((sourceAddress == targetAddress) && (sourceOffset == targetOffset))
+            {
+                ValueNum loadMemoryVN = source.GetArg(2);
+                if (loadMemoryVN == fgCurMemoryVN[ByrefExposed])
+                {
+                    unchanged = byrefStateReliable;
+                }
+                else if (byrefStatesMatchGcHeapStates && byrefStateReliable)
+                {
+                    // The load saw an older memory state. Both models share def points
+                    // and value numbers here, so the captured memory VN is the heap
+                    // field map state at the load point. Project the slot through the
+                    // field maps at that state and compare against the current one. The
+                    // map select machinery peels intervening stores to other fields and
+                    // to disjoint ranges of this field, which tolerates sibling member
+                    // writes of a struct recreation, while an opaque mutation such as a
+                    // call keeps the projections distinct.
+                    assert(fgCurMemoryVN[ByrefExposed] == fgCurMemoryVN[GcHeap]);
+                    ValueNum loadFieldMapVN =
+                        (baseAddr != nullptr)
+                            ? vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, loadMemoryVN, fieldSelectorVN)
+                            : loadMemoryVN;
+                    ValueNum loadField =
+                        vnStore->VNForMapSelect(VNK_Liberal, fieldType, loadFieldMapVN, fieldValueSelectorVN);
+                    ValueNum loadValue =
+                        vnStore->VNForLoad(VNK_Liberal, loadField, fieldSize, TYP_REF, offset, storeSize);
+                    unchanged = loadValue == previousValue;
+                }
+            }
+        }
+        JITDUMP("REFSTORE [%06u] offset=%zd field=" FMT_VN " value=" FMT_VN " equal=%d\n", dspTreeID(storeNode), offset,
+                previousValue, value, unchanged);
+        if (unchanged)
+        {
+            // The store disappears, so its memory SSA definition carries the incoming state.
+            fgValueNumberRecordMemorySsa(GcHeap, storeNode);
+            if (!byrefStatesMatchGcHeapStates)
+                fgValueNumberRecordMemorySsa(ByrefExposed, storeNode);
+            return true;
+        }
+    }
     if (vnStore->LoadStoreIsEntire(fieldSize, offset, storeSize))
     {
         // For memory locations (as opposed to locals), we do not normalize types.
@@ -7023,6 +7108,7 @@ void Compiler::fgValueNumberFieldStore(
         // For out-of-bounds stores, the heap has to be invalidated as other fields may be affected.
         fgMutateGcHeap(storeNode DEBUGARG("out-of-bounds store to a field"));
     }
+    return false;
 }
 
 ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN)
@@ -11839,6 +11925,8 @@ class ValueNumberState
     BitVec       m_provenUnreachableBlocks;
 
 public:
+    bool statementChanged = false;
+
     ValueNumberState(Compiler* comp)
         : m_compiler(comp)
         , m_blockTraits(comp->fgBBNumMax + 1, comp)
@@ -12297,12 +12385,18 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
+        vnState->statementChanged = false;
         for (GenTree* const tree : stmt->TreeList())
         {
             // Set up ambient var referring to current tree.
             compCurTree = tree;
             fgValueNumberTree(tree);
             compCurTree = nullptr;
+        }
+        if (vnState->statementChanged)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
 #ifdef DEBUG
@@ -13030,6 +13124,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
         }
     }
 
+    bool redundantReferenceStore = false;
+
     // Now, record the new VN for the store (performing the indicated "state update").
     switch (store->OperGet())
     {
@@ -13071,7 +13167,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 fldSeq   = vnStore->FieldSeqVNToFieldSeq(funcApp.GetArg(1));
                 offset   = vnStore->ConstantValue<ssize_t>(funcApp.GetArg(2));
 
-                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
+                redundantReferenceStore =
+                    fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
             }
             else if (addrIsVNFunc && (funcApp.FuncIs(VNF_PtrToArrElem)))
             {
@@ -13080,14 +13177,57 @@ void Compiler::fgValueNumberStore(GenTree* store)
             else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
             {
                 assert(fldSeq != nullptr);
-                fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
+                redundantReferenceStore =
+                    fgValueNumberFieldStore(store, baseAddr, fldSeq, offset, storeSize, valueVNPair.GetLiberal());
             }
             else
             {
                 assert(!store->HasAnyLocalDefs(this));
-                if (store->OperIs(GT_STOREIND) && IsByrefStoreForwardingType(store->TypeGet()) &&
-                    (value->TypeGet() == store->TypeGet()) && !store->AsIndir()->IsVolatile() &&
+                // A destination without field metadata can still have an exact address.
+                // A reference loaded from this address at the current memory state and
+                // written back is redundant under the same proof as the field path.
+                // This covers generic ref T helpers after inlining. The proof consults
+                // the ByrefExposed state, a use liveness does not see, so it is only
+                // meaningful where that kind is live into the block (memory SSA phis
+                // are pruned where it is dead).
+                if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_REF) && !store->AsIndir()->IsVolatile() &&
+                    ((compCurBB->bbMemoryLiveIn & memoryKindSet(ByrefExposed)) != 0) &&
+                    ((store->gtFlags & GTF_IND_NONFAULTING) != 0) &&
+                    (((addr->gtFlags | store->Data()->gtFlags) & GTF_ALL_EFFECT) == 0) &&
                     !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
+                {
+                    VNFuncApp source;
+                    ValueNum  storeValueVN = valueVNPair.GetLiberal();
+                    if (vnStore->GetVNFunc(storeValueVN, &source) && source.FuncIs(VNF_ByrefExposedLoad) &&
+                        (source.GetArg(0) == vnStore->VNForIntCon(TYP_REF)) &&
+                        (source.GetArg(2) == fgCurMemoryVN[ByrefExposed]))
+                    {
+                        ValueNum       sourceAddress = source.GetArg(1);
+                        ValueNum       targetAddress = vnStore->VNNormalValue(addrVN);
+                        target_ssize_t sourceOffset;
+                        target_ssize_t targetOffset;
+                        vnStore->PeelOffsets(&sourceAddress, &sourceOffset);
+                        vnStore->PeelOffsets(&targetAddress, &targetOffset);
+                        if ((sourceAddress == targetAddress) && (sourceOffset == targetOffset))
+                        {
+                            JITDUMP("REFSTORE [%06u] byref addr " FMT_VN " value=" FMT_VN " equal=1\n",
+                                    dspTreeID(store), targetAddress, storeValueVN);
+                            // The store disappears, so its memory SSA definition carries
+                            // the incoming state.
+                            fgValueNumberRecordMemorySsa(GcHeap, store);
+                            if (!byrefStatesMatchGcHeapStates)
+                                fgValueNumberRecordMemorySsa(ByrefExposed, store);
+                            redundantReferenceStore = true;
+                        }
+                    }
+                }
+                if (redundantReferenceStore)
+                {
+                    // The memory state stays as it was, there is no store to record.
+                }
+                else if (store->OperIs(GT_STOREIND) && IsByrefStoreForwardingType(store->TypeGet()) &&
+                         (value->TypeGet() == store->TypeGet()) && !store->AsIndir()->IsVolatile() &&
+                         !(addrIsVNFunc && funcApp.FuncIs(VNF_PtrToLoc)))
                 {
                     // Keep the rest of memory opaque; only an exact, same-type load can reuse this value.
                     ValueNum memoryVN =
@@ -13121,6 +13261,14 @@ void Compiler::fgValueNumberStore(GenTree* store)
         storeExcSet = vnStore->VNPUnionExcSet(store->AsIndir()->Addr()->gtVNPair, storeExcSet);
     }
     store->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), storeExcSet);
+    if (redundantReferenceStore)
+    {
+        JITDUMP("Removing unchanged reference store [%06u]\n", dspTreeID(store));
+        store->gtBashToNOP();
+        store->gtVNPair = vnStore->VNPForVoid();
+        gtUpdateTreeAncestorsSideEffects(store);
+        vnState->statementChanged = true;
+    }
 }
 
 //------------------------------------------------------------------------

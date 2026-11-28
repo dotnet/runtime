@@ -796,6 +796,17 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
             if (TLiveness::ComputeMemoryLiveness)
             {
                 m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+
+                // Value numbering proves some reference stores redundant by comparing
+                // against the destination's previous value, which makes such a store
+                // also a read of the memory state. Make that use visible so memory
+                // SSA builds the join phis the proof consults instead of pruning
+                // them. Keep this in sync with the candidate checks in
+                // fgValueNumberFieldStore and fgValueNumberStore.
+                if (tree->OperIs(GT_STOREIND) && tree->TypeIs(TYP_REF) && !tree->AsIndir()->IsVolatile())
+                {
+                    m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                }
             }
             break;
 
