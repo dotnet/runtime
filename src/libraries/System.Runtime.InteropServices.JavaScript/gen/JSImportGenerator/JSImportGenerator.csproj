@@ -4,7 +4,8 @@
     <!-- TODO: Remove once migrated to unsafe-v2. -->
     <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <AssemblyName>Microsoft.Interop.JavaScript.JSImportGenerator</AssemblyName>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Plural so static graph builds reach the netstandard2.0 build pinned by SetTargetFramework in eng/generators.targets. -->
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Microsoft.Interop.JavaScript</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>

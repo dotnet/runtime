@@ -738,6 +738,15 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)Microsoft.NETCore.Platforms\src\Microsoft.NETCore.Platforms.csproj" Category="libraries" />
   </ItemGroup>
 
+  <!-- Repo builds only build the current .NET target frameworks of libraries, so let them narrow their
+       TargetFrameworks. Building a library project directly keeps all of its target frameworks. Library tests
+       include netstandard2.0 helpers that need downlevel builds of the libraries they reference, so builds that
+       include them don't narrow. See src/libraries/Directory.Build.targets. -->
+  <PropertyGroup Condition="'$(NarrowLibraryTargetFrameworks)' == ''">
+    <NarrowLibraryTargetFrameworks>true</NarrowLibraryTargetFrameworks>
+    <NarrowLibraryTargetFrameworks Condition="$(_subset.Contains('+libs.tests+'))">false</NarrowLibraryTargetFrameworks>
+  </PropertyGroup>
+
   <!-- Set default configurations. -->
   <ItemGroup>
     <ProjectToBuild Update="@(ProjectToBuild)">
@@ -753,6 +762,7 @@
       <AdditionalProperties>%(AdditionalProperties);HostConfiguration=$(HostConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);TasksConfiguration=$(TasksConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);ToolsConfiguration=$(ToolsConfiguration)</AdditionalProperties>
+      <AdditionalProperties>%(AdditionalProperties);NarrowLibraryTargetFrameworks=$(NarrowLibraryTargetFrameworks)</AdditionalProperties>
     </ProjectToBuild>
   </ItemGroup>
 

@@ -202,6 +202,34 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Static graph protocol for the implementation closure queries below. -->
+  <ItemGroup Condition="'$(IsCrossTargetingBuild)' != 'true'">
+    <ProjectReferenceTargets Include="Build"
+                             Targets="GetILLinkImplementationClosureForTargetOS"
+                             OuterBuild="true"
+                             SkipNonexistentTargets="true"
+                             Condition="'$(ILLinkTrimAssembly)' == 'true'" />
+    <ProjectReferenceTargets Include="Build"
+                             Targets="GetILLinkImplementationClosureForTargetOS"
+                             SkipNonexistentTargets="true"
+                             Condition="'$(ILLinkTrimAssembly)' == 'true'" />
+    <ProjectReferenceTargets Include="GetILLinkImplementationClosureForTargetOS;GetILLinkImplementationClosure"
+                             Targets="GetILLinkImplementationClosureForTargetOS"
+                             OuterBuild="true"
+                             SkipNonexistentTargets="true" />
+    <ProjectReferenceTargets Include="GetILLinkImplementationClosureForTargetOS;GetILLinkImplementationClosure"
+                             Targets="$(ProjectReferenceTargetsForBuild)" />
+    <ProjectReferenceTargets Include="GetILLinkImplementationClosureForTargetOS;GetILLinkImplementationClosure"
+                             Targets="GetILLinkImplementationClosureForTargetOS"
+                             SkipNonexistentTargets="true" />
+  </ItemGroup>
+  <!-- Outer builds forward the query to their inner build for the TargetOS. -->
+  <ItemGroup Condition="'$(IsCrossTargetingBuild)' == 'true'">
+    <ProjectReferenceTargets Include="GetILLinkImplementationClosureForTargetOS"
+                             Targets="Build;GetILLinkImplementationClosure"
+                             SkipNonexistentTargets="true" />
+  </ItemGroup>
+
   <!-- Returns the implementation assemblies of the project references and, transitively, of their project references
        (e.g. System.Private.Uri, which System.Runtime forwards to). A reference is resolved to the flavor that is built
        for the TargetOS, which is the one in the shared framework, rather than the flavor that is compatible with the

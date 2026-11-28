@@ -7,6 +7,36 @@
     <_TestWasmReadyToRunImplicit>true</_TestWasmReadyToRunImplicit>
   </PropertyGroup>
 
+  <!-- Repo builds (see eng/Subsets.props) only build the current .NET target frameworks of libraries. Regular builds
+       pick them when negotiating project references, but static graph builds can't negotiate and would build every
+       inner build of a multi-targeted reference. Narrow library projects to the target frameworks this build can
+       pick: the current .NET target framework, either platform neutral or for TargetOS and the platforms it falls
+       back to in the RID graph. Narrowing every project, not just source projects, keeps references between them
+       compatible for restore. Projects without such a target framework are left alone, as are builds for another
+       BuildTargetFramework, whose projects pick from the downlevel target frameworks. -->
+  <PropertyGroup Condition="'$(NarrowLibraryTargetFrameworks)' == 'true' and
+                            '$(BuildAllConfigurations)' != 'true' and
+                            ('$(BuildTargetFramework)' == '' or '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)') and
+                            '$(IsGeneratorProject)' != 'true' and
+                            '$(TargetFrameworks)' != ''">
+    <_NarrowedTargetPlatforms>$(TargetOS)</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsAndroid)' == 'true'">$(_NarrowedTargetPlatforms)|linux-bionic</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsLinux)' == 'true'">$(_NarrowedTargetPlatforms)|linux</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">$(_NarrowedTargetPlatforms)|ios</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetstvOS)' == 'true'">$(_NarrowedTargetPlatforms)|tvos</_NarrowedTargetPlatforms>
+    <_NarrowedTargetPlatforms Condition="'$(TargetsUnix)' == 'true'">$(_NarrowedTargetPlatforms)|unix</_NarrowedTargetPlatforms>
+    <_NarrowedTargetFrameworkPattern>$(NetCoreAppCurrent.Replace('.', '\.'))(-($(_NarrowedTargetPlatforms)))?</_NarrowedTargetFrameworkPattern>
+    <!-- Property function results are escaped; unescape so the lists still split into target frameworks. -->
+    <_AllTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '\s', ''))))</_AllTargetFrameworks>
+    <_NarrowedTargetFrameworks>$([MSBuild]::Unescape($([System.Text.RegularExpressions.Regex]::Replace(';$(_AllTargetFrameworks);', ';(?!($(_NarrowedTargetFrameworkPattern));)[^;]*(?=;)', '').Trim(';'))))</_NarrowedTargetFrameworks>
+    <TargetFrameworks Condition="'$(_NarrowedTargetFrameworks)' != ''">$(_NarrowedTargetFrameworks)</TargetFrameworks>
+    <!-- A multi-targeted project validates its inner builds against the contract in its outer build, which regular
+         builds only run for projects they build directly. Graph builds also run it for referenced projects, where the
+         removed target frameworks would leave their suppressions unnecessary, so skip it like regular builds do. The
+         BuildAllConfigurations build still validates all target frameworks. -->
+    <ApiCompatValidateAssemblies Condition="'$(TargetFramework)' == '' and '$(_NarrowedTargetFrameworks)' != '' and '$(_NarrowedTargetFrameworks)' != '$(_AllTargetFrameworks)'">false</ApiCompatValidateAssemblies>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
          Tests which wish to control this should set TestStrongNameKeyId. -->

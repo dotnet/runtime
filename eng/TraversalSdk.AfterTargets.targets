@@ -30,4 +30,30 @@
                       SkipGetTargetFrameworkProperties="false"  />
   </ItemGroup>
 
+  <!-- Static graph protocol for the filtering above: outer builds are only queried for their target frameworks,
+       and only inner builds are built. -->
+  <ItemGroup Condition="'$(FilterTraversalProjectReferences)' == 'true' and '$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Remove="Build" />
+    <ProjectReferenceTargets Include="Build" Targets="GetTargetFrameworks" OuterBuild="true" SkipNonexistentTargets="true" />
+    <ProjectReferenceTargets Include="Build" Targets=".default" OuterBuild="false" />
+  </ItemGroup>
+
+  <!-- The Traversal SDK skips Build in graph builds, where the graph already builds the references, so its outputs
+       are empty. Collect them anyway (served from the results cache) for consumers that use OutputItemType. -->
+  <Target Name="Build"
+          DependsOnTargets="$(BuildDependsOn)"
+          Returns="@(CollectedBuildOutput)">
+    <MSBuild Projects="@(ProjectReference)"
+             Condition="'%(ProjectReference.Build)' != 'false'"
+             BuildInParallel="$([MSBuild]::ValueOrDefault('%(ProjectReference.BuildInParallel)', '$(BuildInParallel)'))"
+             Properties="%(ProjectReference.SetConfiguration); %(ProjectReference.SetPlatform); %(ProjectReference.SetTargetFramework)"
+             SkipNonexistentProjects="$(SkipNonexistentProjects)"
+             SkipNonexistentTargets="$(SkipNonexistentTargets)"
+             StopOnFirstFailure="$(StopOnFirstFailure)"
+             Targets="%(ProjectReference.Targets)"
+             ContinueOnError="$(ContinueOnError)">
+      <Output TaskParameter="TargetOutputs" ItemName="CollectedBuildOutput" />
+    </MSBuild>
+  </Target>
+
 </Project>
