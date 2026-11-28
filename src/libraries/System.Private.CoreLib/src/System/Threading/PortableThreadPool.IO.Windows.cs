@@ -98,7 +98,7 @@ namespace System.Threading
             return port;
         }
 
-        public void RegisterForIOCompletionNotifications(nint handle)
+        public nint SelectIOCompletionPortForRegister()
         {
             Debug.Assert(_ioPorts != null);
 
@@ -113,6 +113,12 @@ namespace System.Threading
                     : Interlocked.Increment(ref _ioPortSelectorForRegister) % (uint)IOCompletionPortCount;
             nint selectedPort = _ioPorts[selectedPortIndex];
             Debug.Assert(selectedPort != 0);
+            return selectedPort;
+        }
+
+        public void RegisterForIOCompletionNotifications(nint handle)
+        {
+            nint selectedPort = SelectIOCompletionPortForRegister();
             nint port = Interop.Kernel32.CreateIoCompletionPort(handle, selectedPort, UIntPtr.Zero, 0);
             if (port == 0)
             {
