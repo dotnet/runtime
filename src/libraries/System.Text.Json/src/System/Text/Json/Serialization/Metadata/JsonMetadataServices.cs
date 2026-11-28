@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -55,6 +56,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="objectInfo"/> is null.</exception>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) where T : notnull
         {
             ArgumentNullException.ThrowIfNull(options);
