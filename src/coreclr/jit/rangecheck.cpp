@@ -1948,7 +1948,7 @@ public:
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
 // arguments. If not a phi argument, check if we have assertions about local variables.
-void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
+void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange, bool monIncreasing DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
             Compiler::dspTreeID(op), m_compiler->vnStore->VNConservativeNormalValue(op->gtVNPair));
@@ -2014,7 +2014,20 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     if (!BitVecOps::MayBeUninit(assertions))
     {
         // Perform the merge step to fine tune the range value.
-        MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
+        Range merged = *pRange;
+        MergeEdgeAssertions(op->AsLclVarCommon(), assertions, &merged);
+
+        // A monotonic walk takes the lower limit of a loop from its seeds (see RangeOps::Merge),
+        // so it must not use path-specific assertions that raise it.
+        if (monIncreasing)
+        {
+            merged.lLimit = pRange->LowerLimit();
+            if (!merged.IsValid())
+            {
+                return;
+            }
+        }
+        *pRange = merged;
     }
 }
 
@@ -2066,7 +2079,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             // find the range.
             opRange = GetSearchPath()->Lookup(op) ? Range(Limit(Limit::keDependent))
                                                   : GetRangeWorker(block, op, monIncreasing DEBUGARG(indent));
-            MergeAssertion(block, op, &opRange DEBUGARG(indent + 1));
+            MergeAssertion(block, op, &opRange, monIncreasing DEBUGARG(indent + 1));
         }
         else
         {
@@ -2339,7 +2352,7 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
     // We can use intermediate assertions about the local to prove that any
     // overflow on this path does not matter for the range computed.
     Range assertionRange = Range(Limit(Limit::keUnknown));
-    MergeAssertion(block, lcl, &assertionRange DEBUGARG(0));
+    MergeAssertion(block, lcl, &assertionRange, false DEBUGARG(0));
 
     // But only if the range from the assertion is at least as strict as the range
     // assumed for the local by its user; otherwise we might still have used the def's
@@ -2545,7 +2558,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     {
         range = ComputeRangeForLocalDef(expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
         // Phi arguments need edge assertions, not the assertions of a block that jump threading may have bypassed.
-        MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
+        MergeAssertion(block, expr, &range, monIncreasing DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
     else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
@@ -2575,7 +2588,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             }
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
-            MergeAssertion(block, use.GetNode(), &argRange DEBUGARG(indent + 1));
+            MergeAssertion(block, use.GetNode(), &argRange, monIncreasing DEBUGARG(indent + 1));
             JITDUMP("Merging ranges %s %s:", range.ToString(m_compiler), argRange.ToString(m_compiler));
             range = RangeOps::Merge(range, argRange, monIncreasing);
             JITDUMP("%s\n", range.ToString(m_compiler));

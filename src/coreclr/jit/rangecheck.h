@@ -912,7 +912,7 @@ private:
 
     // Merge assertions from AssertionProp's flags, for the corresponding "phiArg."
     // Requires "pRange" to contain range that is computed partially.
-    void MergeAssertion(BasicBlock* block, GenTree* phiArg, Range* pRange DEBUGARG(int indent));
+    void MergeAssertion(BasicBlock* block, GenTree* phiArg, Range* pRange, bool monIncreasing DEBUGARG(int indent));
 
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
