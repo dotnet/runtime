@@ -789,35 +789,11 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
-    public partial class SZArraySignature
-    {
-        public override string ToString()
-        {
-            return ElementType.ToString() + "[]";
-        }
-    }
-
-    public partial class ArraySignature
-    {
-        public override string ToString()
-        {
-            return ElementType.ToString() + "[" + new string(',', Rank - 1) + "]";
-        }
-    }
-
     public partial class TypeSpecification
     {
         public override string ToString()
         {
-            return Signature.ToString();
-        }
-    }
-
-    public partial class TypeInstantiationSignature
-    {
-        public override string ToString()
-        {
-            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments) + ">";
+            return Blob.ToString();
         }
     }
 
@@ -839,14 +815,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 + "<"
                 + string.Join(", ", this.GenericTypeArguments)
                 + ">";
-        }
-    }
-
-    public partial class ByReferenceSignature
-    {
-        public override string ToString()
-        {
-            return "ref " + Type.ToString();
         }
     }
 
@@ -884,13 +852,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public string ToString(string name)
         {
-            return string.Join(" ", new string[] {
-                CallingConvention.FlagsToString(),
-                ReturnType.ToString(false),
-                name
-                    + (GenericParameterCount == 0 ? "" : "`" + GenericParameterCount.ToString())
-                    + "(" + string.Join(", ", Parameters.Select(p => p.ToString(false))) +
-                    string.Join(", ", VarArgParameters.Select(p => p.ToString(false))) + ")"}.Where(e => !string.IsNullOrWhiteSpace(e)));
+            return name + " " + Blob.ToString();
         }
     }
 
@@ -898,8 +860,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return string.Join(" ", Enum.GetName(CallingConvention),
-                Type.ToString()) + "(" + ToString(Parameters) + ")";
+            return Blob.ToString();
         }
     }
 
@@ -907,32 +868,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return Type.ToString();
-        }
-    }
-
-    public partial class ModifiedType
-    {
-        public override string ToString()
-        {
-            return "[" + (IsOptional ? "opt : " : "req : ") + ModifierType.ToString() + "] " +
-                Type.ToString();
-        }
-    }
-
-    public partial class TypeVariableSignature
-    {
-        public override string ToString()
-        {
-            return "!" + Number;
-        }
-    }
-
-    public partial class MethodTypeVariableSignature
-    {
-        public override string ToString()
-        {
-            return "!!" + Number;
+            return Blob.ToString();
         }
     }
 
@@ -946,42 +882,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Name.ToString(),
                 Sequence,
                 (DefaultValue == null ? "" : " = " + DefaultValue.ToString()));
-        }
-    }
-
-    public partial class PointerSignature
-    {
-        public override string ToString()
-        {
-            return Type.ToString() + "*";
-        }
-    }
-
-    public static class EnumHelpers
-    {
-        public static string FlagsToString(this SignatureCallingConvention value)
-        {
-            var values = new List<string>();
-            if ((value & SignatureCallingConvention.HasThis) == SignatureCallingConvention.HasThis)
-            {
-                values.Add(nameof(SignatureCallingConvention.HasThis));
-                value &= ~SignatureCallingConvention.HasThis;
-            }
-            if ((value & SignatureCallingConvention.ExplicitThis) == SignatureCallingConvention.ExplicitThis)
-            {
-                values.Add(nameof(SignatureCallingConvention.ExplicitThis));
-                value &= ~SignatureCallingConvention.ExplicitThis;
-            }
-            if ((value & SignatureCallingConvention.UnmanagedCallingConventionMask) != default)
-            {
-                values.Add((value & SignatureCallingConvention.UnmanagedCallingConventionMask).ToString());
-                value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
-            }
-            if (value != default)
-            {
-                values.Add(value.ToString());
-            }
-            return values.Count == 0 ? "" : "[" + string.Join(" | ", values) + "] ";
         }
     }
 

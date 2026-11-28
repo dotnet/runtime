@@ -46,8 +46,11 @@ namespace Internal.Metadata.NativeFormat
         {
             uint rawValue;
             offset = reader.DecodeUnsigned(offset, out rawValue);
-            handle = new Handle((HandleType)(rawValue & 0x7F), (int)(rawValue >> 7));
+            handle = DecodeHandle(rawValue);
             return offset;
         }
+
+        public static Handle DecodeHandle(uint rawValue) =>
+            new Handle((HandleType)(rawValue & 0x7F), (int)(rawValue >> 7));
     }
 }

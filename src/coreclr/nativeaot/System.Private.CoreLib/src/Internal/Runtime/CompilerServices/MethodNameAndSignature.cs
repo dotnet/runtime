@@ -6,6 +6,8 @@ using System.Diagnostics;
 
 using Internal.Metadata.NativeFormat;
 
+using CorElementType = System.Reflection.CorElementType;
+
 namespace Internal.Runtime.CompilerServices
 {
     [CLSCompliant(false)]
@@ -60,11 +62,8 @@ namespace Internal.Runtime.CompilerServices
             get
             {
                 Method method = Reader.GetMethod(Handle);
-                Handle returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
-                if (returnType.HandleType != HandleType.TypeSpecification)
-                    return false;
-                Handle inner = returnType.ToTypeSpecificationHandle(Reader).GetTypeSpecification(Reader).Signature;
-                return inner.HandleType == HandleType.TypeInstantiationSignature;
+                SigPointer returnType = method.Signature.GetMethodSignature(Reader).ReturnType;
+                return new SigParser(returnType).PeekElemType() == CorElementType.ELEMENT_TYPE_GENERICINST;
             }
         }
 

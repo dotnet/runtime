@@ -20,6 +20,7 @@ namespace System.Reflection
         private readonly bool _noMetadata;
         private bool _noDefaultValue;
         private readonly MethodBase? _originalMember;
+        private readonly Signature? _signature;
 
         internal MethodBase DefiningMethod
         {
@@ -45,11 +46,7 @@ namespace System.Reflection
         internal RuntimeParameterInfo(RuntimeParameterInfo accessor, RuntimePropertyInfo property)
             : this(accessor, (MemberInfo)property)
         {
-#if NATIVEAOT
-            _signature = property.GetParameterTypeHandle(PositionImpl);
-#else
             _signature = property.Signature;
-#endif
         }
 
         private RuntimeParameterInfo(RuntimeParameterInfo accessor, MemberInfo member)
@@ -73,7 +70,6 @@ namespace System.Reflection
             // However we need this to make ca's work... oh well...
 #if NATIVEAOT
             _tkParamDef = accessor._tkParamDef;
-            _typeContext = accessor._typeContext;
 #else
             _tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
 #endif
@@ -95,9 +91,6 @@ namespace System.Reflection
                 // only instance of ParameterInfo has ClassImpl, all its subclasses don't
                 if (ClassImpl == null)
                 {
-#if NATIVEAOT
-                    ClassImpl = _signature.Resolve(_typeContext).ToType();
-#else
                     Debug.Assert(_signature != null);
 
                     RuntimeType parameterType;
@@ -109,7 +102,6 @@ namespace System.Reflection
                     Debug.Assert(parameterType != null);
                     // different thread could only write ClassImpl to the same value, so a race condition is not a problem here
                     ClassImpl = parameterType;
-#endif
                 }
 
                 return ClassImpl;
@@ -335,6 +327,15 @@ namespace System.Reflection
 
             return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
+
+        public override Type[] GetRequiredCustomModifiers() =>
+            _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: false);
+
+        public override Type[] GetOptionalCustomModifiers() =>
+            _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, isOptional: true);
+
+        public override Type GetModifiedParameterType() =>
+            ModifiedType.Create(unmodifiedType: ParameterType, _signature, parameterIndex: PositionImpl + 1);
     }
 
 #if NATIVEAOT

@@ -46,6 +46,21 @@ public class Program
             typeof(GenericModifiers).GetMethod(name).MakeGenericMethod(argument).GetParameters()[0].GetModifiedParameterType();
     }
 
+    // Custom modifier types are resolved in the generic context of the member that declares them.
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [Fact]
+    public static void ModifiersInstantiatedOverGenericParameters()
+    {
+        FieldInfo field = typeof(GenericModifierHolder<string>).GetField("Field");
+        Assert.Equal(new[] { typeof(GenericModifier<string>) }, field.GetRequiredCustomModifiers());
+        Assert.Equal(new[] { typeof(GenericModifier<string>) }, field.GetModifiedFieldType().GetRequiredCustomModifiers());
+
+        Type parameter = typeof(GenericModifiers).GetMethod("GenericModReqInArrayElement").MakeGenericMethod(typeof(object))
+            .GetParameters()[0].GetModifiedParameterType();
+        Assert.Same(typeof(int[]), parameter.UnderlyingSystemType);
+        Assert.Equal(new[] { typeof(GenericModifier<object>) }, parameter.GetElementType().GetRequiredCustomModifiers());
+    }
+
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()

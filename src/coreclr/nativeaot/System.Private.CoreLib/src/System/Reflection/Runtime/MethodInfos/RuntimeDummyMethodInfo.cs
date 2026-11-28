@@ -47,6 +47,7 @@ namespace System.Reflection.Runtime.MethodInfos
         protected internal sealed override string ComputeToString(RuntimeMethodInfo contextMethod) { throw NotImplemented.ByDesign; }
         internal sealed override MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant) { throw NotImplemented.ByDesign; }
         internal sealed override RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs) { throw NotImplemented.ByDesign; }
+        internal sealed override Signature CreateSignature(RuntimeTypeInfo[] methodTypeArguments) { throw NotImplemented.ByDesign; }
         internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType { get { throw NotImplemented.ByDesign; } }
         public static readonly RuntimeDummyMethodInfo Instance = new RuntimeDummyMethodInfo();
     }

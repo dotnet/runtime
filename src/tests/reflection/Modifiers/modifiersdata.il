@@ -183,7 +183,18 @@
   {
     ret
   }
+
+  .method public static hidebysig void GenericModReqInArrayElement<T>(int32 modreq (class GenericModifier`1<!!0>)[] arg)
+  {
+    ret
+  }
+}
+
+.class public GenericModifierHolder`1<T>
+{
+  .field public int32 modreq (class GenericModifier`1<!0>) Field
 }
 
 .class public FooModifier { }
 .class public BarModifier { }
+.class public GenericModifier`1<T> { }

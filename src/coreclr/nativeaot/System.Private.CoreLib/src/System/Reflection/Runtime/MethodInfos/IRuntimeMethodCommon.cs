@@ -31,9 +31,9 @@ namespace System.Reflection.Runtime.MethodInfos
         Module Module { get; }
 
         /// <summary>
-        /// Return an array of the types of the return value and parameter types.
+        /// Return the method signature, resolved in the context of <see cref="DeclaringType"/> and the given method type arguments.
         /// </summary>
-        QSignatureTypeHandle[] QualifiedMethodSignature { get; }
+        Signature GetSignature(RuntimeTypeInfo[] methodTypeArguments);
         MetadataReader GetMetadataReader();
         CustomAttributeHandleCollection GetCustomAttributeHandles();
 

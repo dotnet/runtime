@@ -7,6 +7,8 @@ using System.Text;
 
 using Internal.Metadata.NativeFormat;
 
+using CorElementType = System.Reflection.CorElementType;
+
 namespace Internal.StackTraceMetadata
 {
     internal class MethodNameFormatter
@@ -130,7 +132,7 @@ namespace Internal.StackTraceMetadata
             }
 
             Method method = methodHandle.GetMethod(_metadataReader);
-            HandleCollection typeVector = method.Signature.GetMethodSignature(_metadataReader).Parameters;
+            SigPointerCollection typeVector = method.Signature.GetMethodSignature(_metadataReader).Parameters;
             ParameterHandleCollection.Enumerator parameters = method.Parameters.GetEnumerator();
 
             bool hasParameter = TryGetNextParameter(ref parameters, out Parameter parameter);
@@ -140,7 +142,7 @@ namespace Internal.StackTraceMetadata
             }
 
             uint typeIndex = 0;
-            foreach (Handle type in typeVector)
+            foreach (SigPointer type in typeVector)
             {
                 if (typeIndex != 0)
                 {
@@ -167,10 +169,10 @@ namespace Internal.StackTraceMetadata
         /// Emit comma-separated list of type names into the output string builder.
         /// </summary>
         /// <param name="typeVector">Enumeration of type handles to output</param>
-        private void EmitTypeVector(HandleCollection typeVector)
+        private void EmitTypeVector(SigPointerCollection typeVector)
         {
             bool first = true;
-            foreach (Handle handle in typeVector)
+            foreach (SigPointer handle in typeVector)
             {
                 if (first)
                 {
@@ -199,44 +201,12 @@ namespace Internal.StackTraceMetadata
                     EmitTypeSpecificationName(typeHandle.ToTypeSpecificationHandle(_metadataReader), flags);
                     break;
 
-                case HandleType.TypeInstantiationSignature:
-                    EmitTypeInstantiationName(typeHandle.ToTypeInstantiationSignatureHandle(_metadataReader), flags);
-                    break;
-
-                case HandleType.SZArraySignature:
-                    EmitSZArrayTypeName(typeHandle.ToSZArraySignatureHandle(_metadataReader), flags);
-                    break;
-
-                case HandleType.ArraySignature:
-                    EmitArrayTypeName(typeHandle.ToArraySignatureHandle(_metadataReader), flags);
-                    break;
-
-                case HandleType.PointerSignature:
-                    EmitPointerTypeName(typeHandle.ToPointerSignatureHandle(_metadataReader));
-                    break;
-
-                case HandleType.ByReferenceSignature:
-                    EmitByRefTypeName(typeHandle.ToByReferenceSignatureHandle(_metadataReader));
-                    break;
-
                 case HandleType.TypeDefinition:
                     EmitTypeDefinitionName(typeHandle.ToTypeDefinitionHandle(_metadataReader), flags);
                     break;
 
-                case HandleType.TypeVariableSignature:
-                    EmitTypeName(_typeContext.GetTypeVariable(typeHandle.ToTypeVariableSignatureHandle(_metadataReader).GetTypeVariableSignature(_metadataReader).Number), flags);
-                    break;
-
-                case HandleType.MethodTypeVariableSignature:
-                    EmitTypeName(_typeContext.GetMethodVariable(typeHandle.ToMethodTypeVariableSignatureHandle(_metadataReader).GetMethodTypeVariableSignature(_metadataReader).Number), flags);
-                    break;
-
                 case HandleType.GenericParameter:
                     EmitString(typeHandle.ToGenericParameterHandle(_metadataReader).GetGenericParameter(_metadataReader).Name);
-                    break;
-
-                case HandleType.FunctionPointerSignature:
-                    EmitFunctionPointerTypeName();
                     break;
 
                 // This is not an actual type, but we don't always bother representing generic arguments on generic methods as types
@@ -249,6 +219,85 @@ namespace Internal.StackTraceMetadata
                     _outputBuilder.Append("???");
                     break;
             }
+        }
+
+        private void EmitTypeName(SigPointer signature, Flags flags)
+        {
+            SigParser reader = new SigParser(signature);
+            EmitTypeName(ref reader, flags);
+        }
+
+        private void EmitTypeName(ref SigParser reader, Flags flags)
+        {
+            SigParser start = reader;
+            CorElementType elementType = reader.GetElemType();
+            switch (elementType)
+            {
+                case CorElementType.ELEMENT_TYPE_CLASS:
+                case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                    EmitTypeName(reader.GetToken(), flags);
+                    return;
+                case CorElementType.ELEMENT_TYPE_GENERICINST:
+                    // Stack traces display the generic definition, not its arguments.
+                    EmitTypeName(ref reader, flags);
+                    int arguments = reader.GetData();
+                    for (int i = 0; i < arguments; i++)
+                        reader.SkipExactlyOne();
+                    return;
+                case CorElementType.ELEMENT_TYPE_VAR:
+                case CorElementType.ELEMENT_TYPE_MVAR:
+                    _typeContext.EmitVariable(this, reader.GetData(), elementType == CorElementType.ELEMENT_TYPE_MVAR, flags);
+                    return;
+                case CorElementType.ELEMENT_TYPE_SZARRAY:
+                    EmitTypeName(ref reader, flags);
+                    _outputBuilder.Append("[]");
+                    return;
+                case CorElementType.ELEMENT_TYPE_ARRAY:
+                    EmitTypeName(ref reader, flags);
+                    int rank = reader.GetArrayShape();
+                    _outputBuilder.Append('[');
+                    if (rank > 1)
+                        _outputBuilder.Append(',', rank - 1);
+                    else
+                        _outputBuilder.Append('*');
+                    _outputBuilder.Append(']');
+                    return;
+                case CorElementType.ELEMENT_TYPE_PTR:
+                case CorElementType.ELEMENT_TYPE_BYREF:
+                    EmitTypeName(ref reader, Flags.None);
+                    _outputBuilder.Append(elementType == CorElementType.ELEMENT_TYPE_PTR ? '*' : '&');
+                    return;
+                case CorElementType.ELEMENT_TYPE_FNPTR:
+                    // Function pointers intentionally have no textual stack-trace representation.
+                    reader = start;
+                    reader.SkipExactlyOne();
+                    return;
+            }
+
+            if ((flags & Flags.NamespaceQualify) != 0)
+                _outputBuilder.Append("System.");
+            _outputBuilder.Append(elementType switch
+            {
+                CorElementType.ELEMENT_TYPE_VOID => "Void",
+                CorElementType.ELEMENT_TYPE_BOOLEAN => "Boolean",
+                CorElementType.ELEMENT_TYPE_CHAR => "Char",
+                CorElementType.ELEMENT_TYPE_I1 => "SByte",
+                CorElementType.ELEMENT_TYPE_U1 => "Byte",
+                CorElementType.ELEMENT_TYPE_I2 => "Int16",
+                CorElementType.ELEMENT_TYPE_U2 => "UInt16",
+                CorElementType.ELEMENT_TYPE_I4 => "Int32",
+                CorElementType.ELEMENT_TYPE_U4 => "UInt32",
+                CorElementType.ELEMENT_TYPE_I8 => "Int64",
+                CorElementType.ELEMENT_TYPE_U8 => "UInt64",
+                CorElementType.ELEMENT_TYPE_R4 => "Single",
+                CorElementType.ELEMENT_TYPE_R8 => "Double",
+                CorElementType.ELEMENT_TYPE_STRING => "String",
+                CorElementType.ELEMENT_TYPE_TYPEDBYREF => "TypedReference",
+                CorElementType.ELEMENT_TYPE_I => "IntPtr",
+                CorElementType.ELEMENT_TYPE_U => "UIntPtr",
+                CorElementType.ELEMENT_TYPE_OBJECT => "Object",
+                _ => "???",
+            });
         }
 
         /// <summary>
@@ -328,76 +377,6 @@ namespace Internal.StackTraceMetadata
         }
 
         /// <summary>
-        /// Emit generic instantiation type.
-        /// </summary>
-        private void EmitTypeInstantiationName(TypeInstantiationSignatureHandle typeInstHandle, Flags flags)
-        {
-            // Stack trace metadata ignores the instantiation arguments of the type in the CLR
-            TypeInstantiationSignature typeInst = _metadataReader.GetTypeInstantiationSignature(typeInstHandle);
-            EmitTypeName(typeInst.GenericType, flags);
-        }
-
-        /// <summary>
-        /// Emit SZArray (single-dimensional array with zero lower bound) type.
-        /// </summary>
-        private void EmitSZArrayTypeName(SZArraySignatureHandle szArraySigHandle, Flags flags)
-        {
-            SZArraySignature szArraySig = _metadataReader.GetSZArraySignature(szArraySigHandle);
-            EmitTypeName(szArraySig.ElementType, flags);
-            _outputBuilder.Append("[]");
-        }
-
-        /// <summary>
-        /// Emit multi-dimensional array type.
-        /// </summary>
-        private void EmitArrayTypeName(ArraySignatureHandle arraySigHandle, Flags flags)
-        {
-            ArraySignature arraySig = _metadataReader.GetArraySignature(arraySigHandle);
-            EmitTypeName(arraySig.ElementType, flags);
-            _outputBuilder.Append('[');
-            if (arraySig.Rank > 1)
-            {
-                _outputBuilder.Append(',', arraySig.Rank - 1);
-            }
-            else
-            {
-                _outputBuilder.Append('*');
-            }
-            _outputBuilder.Append(']');
-        }
-
-        /// <summary>
-        /// Emit pointer type.
-        /// </summary>
-        /// <param name="pointerSigHandle">Pointer type specification signature handle</param>
-        private void EmitPointerTypeName(PointerSignatureHandle pointerSigHandle)
-        {
-            PointerSignature pointerSig = _metadataReader.GetPointerSignature(pointerSigHandle);
-            EmitTypeName(pointerSig.Type, Flags.None);
-            _outputBuilder.Append('*');
-        }
-
-        /// <summary>
-        /// Emit function pointer type.
-        /// </summary>
-        private static void EmitFunctionPointerTypeName()
-        {
-            // Function pointer types have no textual representation and we have tests making sure
-            // they show up as empty strings in stack traces, so deliberately do nothing.
-        }
-
-        /// <summary>
-        /// Emit by-reference type.
-        /// </summary>
-        /// <param name="byRefSigHandle">ByReference type specification signature handle</param>
-        private void EmitByRefTypeName(ByReferenceSignatureHandle byRefSigHandle)
-        {
-            ByReferenceSignature byRefSig = _metadataReader.GetByReferenceSignature(byRefSigHandle);
-            EmitTypeName(byRefSig.Type, Flags.None);
-            _outputBuilder.Append('&');
-        }
-
-        /// <summary>
         /// Emit a string (represented by a serialized ConstantStringValue) to the output string builder.
         /// </summary>
         /// <param name="stringHandle">Constant string value token (offset within stack trace native metadata)</param>
@@ -417,60 +396,44 @@ namespace Internal.StackTraceMetadata
                 _methodContext = methodContext;
             }
 
-            public static Handle GetHandleAt(HandleCollection collection, int index)
+            public void EmitVariable(MethodNameFormatter formatter, int index, bool method, Flags flags)
             {
-                int currentIndex = 0;
-
-                foreach (var currentArg in collection)
+                object context = method ? _methodContext : _typeContext;
+                if (context is SigPointer genericInstantiation)
                 {
-                    if (currentIndex == index)
-                        return currentArg;
-                    currentIndex++;
+                    SigParser sp = new SigParser(genericInstantiation);
+                    if (sp.GetElemType() == CorElementType.ELEMENT_TYPE_GENERICINST)
+                    {
+                        sp.SkipExactlyOne(); // generic type definition
+                        if ((uint)index < (uint)sp.GetData())
+                        {
+                            for (int i = 0; i < index; i++)
+                                sp.SkipExactlyOne();
+                            formatter.EmitTypeName(sp.GetSigPointer(), flags);
+                            return;
+                        }
+                    }
                 }
-
-                Debug.Assert(false);
-                return default(Handle);
-            }
-
-            public static Handle GetHandleAt(GenericParameterHandleCollection collection, int index)
-            {
-                int currentIndex = 0;
-
-                foreach (var currentArg in collection)
+                else if (context is GenericParameterHandleCollection parameters)
                 {
-                    if (currentIndex == index)
-                        return currentArg;
-                    currentIndex++;
+                    foreach (GenericParameterHandle parameter in parameters)
+                        if (index-- == 0)
+                        {
+                            formatter.EmitTypeName(parameter, flags);
+                            return;
+                        }
                 }
-
-                Debug.Assert(false);
-                return default(Handle);
-            }
-
-            public Handle GetTypeVariable(int index)
-            {
-                return _typeContext is GenericParameterHandleCollection ?
-                    GetHandleAt((GenericParameterHandleCollection)_typeContext, index) :
-                    GetHandleAt((HandleCollection)_typeContext, index);
-            }
-
-            public Handle GetMethodVariable(int index)
-            {
-                if (_methodContext is ConstantStringValueHandleCollection strings)
+                else if (context is ConstantStringValueHandleCollection strings)
                 {
                     foreach (ConstantStringValueHandle handle in strings)
-                    {
                         if (index-- == 0)
-                            return handle;
-                    }
-
-                    Debug.Assert(false);
-                    return default;
+                        {
+                            formatter.EmitString(handle);
+                            return;
+                        }
                 }
 
-                return _methodContext is GenericParameterHandleCollection parameters
-                    ? GetHandleAt(parameters, index)
-                    : GetHandleAt((HandleCollection)_methodContext, index);
+                Debug.Fail("Missing generic parameter name.");
             }
 
             private static object GetTypeContext(MetadataReader metadataReader, Handle handle)
@@ -490,20 +453,15 @@ namespace Internal.StackTraceMetadata
                         return typeDef.GenericParameters;
 
                     case HandleType.TypeReference:
-                        return default(HandleCollection);
+                        return null;
 
                     case HandleType.TypeSpecification:
                         TypeSpecification typeSpec = handle.ToTypeSpecificationHandle(metadataReader).GetTypeSpecification(metadataReader);
-                        if (typeSpec.Signature.HandleType != HandleType.TypeInstantiationSignature)
-                        {
-                            Debug.Assert(false);
-                            return default(HandleCollection);
-                        }
-                        return typeSpec.Signature.ToTypeInstantiationSignatureHandle(metadataReader).GetTypeInstantiationSignature(metadataReader).GenericTypeArguments;
+                        return typeSpec.Signature;
 
                     default:
                         Debug.Assert(false);
-                        return default(HandleCollection);
+                        return null;
                 }
             }
 
