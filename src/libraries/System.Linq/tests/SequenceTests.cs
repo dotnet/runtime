@@ -242,6 +242,104 @@ namespace System.Linq.Tests
             }
         }
 
+        [Fact]
+        public void WideIntegers_ContainsAndIndexOf_CompareWholeValue()
+        {
+            Validate<uint>();
+            Validate<long>();
+            Validate<ulong>();
+            Validate<nint>();
+            Validate<nuint>();
+
+            static void Validate<T>() where T : IBinaryInteger<T>, IMinMaxValue<T>
+            {
+                T start = T.CreateTruncating(100);
+                T end = T.CreateTruncating(110);
+                AssertContainsOnly(start, end);
+
+                // A sequence that ends at the largest value of the type.
+                AssertContainsOnly(T.MaxValue - T.CreateTruncating(5), T.MaxValue);
+                Assert.False(Enumerable.Sequence(T.MaxValue - T.CreateTruncating(5), T.MaxValue, T.One).Contains(T.MinValue));
+
+                if (T.Zero.GetByteCount() == sizeof(long))
+                {
+                    // Values that match an element in their low 32 bits only.
+                    IEnumerable<T> sequence = Enumerable.Sequence(start, end, T.One);
+                    for (T element = start; element <= end; element++)
+                    {
+                        foreach (int shift in new[] { 32, 33, 40, 62 })
+                        {
+                            T other = element + (T.One << shift);
+                            Assert.False(sequence.Contains(other));
+                            if (sequence is IList<T> list)
+                            {
+                                Assert.Equal(-1, list.IndexOf(other));
+                            }
+                        }
+                    }
+                }
+            }
+
+            static void AssertContainsOnly<T>(T start, T end) where T : IBinaryInteger<T>
+            {
+                IEnumerable<T> sequence = Enumerable.Sequence(start, end, T.One);
+                int count = int.CreateChecked(end - start) + 1;
+                Assert.Equal(count, sequence.Count());
+
+                for (int i = 0; i < count; i++)
+                {
+                    T element = start + T.CreateTruncating(i);
+                    Assert.True(sequence.Contains(element));
+                    if (sequence is IList<T> list)
+                    {
+                        Assert.Equal(i, list.IndexOf(element));
+                    }
+                }
+
+                Assert.False(sequence.Contains(start - T.One));
+                Assert.False(sequence.Contains(start - T.CreateTruncating(50)));
+            }
+        }
+
+        [Fact]
+        public void WideIntegers_MoreThanInt32MaxValueElements()
+        {
+            Validate<uint>();
+            Validate<long>();
+            Validate<ulong>();
+            if (nint.Size == sizeof(long))
+            {
+                Validate<nint>();
+                Validate<nuint>();
+            }
+
+            static void Validate<T>() where T : IBinaryInteger<T>
+            {
+                T start = T.CreateTruncating(10);
+
+                // int.MaxValue elements.
+                T end = start + T.CreateTruncating(int.MaxValue - 1);
+                IEnumerable<T> sequence = Enumerable.Sequence(start, end, T.One);
+                Assert.Equal(int.MaxValue, sequence.Count());
+                Assert.Equal(end, sequence.Last());
+                Assert.Equal(end, sequence.ElementAt(int.MaxValue - 1));
+                Assert.True(sequence.Contains(end));
+                Assert.False(sequence.Contains(end + T.One));
+
+                // One element more than that.
+                end++;
+                sequence = Enumerable.Sequence(start, end, T.One);
+                Assert.False(sequence.TryGetNonEnumeratedCount(out _));
+                Assert.True(sequence.Any());
+                Assert.Equal(start, sequence.First());
+                Assert.Equal(start + T.CreateTruncating(5), sequence.Skip(5).First());
+                Assert.Equal(start + T.CreateTruncating(7), sequence.ElementAt(7));
+                Assert.Equal(5, sequence.Take(5).Count());
+                Assert.Equal(new[] { start, start + T.One, start + T.CreateTruncating(2) }, sequence.Take(3));
+                Assert.True(sequence.Contains(start + T.CreateTruncating(3)));
+            }
+        }
+
         private sealed class ReferenceAddable(int value) : INumber<ReferenceAddable>
         {
             public static ReferenceAddable One => throw new NotImplementedException();

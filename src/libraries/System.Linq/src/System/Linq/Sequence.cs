@@ -80,18 +80,19 @@ namespace System.Linq
 
                 // If we're dealing with a known primitive integer type and the step is 1 and the number of elements to yield is within the bounds of that type,
                 // we can reuse Range's iterator, which provides better performance, e.g. it implements IList<T>, has optimizations for Select, etc.
+                // That iterator exposes its length as an int, so for the types that are wider than int the number of elements is limited to int.MaxValue.
                 RangeIterator<T>? range;
                 if (typeof(T) == typeof(byte) && (range = TryUseRange<ushort>(start, endInclusive, step, byte.MaxValue)) is not null) return range;
                 if (typeof(T) == typeof(sbyte) && (range = TryUseRange<short>(start, endInclusive, step, sbyte.MaxValue)) is not null) return range;
                 if (typeof(T) == typeof(ushort) && (range = TryUseRange<uint>(start, endInclusive, step, ushort.MaxValue)) is not null) return range;
                 if (typeof(T) == typeof(char) && (range = TryUseRange<uint>(start, endInclusive, step, char.MaxValue)) is not null) return range;
                 if (typeof(T) == typeof(short) && (range = TryUseRange<int>(start, endInclusive, step, short.MaxValue)) is not null) return range;
-                if (typeof(T) == typeof(uint) && (range = TryUseRange<ulong>(start, endInclusive, step, uint.MaxValue)) is not null) return range;
+                if (typeof(T) == typeof(uint) && (range = TryUseRange<ulong>(start, endInclusive, step, (uint)int.MaxValue)) is not null) return range;
                 if (typeof(T) == typeof(int) && (range = TryUseRange<long>(start, endInclusive, step, int.MaxValue)) is not null) return range;
-                if (typeof(T) == typeof(ulong) && (range = TryUseRange<UInt128>(start, endInclusive, step, ulong.MaxValue)) is not null) return range;
-                if (typeof(T) == typeof(long) && (range = TryUseRange<Int128>(start, endInclusive, step, long.MaxValue)) is not null) return range;
-                if (typeof(T) == typeof(nuint) && (range = TryUseRange<UInt128>(start, endInclusive, step, nuint.MaxValue)) is not null) return range;
-                if (typeof(T) == typeof(nint) && (range = TryUseRange<Int128>(start, endInclusive, step, nint.MaxValue)) is not null) return range;
+                if (typeof(T) == typeof(ulong) && (range = TryUseRange<UInt128>(start, endInclusive, step, (uint)int.MaxValue)) is not null) return range;
+                if (typeof(T) == typeof(long) && (range = TryUseRange<Int128>(start, endInclusive, step, int.MaxValue)) is not null) return range;
+                if (typeof(T) == typeof(nuint) && (range = TryUseRange<UInt128>(start, endInclusive, step, (uint)int.MaxValue)) is not null) return range;
+                if (typeof(T) == typeof(nint) && (range = TryUseRange<Int128>(start, endInclusive, step, int.MaxValue)) is not null) return range;
 
                 // Otherwise, just produce an incrementing sequence.
                 return IncrementingIterator(start, endInclusive, step);

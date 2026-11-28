@@ -71,12 +71,14 @@ namespace System.Linq
                 return _endExclusive - T.One;
             }
 
+            // T can be as wide as 64 bits (e.g. long via Enumerable.Sequence), so the offset of the item
+            // from the start is compared as a ulong; truncating it to 32 bits would match unrelated values.
             public override bool Contains(T item) =>
-                uint.CreateTruncating(item - _start) < (uint)Count;
+                ulong.CreateTruncating(item - _start) < (uint)Count;
 
             public int IndexOf(T item)
             {
-                uint index = uint.CreateTruncating(item - _start);
+                ulong index = ulong.CreateTruncating(item - _start);
                 if (index < (uint)Count)
                 {
                     return (int)index;
