@@ -261,7 +261,7 @@ namespace System.Text.Json.Serialization.Converters
                 goto End;
             }
 
-            if (JsonHelpers.IntegerRegex.IsMatch(source))
+            if (JsonHelpers.IsInteger(source))
             {
                 // We found an integer that is not an enum field name.
                 if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0)

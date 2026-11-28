@@ -7,6 +7,8 @@ internal static class CharPolyfills
 {
     extension(char)
     {
+        public static bool IsAsciiDigit(char c) => c is >= '0' and <= '9';
+
         public static bool IsAsciiHexDigit(char c) =>
             c is >= '0' and <= '9' or >= 'A' and <= 'F' or >= 'a' and <= 'f';
     }

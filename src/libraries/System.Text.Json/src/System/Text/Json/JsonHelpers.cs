@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 namespace System.Text.Json
 {
@@ -305,17 +304,32 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Gets a Regex instance for recognizing integer representations of enums.
+        /// Recognizes integer representations of enums without parsing their numeric value.
         /// </summary>
-        private const string IntegerRegexPattern = @"^\s*(?:\+|\-)?[0-9]+\s*$";
-        private const int IntegerRegexTimeoutMs = 200;
+        public static bool IsInteger(ReadOnlySpan<char> source)
+        {
+            source = source.Trim();
 
-#if NET
-        [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
-        public static partial Regex IntegerRegex { get; }
-#else
-        public static Regex IntegerRegex { get; } = new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
-#endif
+            if (!source.IsEmpty && (source[0] == '+' || source[0] == '-'))
+            {
+                source = source.Slice(1);
+            }
+
+            if (source.IsEmpty)
+            {
+                return false;
+            }
+
+            foreach (char c in source)
+            {
+                if (!char.IsAsciiDigit(c))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Compares two valid UTF-8 encoded JSON numbers for decimal equality.

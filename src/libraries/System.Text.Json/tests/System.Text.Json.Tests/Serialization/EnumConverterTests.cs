@@ -20,6 +20,30 @@ namespace System.Text.Json.Serialization.Tests
         private static readonly JsonSerializerOptions s_optionsWithStringAndNoIntegerEnumConverter = new() { Converters = { new JsonStringEnumConverter(allowIntegerValues: false) } };
 
         [Theory]
+        [InlineData("\"+1\"", 1)]
+        [InlineData("\"  -1  \"", -1)]
+        [InlineData("\"0001\"", 1)]
+        [InlineData("\"-0\"", 0)]
+        [InlineData("\"\\u00A0+1\\u00A0\"", 1)]
+        public void QuotedIntegerEnumValuesRespectAllowIntegerValues(string json, int expectedValue)
+        {
+            DayOfWeek value = JsonSerializer.Deserialize<DayOfWeek>(json, s_optionsWithStringEnumConverter);
+            Assert.Equal((DayOfWeek)expectedValue, value);
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(json, s_optionsWithStringAndNoIntegerEnumConverter));
+        }
+
+        [Theory]
+        [InlineData("\"+\"")]
+        [InlineData("\"1 2\"")]
+        [InlineData("\"1.0\"")]
+        [InlineData("\"\\u0661\"")]
+        public void InvalidQuotedIntegerEnumValuesAreRejected(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(json, s_optionsWithStringEnumConverter));
+        }
+
+        [Theory]
         [InlineData(typeof(JsonStringEnumConverter), typeof(DayOfWeek))]
         [InlineData(typeof(JsonStringEnumConverter), typeof(MyCustomEnum))]
         [InlineData(typeof(JsonStringEnumConverter<DayOfWeek>), typeof(DayOfWeek))]
