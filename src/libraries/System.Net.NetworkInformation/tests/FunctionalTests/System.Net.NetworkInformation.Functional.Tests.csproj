@@ -3,6 +3,7 @@
     <!-- TODO: Remove once migrated to unsafe-v2. -->
     <MemorySafetyRulesVersion>1</MemorySafetyRulesVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</IgnoreForCI>
