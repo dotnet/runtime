@@ -197,6 +197,11 @@
         <target state="translated">GeneratedRegexAttribute 方法或屬性必須是部分、無參數、非泛型、非抽象，並傳回 Regex。如果是屬性，它也必須是 get-only。</target>
         <note />
       </trans-unit>
+      <trans-unit id="RegexMemberMustNotBeInFileLocalTypeMessage">
+        <source>GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</source>
+        <target state="new">GeneratedRegexAttribute cannot be used within a file-local type. Move the member outside any file-local types.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
+      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">相反順序的 [x-y] 範圍。</target>
