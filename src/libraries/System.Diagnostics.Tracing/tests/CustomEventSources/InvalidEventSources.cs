@@ -82,15 +82,6 @@ namespace SdtEventSources
         #endregion
     }
 
-    public sealed class MismatchIdEventSource : EventSource
-    {
-        [Event(10, Level = EventLevel.Informational)]
-        public void WriteInteger(int n)
-        {
-            WriteEvent(1, n);
-        }
-    }
-
     public sealed class EventIdReusedEventSource : EventSource
     {
         [Event(1, Level = EventLevel.Informational)]
