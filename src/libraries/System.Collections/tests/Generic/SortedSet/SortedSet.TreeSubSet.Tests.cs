@@ -36,6 +36,26 @@ namespace System.Collections.Tests
             Assert.Equal(0, view.Count);
             Assert.Equal(new[] { 1, 4 }, set);
         }
+
+        [Theory]
+        [InlineData(5)]
+        [InlineData(10)]
+        [InlineData(20)]
+        public void SetEquals_AlmostTrue(int size)
+        {
+            var set = new SortedSet<int>();
+            var other = new List<int>();
+            for (int i = 1; i < size; i++)
+            {
+                set.Add(i);
+                other.Add(i);
+            }
+            set.Add(size);
+            other.Add(size + 1);
+            SortedSet<int> view = set.GetViewBetween(1, size);
+
+            Assert.False(set.SetEquals(other));
+        }
     }
 
     public class SortedSet_TreeSubset_String_Tests : SortedSet_TreeSubset_Tests<string>
