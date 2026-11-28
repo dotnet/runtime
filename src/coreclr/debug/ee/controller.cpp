@@ -2929,10 +2929,20 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
     ULONG iEventNext = UINT32_MAX;
     BOOL fDone = FALSE;
 
+    // A breakpoint exception without a patch at an address that isn't a break instruction anymore
+    // means the patch was removed after the thread hit it. That's not the case if the instruction
+    // is still a trap instruction from someone else (such as a 'brk #1' from __builtin_trap() or a
+    // Swift runtime trap): claiming that exception would make the thread execute the same trap
+    // instruction again, forever.
+    bool isForeignBreakpoint = false;
+#ifdef TARGET_ARM64
+    isForeignBreakpoint = (patch == NULL) && (stWhat == ST_PATCH) && AddressIsBrkInstruction(address);
+#endif
+
     // This is a debugger exception if there's a patch here, or
     // we're here for something like a single step.
     DPOSS_ACTION used = DPOSS_INVALID;
-    if ((patch != NULL) || !IsPatched(address, TRUE))
+    if ((patch != NULL) || (!IsPatched(address, TRUE) && !isForeignBreakpoint))
     {
         // we are sure that we care for this exception but not sure
         // if we will send event to the RS

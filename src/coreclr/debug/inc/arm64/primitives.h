@@ -202,6 +202,16 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
     return *(PRD_TYPE *)ptraddr;
 }
 
+// Returns true if the instruction at the address is a BRK instruction with any immediate value.
+// CORDbg_BREAK_INSTRUCTION is a BRK with one specific immediate value, but native code uses other
+// immediate values (for instance __builtin_trap() and Swift runtime traps use 'brk #1').
+inline bool AddressIsBrkInstruction(CORDB_ADDRESS_TYPE* address)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (CORDbgGetInstruction(address) & 0xFFE0001F) == 0xD4200000;
+}
+
 
 inline void SetSSFlag(T_CONTEXT *pContext)
 {
