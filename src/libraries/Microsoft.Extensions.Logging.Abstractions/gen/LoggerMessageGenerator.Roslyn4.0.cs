@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         var classDeclaration = context.TargetNode.Parent as ClassDeclarationSyntax;
                         if (classDeclaration == null)
                         {
-                            return default;
+                            return (null, ImmutableArray<Diagnostic>.Empty, false);
                         }
 
                         SemanticModel semanticModel = context.SemanticModel;
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         if (loggerMessageAttribute == null || loggerSymbol == null || logLevelSymbol == null)
                         {
                             // Required types aren't available
-                            return default;
+                            return (null, ImmutableArray<Diagnostic>.Empty, false);
                         }
 
                         if (exceptionSymbol == null)
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         if (enumerableSymbol == null || stringSymbol == null)
                         {
                             // Required types aren't available
-                            return default;
+                            return (null, ImmutableArray<Diagnostic>.Empty, false);
                         }
 
                         // Parse the logger class immediately to extract value-based data
@@ -116,11 +116,15 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             (specs ??= ImmutableArray.CreateBuilder<(LoggerClassSpec, bool)>()).Add((item.LoggerClassSpec, item.HasStringCreate));
                         }
-                        foreach (Diagnostic diagnostic in item.Diagnostics)
+
+                        if (!item.Diagnostics.IsDefaultOrEmpty)
                         {
-                            if ((seen ??= new()).Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath, diagnostic.GetMessage())))
+                            foreach (Diagnostic diagnostic in item.Diagnostics)
                             {
-                                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
+                                if ((seen ??= new()).Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath, diagnostic.GetMessage())))
+                                {
+                                    (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
+                                }
                             }
                         }
                     }
