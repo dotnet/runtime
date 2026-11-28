@@ -293,6 +293,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     EmitByte(checked((byte)value));
                     break;
+                case RelocType.WASM_TABLE_INDEX_I64:
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     EmitLong(delta);
                     break;

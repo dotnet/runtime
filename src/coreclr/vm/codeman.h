@@ -2632,14 +2632,14 @@ public:
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT) && !defined(TARGET_WASMARCH)
     // Returns NULL if no jump stub can be allocated within the requested range.
     static PCODE jumpStub(MethodDesc* pMD,
                           PCODE target,
                           BYTE * loAddr,
                           BYTE * hiAddr,
                           LoaderAllocator *pLoaderAllocator = NULL);
-#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT) && !defined(TARGET_WASMARCH)
 
 private:
     static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
@@ -2708,12 +2708,12 @@ private:
     }
 #endif // defined(_DEBUG)
 
-#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT) && !defined(TARGET_WASMARCH)
     static PCODE getNextJumpStub(MethodDesc* pMD,
                                  PCODE target,
                                  BYTE * loAddr,  BYTE * hiAddr,
                                  LoaderAllocator *pLoaderAllocator);
-#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT) && !defined(TARGET_WASMARCH)
 
 private:
     // ***************************************************************************

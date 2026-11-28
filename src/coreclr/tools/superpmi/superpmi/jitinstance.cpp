@@ -316,6 +316,10 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_WASM32);
                     break;
 
+                case CORINFO_ARCH_WASM64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_WASM64);
+                    break;
+
                 default:
                     LogError("Unknown target architecture");
                     break;

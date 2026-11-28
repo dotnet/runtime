@@ -4159,12 +4159,13 @@ namespace Internal.JitInterface
                     // The adapter accepts the managed instance shape
                     // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
                     // no async-continuation argument, and pointer-typed this/retbuf positions.
+                    WasmValueType pointerType = _compilation.NodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
                     if (!sig.IsStatic &&
                         wasmSig.SignatureString[0] == 'S' &&
                         !wasmSig.SignatureString.Contains('a') &&
                         parameters.Length >= 4 &&
-                        parameters[1] == WasmValueType.I32 &&
-                        parameters[2] == WasmValueType.I32)
+                        parameters[1] == pointerType &&
+                        parameters[2] == pointerType)
                     {
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }

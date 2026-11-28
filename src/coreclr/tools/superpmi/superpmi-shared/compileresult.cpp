@@ -732,7 +732,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
     // so byte-by-byte comparison naturally succeeds at reloc sites without any
     // patching here. The near-differ validates reloc-target equivalence via
     // `compareOffsetsWasm` when the surrounding immediate bytes happen to differ.
-    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32)
+    if (IsSpmiTargetWasm())
         return;
 
     size_t section_begin = (size_t)block1;

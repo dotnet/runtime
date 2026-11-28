@@ -63,9 +63,14 @@
     JITHELPER(CORINFO_HELP_LRSZ,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LMUL,                NULL,               METHOD__NIL)
 #endif // TARGET_64BIT
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) || defined(TARGET_WASMARCH)
     DYNAMICJITHELPER(CORINFO_HELP_LMUL_OVF,     NULL,               METHOD__MATH__MULTIPLY_CHECKED_INT64)
     DYNAMICJITHELPER(CORINFO_HELP_ULMUL_OVF,    NULL,               METHOD__MATH__MULTIPLY_CHECKED_UINT64)
+#else
+    JITHELPER(CORINFO_HELP_LMUL_OVF,            NULL,               METHOD__NIL)
+    JITHELPER(CORINFO_HELP_ULMUL_OVF,           NULL,               METHOD__NIL)
+#endif
+#ifndef TARGET_64BIT
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
     JITHELPER(CORINFO_HELP_LDIV,                JIT_LDiv,           METHOD__NIL)
     JITHELPER(CORINFO_HELP_LMOD,                JIT_LMod,           METHOD__NIL)
@@ -78,8 +83,6 @@
     DYNAMICJITHELPER(CORINFO_HELP_ULMOD,        NULL,               METHOD__MATH__MOD_UINT64)
 #endif // TARGET_X86 && TARGET_WINDOWS
 #else // TARGET_64BIT
-    JITHELPER(CORINFO_HELP_LMUL_OVF,            NULL,               METHOD__NIL)
-    JITHELPER(CORINFO_HELP_ULMUL_OVF,           NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LDIV,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LMOD,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_ULDIV,               NULL,               METHOD__NIL)

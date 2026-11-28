@@ -15,33 +15,33 @@
 static const int LINEAR_MEMORY_INDEX = 0;
 
 #ifdef TARGET_64BIT
-static const instruction INS_I_load  = INS_i64_load;
-static const instruction INS_I_store = INS_i64_store;
-static const instruction INS_I_const = INS_i64_const;
-static const instruction INS_I_add   = INS_i64_add;
-static const instruction INS_I_and   = INS_i64_and;
-static const instruction INS_I_or    = INS_i64_or;
-static const instruction INS_I_shl   = INS_i64_shl;
-static const instruction INS_I_eqz   = INS_i64_eqz;
-static const instruction INS_I_mul   = INS_i64_mul;
-static const instruction INS_I_sub   = INS_i64_sub;
-static const instruction INS_I_le_u  = INS_i64_le_u;
-static const instruction INS_I_ge_u  = INS_i64_ge_u;
-static const instruction INS_I_gt_u  = INS_i64_gt_u;
+static const instruction INS_I_load                = INS_i64_load;
+static const instruction INS_I_store               = INS_i64_store;
+static const instruction INS_I_const               = INS_i64_const;
+static const instruction INS_I_const_frameidentity = INS_i64_const_frameidentity;
+static const instruction INS_I_add                 = INS_i64_add;
+static const instruction INS_I_and                 = INS_i64_and;
+static const instruction INS_I_or                  = INS_i64_or;
+static const instruction INS_I_shl                 = INS_i64_shl;
+static const instruction INS_I_eqz                 = INS_i64_eqz;
+static const instruction INS_I_mul                 = INS_i64_mul;
+static const instruction INS_I_sub                 = INS_i64_sub;
+static const instruction INS_I_le_u                = INS_i64_le_u;
+static const instruction INS_I_gt_u                = INS_i64_gt_u;
 #else  // !TARGET_64BIT
-static const instruction INS_I_load  = INS_i32_load;
-static const instruction INS_I_store = INS_i32_store;
-static const instruction INS_I_const = INS_i32_const;
-static const instruction INS_I_add   = INS_i32_add;
-static const instruction INS_I_and   = INS_i32_and;
-static const instruction INS_I_or    = INS_i32_or;
-static const instruction INS_I_shl   = INS_i32_shl;
-static const instruction INS_I_eqz   = INS_i32_eqz;
-static const instruction INS_I_mul   = INS_i32_mul;
-static const instruction INS_I_sub   = INS_i32_sub;
-static const instruction INS_I_le_u  = INS_i32_le_u;
-static const instruction INS_I_ge_u  = INS_i32_ge_u;
-static const instruction INS_I_gt_u  = INS_i32_gt_u;
+static const instruction INS_I_load                = INS_i32_load;
+static const instruction INS_I_store               = INS_i32_store;
+static const instruction INS_I_const               = INS_i32_const;
+static const instruction INS_I_const_frameidentity = INS_i32_const_frameidentity;
+static const instruction INS_I_add                 = INS_i32_add;
+static const instruction INS_I_and                 = INS_i32_and;
+static const instruction INS_I_or                  = INS_i32_or;
+static const instruction INS_I_shl                 = INS_i32_shl;
+static const instruction INS_I_eqz                 = INS_i32_eqz;
+static const instruction INS_I_mul                 = INS_i32_mul;
+static const instruction INS_I_sub                 = INS_i32_sub;
+static const instruction INS_I_le_u                = INS_i32_le_u;
+static const instruction INS_I_gt_u                = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 //------------------------------------------------------------------------
@@ -196,7 +196,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         if (m_compiler->IsNativeAot() || m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
-            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+            GetEmitter()->emitIns_I(INS_I_const_frameidentity, EA_HANDLE_CNS_RELOC,
                                     reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
         }
         else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
@@ -220,7 +220,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         if ((m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX) && (m_compiler->lvaWasmResumeIP != BAD_VAR_NUM))
         {
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-            GetEmitter()->emitIns_I(INS_I_const, EA_4BYTE, 0);
+            GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
             GetEmitter()->emitIns_S(ins_Store(TYP_INT), EA_4BYTE, m_compiler->lvaWasmResumeIP, 0);
         }
     }
@@ -1178,6 +1178,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_RETURN:
         case GT_RETFILT:
             genReturn(treeNode);
+#ifdef TARGET_64BIT
+            // The runtime uses the pointer-sized catch funclet ABI for filters as well.
+            if (treeNode->OperIs(GT_RETFILT) && treeNode->TypeIs(TYP_INT))
+            {
+                GetEmitter()->emitIns(INS_i64_extend_u_i32);
+            }
+#endif
             break;
 
         case GT_IL_OFFSET:
@@ -1365,6 +1372,14 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
+    if (ActualTypeToWasmValueType(genActualType(treeNode->AsOp()->gtOp1->TypeGet())) == WasmValueType::I64)
+    {
+        // br_table takes an i32 even on wasm64. Saturate rather than wrap so large
+        // (including negative) indices still reach the default. f64 is exact in the u32 range.
+        GetEmitter()->emitIns(INS_f64_convert_u_i64);
+        GetEmitter()->emitIns(INS_i32_trunc_sat_f64_u);
+    }
+
     BBswtDesc* const desc      = block->GetSwitchTargets();
     unsigned const   caseCount = desc->GetCaseCount();
 
@@ -1467,9 +1482,11 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
         switch (genActualType(retNativeType))
         {
             case TYP_INT:
+                emit->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+                break;
             case TYP_REF:
             case TYP_BYREF:
-                emit->emitIns_I(INS_i32_const, emitActualTypeSize(retNativeType), 0);
+                emit->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
                 break;
             case TYP_LONG:
                 emit->emitIns_I(INS_i64_const, EA_8BYTE, 0);
@@ -2242,7 +2259,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         {
             if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
             {
-                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                GetEmitter()->emitIns_I(INS_I_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
                 WasmProduceReg(treeNode);
                 return;
             }
@@ -2334,15 +2351,16 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTreeOp* treeNode = tree->AsOp();
     genConsumeOperands(treeNode);
 
-    // The shift operand width in IR is always int or small int, so the operand's actual type should be TYP_INT.
-    // However, the WASM operations have the same widths for both the shift and shiftee so
-    // the shift width may need to be zero-extended if the shift result type is TYP_LONG.
-    if (treeNode->TypeIs(TYP_LONG))
+    // Wasm requires the shift count and the value being shifted to have the same width.
+    const var_types shiftType = genActualType(treeNode->gtGetOp2()->TypeGet());
+    assert((shiftType == TYP_INT) || (shiftType == TYP_LONG));
+    if (treeNode->TypeIs(TYP_LONG) && (shiftType == TYP_INT))
     {
-        assert(genActualType(treeNode->gtGetOp2()->TypeGet()) == TYP_INT);
-        // Zero-extend the shift amount to 64 bits for long shifts/rotates.
-        // Wasteful if the amount was a constant, perhaps we should contain it if so.
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
+    else if (treeNode->TypeIs(TYP_INT) && (shiftType == TYP_LONG))
+    {
+        GetEmitter()->emitIns(INS_i32_wrap_i64);
     }
 
     instruction ins;
@@ -2651,7 +2669,9 @@ void CodeGen::genRangeCheck(GenTree* tree)
     else
 #endif
     {
-        GetEmitter()->emitIns(INS_I_ge_u);
+        const var_types indexType = genActualType(boundsCheck->GetIndex()->TypeGet());
+        assert(indexType == genActualType(boundsCheck->GetArrayLength()->TypeGet()));
+        GetEmitter()->emitIns(indexType == TYP_LONG ? INS_i64_ge_u : INS_i32_ge_u);
     }
 
     genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
@@ -3415,7 +3435,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // must still include it. See #DeferredWasmCallRelocationProtocol.
         assert(!call->IsHelperCall() && !call->IsUnmanaged());
         assert(call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) == nullptr);
-        typeStack.Push(CORINFO_WASM_TYPE_I32);
+        typeStack.Push(TARGET_POINTER_SIZE == 8 ? CORINFO_WASM_TYPE_I64 : CORINFO_WASM_TYPE_I32);
     }
 
     // Report managed call signatures to the R2R compiler for thunk generation.
@@ -3724,19 +3744,26 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
 
         if (!canUseValueDirectly)
         {
-            GetEmitter()->emitIns(genActualType(value->TypeGet()) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+            GetEmitter()->emitIns(genTypeSize(genActualType(value->TypeGet())) == 8 ? INS_i64_eqz : INS_i32_eqz);
             if (treeNode->OperIs(GT_NE))
             {
                 GetEmitter()->emitIns(INS_i32_eqz);
             }
         }
 
+        genWidenCompareResult(treeNode);
         WasmProduceReg(treeNode);
         return;
     }
 
+    var_types operandType = genActualType(op1->TypeGet());
+    if (varTypeIsGC(operandType))
+    {
+        operandType = TYP_I_IMPL;
+    }
+
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), genActualType(op1->TypeGet())))
+    switch (PackOperAndType(treeNode->OperGet(), operandType))
     {
         case PackOperAndType(GT_EQ, TYP_INT):
             ins = INS_i32_eq;
@@ -3779,7 +3806,25 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+    genWidenCompareResult(treeNode);
     WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genWidenCompareResult: Zero-extend an i32 compare result when the node produces a long
+//
+// Arguments:
+//    treeNode - the compare tree
+//
+// Notes:
+//    On 64-bit targets lowering can turn a TYP_LONG GT_UDIV into a GT_GE that keeps its type.
+//
+void CodeGen::genWidenCompareResult(GenTreeOp* treeNode)
+{
+    if (genActualType(treeNode->TypeGet()) == TYP_LONG)
+    {
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4011,7 +4056,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             if (needsZeroing)
             {
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
                 // TODO-WASM-CQ: possibly do small fills directly
                 GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
@@ -4189,7 +4234,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         }
         else
         {
-            emit->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+            emit->emitIns_I(INS_I_const, EA_PTRSIZE, blkOp->Size());
             emit->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
         }
         genUpdateLife(blkOp);
@@ -4352,7 +4397,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     // The runtime expects a return value from a catch funclet,
     // but nothing will depend on it.
     //
-    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
 }
 
 void CodeGen::genStructReturn(GenTree* treeNode)

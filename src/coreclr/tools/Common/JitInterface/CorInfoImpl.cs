@@ -1492,7 +1492,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // R2R/interpreter transitions do not preserve tail calls, and explicit tail calls that cannot be
             // fast are demoted to regular calls. Leave methods with explicit tail calls to the interpreter.
-            if (fIsTailPrefix && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
+            if (fIsTailPrefix && MethodBeingCompiled.Context.Target.IsWasm)
             {
                 throw new RequiresRuntimeJitException(nameof(reportTailCallDecision));
             }
@@ -4975,6 +4975,8 @@ namespace Internal.JitInterface
                     return (uint)CorInfoArch.CORINFO_ARCH_RISCV64;
                 case TargetArchitecture.Wasm32:
                     return (uint)CorInfoArch.CORINFO_ARCH_WASM32;
+                case TargetArchitecture.Wasm64:
+                    return (uint)CorInfoArch.CORINFO_ARCH_WASM64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
@@ -5125,7 +5127,7 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-            if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
+            if (this.MethodBeingCompiled.Context.Target.IsWasm)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
                 if (_methodCodeNode.IsJitHelper)
