@@ -277,5 +277,50 @@ namespace System.Text.Tests
                     break;
             }
         }
+
+        [Theory]
+        [InlineData("{999999}", 1_000_000)]
+        [InlineData("{1000000}", 1_000_001)]
+        [InlineData("{1000001}", 1_000_002)]
+        [InlineData("{9999999}", 10_000_000)]
+        public static void Parse_ValidLargeIndex_MinimumArgumentCount(string format, int expectedMinArgs)
+        {
+            CompositeFormat cf = CompositeFormat.Parse(format);
+            Assert.NotNull(cf);
+            Assert.Equal(expectedMinArgs, cf.MinimumArgumentCount);
+        }
+
+        [Theory]
+        [InlineData("{0,999999}")]
+        [InlineData("{0,1000000}")]
+        [InlineData("{0,1000001}")]
+        [InlineData("{0,9999999}")]
+        [InlineData("{0,-9999999}")]
+        public static void Parse_ValidLargeAlignment_ParsesSuccessfully(string format)
+        {
+            CompositeFormat cf = CompositeFormat.Parse(format);
+            Assert.NotNull(cf);
+            Assert.Equal(1, cf.MinimumArgumentCount);
+        }
+
+        [Theory]
+        [InlineData("{10000000}")]
+        [InlineData("{10000001}")]
+        [InlineData("{9999999999999999999999}")]
+        [InlineData("{0,10000000}")]
+        [InlineData("{0,10000001}")]
+        [InlineData("{0,-10000000}")]
+        [InlineData("{0,-10000001}")]
+        [InlineData("{0,9999999999999999999999}")]
+        [InlineData("{0,-9999999999999999999999}")]
+        public static void Parse_InvalidIndexOrWidthExceedingLimits_ThrowsFormatException(string format)
+        {
+            // Verify CompositeFormat.Parse throws FormatException (and specifically not OverflowException)
+            Assert.Throws<FormatException>(() => CompositeFormat.Parse(format));
+
+            // Verify parity with string.Format / StringBuilder.AppendFormat
+            Assert.Throws<FormatException>(() => string.Format(null, format, 0));
+            Assert.Throws<FormatException>(() => new StringBuilder().AppendFormat(null, format, 0));
+        }
     }
 }
