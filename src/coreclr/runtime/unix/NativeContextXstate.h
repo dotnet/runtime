@@ -61,15 +61,10 @@ using asm_sigcontext::_xstate;
 #define FPREG_Xstate_ExtendedStateArea(uc) (reinterpret_cast<uint8_t *>(FPREG_Fpstate(uc)) + \
                                             FPREG_Xstate_ExtendedStateArea_Offset)
 
-struct Xstate_ExtendedFeature
-{
-    bool     initialized;
-    uint32_t offset;
-    uint32_t size;
-};
-
+// Offset and size of each extended feature, packed as (offset << 32) | size and 0 until computed. Each entry is
+// a single word accessed atomically since signal handlers on different threads may compute it concurrently.
 #define Xstate_ExtendedFeatures_Count (XSTATE_APX + 1)
-inline Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
+inline uint64_t Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
 {
@@ -117,12 +112,12 @@ inline bool FPREG_HasExtendedState(const ucontext_t *uc)
 inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featureSize, uint32_t featureIndex)
 {
     _ASSERTE(featureSize != nullptr);
-    _ASSERTE(featureIndex < (sizeof(Xstate_ExtendedFeatures) / sizeof(Xstate_ExtendedFeature)));
+    _ASSERTE(featureIndex < Xstate_ExtendedFeatures_Count);
     _ASSERTE(FPREG_Xstate_ExtendedStateArea_Offset == 576);
 
-    Xstate_ExtendedFeature *extendedFeature = &Xstate_ExtendedFeatures[featureIndex];
+    uint64_t extendedFeature = __atomic_load_n(&Xstate_ExtendedFeatures[featureIndex], __ATOMIC_RELAXED);
 
-    if (!extendedFeature->initialized)
+    if (extendedFeature == 0)
     {
         int cpuidInfo[4];
 
@@ -146,14 +141,15 @@ inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featur
         _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) > 0);
         _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EBX]) >= FPREG_Xstate_ExtendedStateArea_Offset);
 
-        extendedFeature->size   = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
-        extendedFeature->offset = static_cast<uint32_t>(cpuidInfo[CPUID_EBX] - FPREG_Xstate_ExtendedStateArea_Offset);
+        uint32_t size   = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
+        uint32_t offset = static_cast<uint32_t>(cpuidInfo[CPUID_EBX] - FPREG_Xstate_ExtendedStateArea_Offset);
 
-        extendedFeature->initialized = true;
+        extendedFeature = (static_cast<uint64_t>(offset) << 32) | size;
+        __atomic_store_n(&Xstate_ExtendedFeatures[featureIndex], extendedFeature, __ATOMIC_RELAXED);
     }
 
-    *featureSize = extendedFeature->size;
-    return (FPREG_Xstate_ExtendedStateArea(uc) + extendedFeature->offset);
+    *featureSize = static_cast<uint32_t>(extendedFeature);
+    return (FPREG_Xstate_ExtendedStateArea(uc) + static_cast<uint32_t>(extendedFeature >> 32));
 }
 
 inline bool FPREG_HasApxRegisters(const ucontext_t *uc)
