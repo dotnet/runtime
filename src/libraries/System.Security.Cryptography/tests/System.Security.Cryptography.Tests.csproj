@@ -921,6 +921,7 @@
     <Compile Include="Interop.EVP.ExtraHandle.cs" />
     <Compile Include="MLDsaOpenSslTests.Unix.cs" />
     <Compile Include="MLKemOpenSslTests.Unix.cs" />
+    <Compile Include="OpenSslProviderAvailabilityTests.Unix.cs" />
     <Compile Include="RSACryptoServiceProviderBackCompat.cs" />
     <Compile Include="RSACryptoServiceProviderProvider.cs" />
     <Compile Include="RSACryptoServiceProviderTests.cs" />
