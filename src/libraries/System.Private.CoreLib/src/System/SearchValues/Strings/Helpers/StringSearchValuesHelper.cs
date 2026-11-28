@@ -147,16 +147,15 @@ namespace System.Buffers
                     {
                         SecondReadByteOffset = (value.Length - 8) * sizeof(char);
                         Value256 = Vector256.Create(
-                            Vector128.LoadUnsafe(ref value.GetRawStringDataAsUInt16()),
-                            Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref value.GetRawStringDataAsUInt16(), SecondReadByteOffset)));
+                            Vector128.Create(MemoryMarshal.Cast<char, ushort>(value.AsSpan())),
+                            Vector128.Create(MemoryMarshal.Cast<char, ushort>(value.AsSpan(value.Length - Vector128<ushort>.Count))));
                     }
                     else if (value.Length >= 4)
                     {
                         SecondReadByteOffset = (value.Length - 4) * sizeof(char);
                         Value256 = Vector256.Create(Vector128.Create(
-                            Unsafe.ReadUnaligned<ulong>(ref value.GetRawStringDataAsUInt8()),
-                            Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref value.GetRawStringDataAsUInt8(), SecondReadByteOffset))
-                            )).AsUInt16();
+                            Vector64.Create(MemoryMarshal.Cast<char, ushort>(value.AsSpan())),
+                            Vector64.Create(MemoryMarshal.Cast<char, ushort>(value.AsSpan(value.Length - Vector64<ushort>.Count)))));
                     }
                     else
                     {

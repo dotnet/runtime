@@ -103,13 +103,11 @@ namespace System.IO.Hashing
         {
             if (destination.Length >= sizeof(long))
             {
+                // Slice before hashing so the length stays known across the call.
+                Span<byte> hashDestination = destination.Slice(0, sizeof(ulong));
                 ulong hash = HashToUInt64(source, seed);
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    hash = BinaryPrimitives.ReverseEndianness(hash);
-                }
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), hash);
+                BinaryPrimitives.WriteUInt64BigEndian(hashDestination, hash);
 
                 bytesWritten = HashLengthInBytes;
                 return true;
