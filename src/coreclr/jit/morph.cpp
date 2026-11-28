@@ -7376,6 +7376,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
+#ifndef TARGET_WASM
+            // Wasm has native remainder instructions, so keep MOD/UMOD instead of expanding them.
 #ifdef TARGET_ARM64
             // ARM64 architecture manual suggests this transformation
             // for the mod operator.
@@ -7394,6 +7396,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
+#endif // !TARGET_WASM
             break;
 
         USE_HELPER_FOR_ARITH:
