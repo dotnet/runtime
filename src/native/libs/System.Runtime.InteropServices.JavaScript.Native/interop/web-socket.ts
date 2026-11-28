@@ -212,7 +212,14 @@ export function wsReceive(ws: WebSocketExtension, bufferPtr: VoidPtr, bufferLeng
         return resolvedPromise();
     }
 
-    const pcs = dotnetLoaderExports.createPromiseCompletionSource<void>();
+    const pcs = dotnetLoaderExports.createPromiseCompletionSource<void>(undefined, () => {
+        // on cancelation the caller unpins the buffer, so this receive must not write into it later
+        receivePromiseControl.bufferLength = 0;
+
+        if (receivePromiseQueue.peek() === receivePromiseControl) {
+            receivePromiseQueue.dequeue();
+        }
+    });
     const receivePromiseControl = pcs as ReceivePromiseControl;
     receivePromiseControl.bufferPtr = fixupPointer(bufferPtr, 0);
     receivePromiseControl.bufferLength = bufferLength;

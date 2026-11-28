@@ -174,6 +174,30 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        protected async Task RunClient_ReceiveAsync_CancelThenMessageArrives_DoesNotWriteToBuffer(Uri server)
+        {
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
+            {
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                // the echo server waits 5 seconds before it reads and echoes the payload
+                await cws.SendAsync(EchoControlMessage.Delay5Sec.ToUtf8(), WebSocketMessageType.Text, true, ctsDefault.Token);
+                await cws.SendAsync("payload".ToUtf8(), WebSocketMessageType.Text, true, ctsDefault.Token);
+
+                // pinned, so that a late write through the address captured by the canceled receive would land in this array
+                byte[] recvBuffer = GC.AllocateArray<byte>(100, pinned: true);
+                var cts = new CancellationTokenSource();
+
+                Task receive = cws.ReceiveAsync(new ArraySegment<byte>(recvBuffer), cts.Token);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receive);
+
+                await Task.Delay(TimeSpan.FromSeconds(7));
+
+                Assert.Equal(new byte[recvBuffer.Length], recvBuffer);
+            }
+        }
+
         #endregion
     }
 
@@ -215,6 +239,10 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory, MemberData(nameof(EchoServers))]
         public Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
             => RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ReceiveAsync_CancelThenMessageArrives_DoesNotWriteToBuffer(Uri server)
+            => RunClient_ReceiveAsync_CancelThenMessageArrives_DoesNotWriteToBuffer(server);
 
         #endregion
     }

@@ -230,7 +230,14 @@ export function ws_wasm_receive (ws: WebSocketExtension, buffer_ptr: VoidPtr, bu
         return resolvedPromise();
     }
 
-    const { promise, promise_control } = createPromiseController<void>();
+    const { promise, promise_control } = createPromiseController<void>(undefined, () => {
+        // on cancelation the caller unpins the buffer, so this receive must not write into it later
+        receive_promise_control.buffer_length = 0;
+
+        if (receive_promise_queue.peek() === receive_promise_control) {
+            receive_promise_queue.dequeue();
+        }
+    });
     const receive_promise_control = promise_control as ReceivePromiseControl;
     receive_promise_control.buffer_ptr = fixupPointer(buffer_ptr, 0);
     receive_promise_control.buffer_length = buffer_length;

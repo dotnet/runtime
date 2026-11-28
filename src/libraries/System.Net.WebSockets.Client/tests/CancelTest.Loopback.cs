@@ -100,6 +100,10 @@ namespace System.Net.WebSockets.Client.Tests
         public Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(bool useSsl) => RunEchoAsync(
             RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException, useSsl);
 
+        [Theory, MemberData(nameof(UseSsl))]
+        public Task ReceiveAsync_CancelThenMessageArrives_DoesNotWriteToBuffer(bool useSsl) => RunEchoAsync(
+            RunClient_ReceiveAsync_CancelThenMessageArrives_DoesNotWriteToBuffer, useSsl);
+
         #endregion
     }
 
