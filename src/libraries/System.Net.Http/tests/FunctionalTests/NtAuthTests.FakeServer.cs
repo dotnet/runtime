@@ -174,6 +174,62 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials are not supported on Browser")]
+        public async Task AuthenticationChallenge_DrainFailure_PreservesResponseStatus(bool closeBeforeDrain)
+        {
+            TaskCompletionSource<bool> clientFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    try
+                    {
+                        using SocketsHttpHandler handler = CreateCredentialHandler();
+                        if (!closeBeforeDrain)
+                        {
+                            handler.MaxResponseDrainSize = 0;
+                        }
+
+                        using HttpClient client = new HttpClient(handler);
+                        HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                        Assert.Equal(HttpRequestError.UserAuthenticationError, exception.HttpRequestError);
+                        Assert.Equal(HttpStatusCode.Unauthorized, exception.StatusCode);
+                    }
+                    finally
+                    {
+                        clientFinished.TrySetResult(true);
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        string headers = "WWW-Authenticate: NTLM\r\n";
+                        if (closeBeforeDrain)
+                        {
+                            // This marks the connection for closure without the Connection: close header,
+                            // so authentication still attempts to drain the response on this connection.
+                            headers += "Keep-Alive: timeout=1\r\n";
+                        }
+
+                        if (closeBeforeDrain)
+                        {
+                            await connection.SendResponseAsync(HttpStatusCode.Unauthorized, headers, "challenge");
+                        }
+                        else
+                        {
+                            // Leave the body outstanding so the zero-byte drain limit is exceeded.
+                            await connection.SendResponseAsync(
+                                "HTTP/1.1 401 Unauthorized\r\nContent-Length: 1024\r\n" + headers + "\r\n");
+                            await clientFinished.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                        }
+                    });
+                });
+        }
+
         [ConditionalTheory(nameof(IsNtlmAndAlpnAvailable))]
         [InlineData(true)]
         [InlineData(false)]
